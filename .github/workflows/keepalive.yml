@@ -1,0 +1,20 @@
+name: Keep site awake
+
+# Opens the live site every 5 minutes so Render's free plan does not put it to sleep.
+# GitHub may delay scheduled runs a little; "Run workflow" starts one by hand.
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping health endpoint
+        run: |
+          curl --fail --silent --show-error --max-time 120 --retry 3 --retry-delay 10 \
+            https://finance-intelligence-studio.onrender.com/api/health
