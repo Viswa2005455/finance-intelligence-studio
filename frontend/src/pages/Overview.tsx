@@ -12,6 +12,7 @@ import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
 import { useState } from 'react';
 import { CompanyDashboard } from '../components/CompanyDashboard';
+import { GetStarted } from '../components/Guide';
 import { useCompanySources } from '../lib/company';
 import { loadRaw } from '../lib/storage';
 
@@ -59,6 +60,8 @@ function SampleOverview({ hasCompanies, onBack }: { hasCompanies: boolean; onBac
           <Link to="/upload" className="btn primary"><FileUp size={16} />Upload data</Link>
         </>}
       />
+
+      {!hasCompanies && <GetStarted />}
 
       {dash.error && <ErrorBox error={dash.error} onRetry={dash.reload} />}
       {dash.loading && !d && <SkeletonCards n={5} />}

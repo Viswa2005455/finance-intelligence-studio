@@ -1,5 +1,6 @@
 import { Download, Plus, Trash2 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
+import { FromUpload } from '../components/FromUpload';
 import { SaveLoad } from '../components/SaveLoad';
 import { Badge, Callout, Card, ErrorBox, Field, Formula, Kpi, NumberField, PageHeader, Skeleton, Tabs } from '../components/ui';
 import { api } from '../lib/api';
@@ -211,6 +212,8 @@ function EPS({ m, set }: { m: Model; set: (p: Partial<Model>) => void }) {
   const r = useCalc<EPSRes>('/api/accounting/eps', filled(e, ['net_income', 'preferred_dividends', 'weighted_shares']) && e.securities.every((s) => isNum(s.shares)) ? e : null);
   return (
     <div className="stack">
+      <FromUpload title="Use net income from a file" keys={['net_income', 'shares_outstanding']} labels={{ net_income: 'Net income', shares_outstanding: 'Shares outstanding' }}
+        onApply={(f) => u({ net_income: f.value('net_income'), ...(f.value('shares_outstanding') !== null ? { weighted_shares: f.value('shares_outstanding') } : {}) })} />
       <Card title="Inputs" actions={<button className="btn sm" onClick={() => u({ securities: [...e.securities, { kind: 'options', name: 'New security', shares: null, exercise_price: null, preferred_dividends: null, interest_after_tax: null }] })}><Plus size={14} />Security</button>}>
         <div className="grid cols-4" style={{ gap: 10 }}>
           <NumberField label="Net income" value={e.net_income} onChange={(v) => u({ net_income: v })} />
@@ -306,6 +309,9 @@ function Materiality({ m, set }: { m: Model; set: (p: Partial<Model>) => void })
   const money = (v: number) => fmtNum(v, 0, settings.currency);
   return (
     <Layout r={r} inputs={<div className="stack" style={{ gap: 10 }}>
+      <FromUpload title="Use benchmarks from a file" keys={['pretax_income', 'revenue', 'total_assets', 'total_equity']}
+        labels={{ pretax_income: 'Profit before tax', revenue: 'Revenue', total_assets: 'Total assets', total_equity: 'Equity' }}
+        onApply={(f) => u({ values: { ...t.values, profit_before_tax: f.value('pretax_income'), revenue: f.value('revenue'), total_assets: f.value('total_assets'), equity: f.value('total_equity') } })} />
       {BENCH.map(([k, l]) => <NumberField key={k} label={l} value={t.values[k]} onChange={(v) => u({ values: { ...t.values, [k]: v } })} />)}
       <Select label="Benchmark used" value={t.selected} options={BENCH.map(([k, l]) => [k, l])} onChange={(v) => u({ selected: v })} />
       <NumberField label="Percentage applied" percent value={t.pct} onChange={(v) => u({ pct: v })} />

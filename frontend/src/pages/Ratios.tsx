@@ -20,7 +20,7 @@ type Data = Record<string, number | null>;
 const GROUPS: { title: string; items: [string, string][]; prior?: boolean }[] = [
   { title: 'Income statement', items: [['revenue', 'Revenue'], ['cogs', 'Cost of goods sold'], ['operating_income', 'Operating income (EBIT)'], ['depreciation_amortization', 'Depreciation & amortisation'], ['interest_expense', 'Interest expense'], ['net_income', 'Net income']] },
   { title: 'Balance sheet (closing)', prior: true, items: [['cash', 'Cash & equivalents'], ['marketable_securities', 'Marketable securities'], ['receivables', 'Accounts receivable'], ['inventory', 'Inventory'], ['current_assets', 'Current assets'], ['total_assets', 'Total assets'], ['current_liabilities', 'Current liabilities'], ['accounts_payable', 'Accounts payable'], ['total_debt', 'Total debt'], ['total_liabilities', 'Total liabilities'], ['total_equity', "Shareholders' equity"]] },
-  { title: 'Cash flow, tax & market', items: [['operating_cash_flow', 'Operating cash flow'], ['debt_service', 'Debt service (interest + principal)'], ['tax_rate', 'Effective tax rate'], ['shares_outstanding', 'Shares outstanding'], ['share_price', 'Share price']] },
+  { title: 'Cash flow, tax & market', items: [['operating_cash_flow', 'Operating cash flow'], ['debt_service', 'Debt service (interest + principal)'], ['pretax_income', 'Profit before tax'], ['income_tax', 'Income tax expense'], ['tax_rate', 'Effective tax rate (overrides the one derived from tax / profit before tax)'], ['wacc', 'Cost of capital (WACC)'], ['shares_outstanding', 'Shares outstanding'], ['share_price', 'Share price']] },
 ];
 const AVERAGEABLE = new Set(['receivables', 'inventory', 'total_assets', 'accounts_payable', 'total_equity', 'total_debt']);
 
@@ -125,7 +125,7 @@ export function Ratios() {
               <div className="stack" style={{ gap: 8 }}>
                 {g.items.map(([k, label]) => (
                   <div key={k} className={g.prior && AVERAGEABLE.has(k) ? 'grid cols-2' : ''} style={{ gap: 8 }}>
-                    <NumberField label={label} percent={k === 'tax_rate'} value={data[k] ?? null} onChange={(v) => set(k, v)}
+                    <NumberField label={label} percent={k === 'tax_rate' || k === 'wacc'} value={data[k] ?? null} onChange={(v) => set(k, v)}
                       hint={sources[k] ? <span title={sources[k]}>From {sources[k].split(' › ').slice(-1)[0]}</span> : undefined} />
                     {g.prior && AVERAGEABLE.has(k) && <NumberField label="Opening" value={data[`${k}_prior`] ?? null} onChange={(v) => set(`${k}_prior`, v)} />}
                   </div>

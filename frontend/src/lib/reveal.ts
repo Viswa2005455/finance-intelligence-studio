@@ -292,7 +292,7 @@ export function ratioData(inp: EngineInput): { data: Record<string, number>; sou
 
 const RATIO_ITEMS = new Set(['revenue', 'cogs', 'operating_income', 'depreciation_amortization', 'interest_expense', 'net_income', 'operating_cash_flow', 'cash',
   'marketable_securities', 'receivables', 'inventory', 'current_assets', 'total_assets', 'current_liabilities', 'accounts_payable', 'total_debt',
-  'total_liabilities', 'total_equity', 'tax_rate', 'debt_service', 'shares_outstanding', 'share_price']);
+  'total_liabilities', 'total_equity', 'tax_rate', 'income_tax', 'pretax_income', 'wacc', 'debt_service', 'shares_outstanding', 'share_price']);
 
 async function ratiosBlock(data: Record<string, number>, sources: Record<string, string>, route: string | null, signal?: AbortSignal): Promise<Block> {
   const body = Object.fromEntries(Object.entries(data).filter(([k]) => RATIO_ITEMS.has(k.replace(/_prior$/, ''))));

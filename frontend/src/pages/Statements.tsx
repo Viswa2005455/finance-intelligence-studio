@@ -11,12 +11,14 @@ import { useSettings } from '../lib/settings';
 import { loadRaw, save } from '../lib/storage';
 import { useProjects } from '../lib/project';
 import { useToast } from '../lib/toast';
+import { Hint } from '../components/Guide';
+import { statedUnits } from '../lib/company';
 import type { UploadSummary } from '../lib/types';
 import { useAsync, useDebounced } from '../lib/useApi';
 
 type Stmt = 'income' | 'balance' | 'cashflow';
 interface Line { label: string; statement: Stmt; key: string | null; values: (number | null)[]; source?: string | null }
-interface Data { periods: string[]; lines: Line[]; company?: string; units?: string; market?: Record<string, (number | null)[]> }
+interface Data { periods: string[]; lines: Line[]; company?: string; units?: string; currency?: string; market?: Record<string, (number | null)[]> }
 interface ScreenerImport { upload_id: string; file: string; company: string | null; periods: string[]; units: string; lines: Line[]; market: Record<string, (number | null)[]>; approximations: Record<string, Line>; notes: string[] }
 interface Change { absolute: number | null; pct: number | null; note: string | null }
 interface Report {
@@ -68,7 +70,7 @@ export function Statements() {
   const { data, isExample } = state;
   const setData = (d: Data, example = false) => { const s = { data: d, isExample: example }; setState(s); save('fis.statements', s); };
   const [tab, setTab] = useState<'overview' | 'horizontal' | 'vertical' | 'checks' | 'edit'>('overview');
-  const [pending, setPending] = useState<{ file: string; sheets: (Suggested & { use: boolean })[] } | null>(null);
+  const [pending, setPending] = useState<{ file: string; sheets: (Suggested & { use: boolean })[]; stated?: { currency?: string; units?: string } } | null>(null);
   const [screener, setScreener] = useState<(ScreenerImport & { name: string; approx: boolean }) | null>(null);
   const { activeId } = useProjects();
 
@@ -79,13 +81,13 @@ export function Statements() {
 
   const loadFrom = async (id: string) => {
     try {
-      const rec = await api.get<{ name: string; statements: Suggested[] }>(`/api/uploads/${id}`);
+      const rec = await api.get<{ name: string; statements: Suggested[]; analysis?: { context?: { currencies?: Record<string, number>; units?: Record<string, number> } } }>(`/api/uploads/${id}`);
       if (!rec.statements?.length) { toast('No statement-shaped sheets found in that file', 'error'); return; }
       // One sheet per statement by default: when a statement appears with several reporting lengths
       // (for example 3-month and 12-month columns), keep the longest and leave the rest unticked.
       const longest = new Map<string, number>();
       rec.statements.forEach((s) => longest.set(s.statement, Math.max(longest.get(s.statement) ?? 0, s.months ?? 0)));
-      setPending({ file: rec.name, sheets: rec.statements.map((s) => ({ ...s, use: (s.months ?? 0) === longest.get(s.statement) })) });
+      setPending({ file: rec.name, sheets: rec.statements.map((s) => ({ ...s, use: (s.months ?? 0) === longest.get(s.statement) })), stated: statedUnits(rec.analysis?.context) });
       setTab('overview');
     } catch (e) { toast((e as Error).message, 'error'); }
   };
@@ -134,7 +136,7 @@ export function Statements() {
       if (key) used.add(key);
       return { label: l.label, statement: s.statement, key, source: l.source, values: periods.map((p) => { const i = s.periods.indexOf(p); return i >= 0 ? l.values[i] : null; }) };
     }));
-    setData({ periods, lines });
+    setData({ periods, lines, ...(pending.stated?.units || pending.stated?.currency ? pending.stated : {}) });
     setPending(null);
     toast(`Imported ${lines.length} lines across ${periods.length} periods`);
   };
@@ -176,6 +178,12 @@ export function Statements() {
           <button className="btn" onClick={exportCsv} disabled={!r}><Download size={15} />Export CSV</button>
         </>} />
 
+      <Hint id="statements-import" step={3} title="Import your file" dir="down" active={isExample && !!uploads.data && (excelUploads.length > 0 || candidates.length > 0)}>
+        Click your file in one of the two boxes below. The page then shows your income statement, balance sheet and cash flow, with margins and checks.
+      </Hint>
+      <Hint id="statements-upload-first" step={1} title="Upload a file first" dir="down" active={isExample && !!uploads.data && excelUploads.length === 0 && candidates.length === 0}>
+        You have no file yet. <Link to="/upload">Go to Upload & Analyse</Link>, add your statement, then come back here and click it to see your statements.
+      </Hint>
       <div className="grid cols-2">
         <Card title="Import a Screener.in export or a Trading & P&L account" subtitle="One click: a Screener workbook (10-year P&L, balance sheet, cash flow, price and shares) or a two-sided To / By Trading and Profit & Loss account with its balance sheet, with cell references">
           {excelUploads.length ? <div className="row">{excelUploads.map((u) => <button key={u.id} className="btn sm" onClick={() => loadScreener(u.id)}><FileUp size={14} />{u.name}</button>)}</div>
@@ -251,7 +259,7 @@ export function Statements() {
         <Tabs label="View" value={tab} onChange={setTab} options={[
           { value: 'overview', label: 'Overview' }, { value: 'horizontal', label: 'Horizontal' }, { value: 'vertical', label: 'Common-size' },
           { value: 'checks', label: <>Checks {fails.length > 0 && <Badge tone="neg">{fails.length}</Badge>}</> }, { value: 'edit', label: 'Edit data' }]} />
-        {r && <span className="faint" style={{ fontSize: 12.5 }}>{r.lines.length} lines · {r.periods.length} periods · {data.units === '' ? 'amounts as written in the file (no unit stated)' : data.units ? `${settings.currency} in ${data.units}` : `${settings.currency} ${UNIT_LABEL[settings.units] || 'in units'}`}</span>}
+        {r && <span className="faint" style={{ fontSize: 12.5 }}>{r.lines.length} lines · {r.periods.length} periods · {data.units === '' ? 'amounts as written in the file (no unit stated)' : data.units ? `${data.currency ?? settings.currency} in ${data.units}` : `${settings.currency} ${UNIT_LABEL[settings.units] || 'in units'}`}</span>}
       </div>
       {res.error && <div className="mt"><ErrorBox error={res.error} /></div>}
       {!complete && <div className="mt"><Callout tone="warn">Every line and period needs a name.</Callout></div>}

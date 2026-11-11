@@ -9,6 +9,7 @@ import { SkeletonCards } from './ui';
 import { Backdrop } from './Backdrop';
 import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
+import { useGuide } from '../lib/guide';
 
 export function Layout() {
   const [open, setOpen] = useState(false);
@@ -19,8 +20,10 @@ export function Layout() {
   const { user, logout } = useAuth();
   const { projects, activeId, setActive } = useProjects();
   const navigate = useNavigate();
+  const guide = useGuide();
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [loc.pathname]);
+  useEffect(() => { if (loc.pathname === '/upload') guide.dismiss('nav-upload'); }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     document.title = `${current?.label ?? 'Not found'} · Finance Intelligence Studio`;
   }, [current]);
@@ -54,6 +57,7 @@ export function Layout() {
                 <n.icon size={17} />
                 <span>{n.label}</span>
                 {!n.ready && <span className="dev-dot" aria-label="under development" />}
+                {n.to === '/upload' && guide.isOn('nav-upload') && <span className="nav-arrow">&larr; Start here</span>}
               </NavLink>,
             ];
           })}

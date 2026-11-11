@@ -1,11 +1,14 @@
 import { Download, Plus, RotateCcw, Trash2 } from 'lucide-react';
-import { memo, useCallback, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
+import { FromUpload } from '../components/FromUpload';
 import { SaveLoad } from '../components/SaveLoad';
 import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, Stable, Tabs, Warnings } from '../components/ui';
 import { api } from '../lib/api';
-import { downloadFile, fmtCompact, fmtMoney, fmtNum, isNum, toCSV } from '../lib/format';
+import { useCompanySources, type StatementData } from '../lib/company';
+import { downloadFile, fmtCompact, fmtMoney, fmtNum, fmtPctPoints, isNum, toCSV } from '../lib/format';
 import { useSettings } from '../lib/settings';
 import { loadRaw, save } from '../lib/storage';
 import { useAsync, useDebounced } from '../lib/useApi';
@@ -36,13 +39,13 @@ const EXAMPLE: CBState = {
 };
 
 export function CashFlow() {
-  const [tab, setTab] = useState<'budget' | 'wc'>('budget');
+  const [tab, setTab] = useState<'cfs' | 'budget' | 'wc'>('cfs');
   return (
     <div className="page">
       <PageHeader title="Cash Flow & Working Capital"
-        subtitle="Plan cash month by month, see when financing is needed and how long cash lasts, and measure how much cash is tied up in working capital."
-        actions={<Tabs label="View" value={tab} onChange={setTab} options={[{ value: 'budget', label: 'Cash budget & runway' }, { value: 'wc', label: 'Working capital' }]} />} />
-      {tab === 'budget' ? <CashBudget /> : <WorkingCapital />}
+        subtitle="Analyse the cash flow statement in a file you uploaded, plan cash month by month, and measure how much cash is tied up in working capital."
+        actions={<Tabs label="View" value={tab} onChange={setTab} options={[{ value: 'cfs', label: 'Cash flow statement' }, { value: 'budget', label: 'Cash budget & runway' }, { value: 'wc', label: 'Working capital' }]} />} />
+      {tab === 'cfs' ? <CashFlowStatement /> : tab === 'budget' ? <CashBudget /> : <WorkingCapital />}
       <div className="mt">
         <LearnBox title="Cash budgets, runway and the cash conversion cycle">
           <div className="stack" style={{ fontSize: 13 }}>
@@ -206,6 +209,145 @@ function CashBudget() {
   );
 }
 
+
+interface StmtReport {
+  periods: string[];
+  lines: { label: string; statement: string; key: string | null; values: (number | null)[]; changes: ({ absolute: number | null; pct: number | null; note: string | null } | null)[] }[];
+  metrics: Record<string, (number | null)[]>;
+  checks: { name: string; period: string; status: 'pass' | 'fail' | 'insufficient'; difference: number | null; detail: string }[];
+  notes: string[];
+}
+
+const CASH_METRICS: [string, string, 'pct' | 'num' | 'x'][] = [
+  ['free_cash_flow', 'Free cash flow (operating cash flow − capital expenditure)', 'num'], ['fcf_margin_pct', 'Free cash flow margin', 'pct'],
+  ['cash_conversion', 'Cash conversion (operating cash flow / net income)', 'x'], ['accruals_ratio_pct', 'Accruals ratio ((net income − operating cash flow) / average assets)', 'pct'],
+  ['capex_to_da', 'Capital expenditure / depreciation & amortisation', 'x'],
+];
+
+/** The cash flow statement of an uploaded file (or saved company): every line, the three sections, cash metrics and the engine's reconciliation checks. */
+function CashFlowStatement() {
+  const { sources } = useCompanySources();
+  const real = sources?.filter((x) => !x.isExample) ?? [];
+  const [id, setId] = useState('');
+  const [data, setData] = useState<StatementData | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  useEffect(() => { if (!id && real.length) setId(real[0].id); }, [real.length]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    const src = real.find((x) => x.id === id);
+    if (!src) return;
+    setData(null); setLoadError(null);
+    src.load().then(setData).catch((e) => setLoadError((e as Error).message));
+  }, [id, real.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const body = useMemo(() => (data ? { periods: data.periods, lines: data.lines.map((l) => ({ label: l.label.slice(0, 160), statement: l.statement, key: l.key, values: l.values, source: l.source?.slice(0, 400) ?? null })) } : null), [data]);
+  const res = useAsync((signal) => api.post<StmtReport>('/api/finance/statements', body, { signal }), [JSON.stringify(body)], !!body);
+  const r = res.data;
+  const cf = r?.lines.filter((l) => l.statement === 'cashflow') ?? [];
+  const at = (k: string, i: number) => cf.find((l) => l.key === k)?.values[i] ?? null;
+  const n = r ? r.periods.length - 1 : 0;
+  const unitNote = data?.units === '' ? 'amounts as written in the file' : [data?.currency, data?.units ? `in ${data.units}` : ''].filter(Boolean).join(' ');
+  const num = (v: number | null | undefined) => (isNum(v) ? fmtNum(v, Math.abs(v) >= 1000 || Number.isInteger(v) ? 0 : 2) : '—');
+  const metric = (key: string, kind: string, i: number) => { const v = r?.metrics[key]?.[i]; return !isNum(v) ? '—' : kind === 'pct' ? fmtPctPoints(v, 1) : kind === 'x' ? `${fmtNum(v, 2)}×` : num(v); };
+  const sectionChart = r ? r.periods.map((p, i) => ({ name: p, Operating: at('operating_cash_flow', i), Investing: at('investing_cash_flow', i), Financing: at('financing_cash_flow', i) })) : [];
+  const cashChecks = r?.checks.filter((c) => /cash/i.test(c.name) && c.status !== 'insufficient') ?? [];
+
+  return (
+    <div className="stack">
+      <Card title="Source" subtitle="The file or saved company whose cash flow statement is analysed">
+        {!sources ? <p className="faint" style={{ margin: 0 }}>Looking for your files…</p>
+          : !real.length ? <p className="muted" style={{ margin: 0 }}>No statement file yet. <Link to="/upload">Upload a statement</Link> (Excel, CSV or PDF) that includes a cash flow statement, or use the other two views for example data.</p>
+            : (
+              <div className="row" style={{ gap: 10, flexWrap: 'wrap' }}>
+                <select className="input" aria-label="File or company" value={id} onChange={(e) => setId(e.target.value)} style={{ maxWidth: 520 }}>
+                  {real.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
+                </select>
+                {data && <span className="faint" style={{ fontSize: 12.5 }}>{data.periods.join(' · ')}{unitNote ? ` · ${unitNote}` : ''}</span>}
+              </div>
+            )}
+        {loadError && <div className="mt-sm"><ErrorBox error={loadError} /></div>}
+      </Card>
+
+      {data && res.error && <ErrorBox error={res.error} />}
+      {data && r && !cf.length && (
+        <Callout tone="warn" title="No cash flow statement in this file">
+          The file's statements were read, but none is a cash flow statement (operating, investing and financing activities). Upload the file that includes it, or open
+          {' '}<Link to="/statements">Financial Statements</Link> to check what was read.
+        </Callout>
+      )}
+
+      {r && cf.length > 0 && (
+        <>
+          <div className="grid cols-4">
+            <Kpi label={`Operating cash flow (${r.periods[n]})`} value={num(at('operating_cash_flow', n))} delta={n > 0 ? `${r.periods[n - 1]}: ${num(at('operating_cash_flow', n - 1))}` : undefined} />
+            <Kpi label="Free cash flow" value={metric('free_cash_flow', 'num', n)} delta={n > 0 ? `${r.periods[n - 1]}: ${metric('free_cash_flow', 'num', n - 1)}` : undefined} />
+            <Kpi label="Cash conversion (OCF / net income)" value={metric('cash_conversion', 'x', n)} delta={n > 0 ? `${r.periods[n - 1]}: ${metric('cash_conversion', 'x', n - 1)}` : undefined} />
+            <Kpi label="Net change in cash" value={num(at('net_change_in_cash', n))} delta={`Ending cash ${num(at('ending_cash', n))}`} />
+          </div>
+
+          {sectionChart.some((d) => d.Operating !== null || d.Investing !== null || d.Financing !== null) && (
+            <Card title="Where the cash came from and went" subtitle="Operating, investing and financing cash flows by period">
+              <div className="chart">
+                <ResponsiveContainer>
+                  <BarChart data={sectionChart} margin={{ top: 8, right: 8, left: -4, bottom: 0 }}>
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="name" {...axisProps} />
+                    <YAxis {...axisProps} width={56} tickFormatter={(x) => fmtCompact(x)} />
+                    <ReferenceLine y={0} stroke="var(--border-strong)" />
+                    <Tooltip cursor={{ fill: 'var(--bg-hover)' }} content={<ChartTooltip format={(x) => num(x)} />} />
+                    <Bar dataKey="Operating" fill={C.c1} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                    <Bar dataKey="Investing" fill={C.c2} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                    <Bar dataKey="Financing" fill={C.c3} radius={[4, 4, 0, 0]} maxBarSize={36} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+              <Legend items={[{ label: 'Operating', color: 'var(--chart-1)' }, { label: 'Investing', color: 'var(--chart-2)' }, { label: 'Financing', color: 'var(--chart-3)' }]} />
+            </Card>
+          )}
+
+          <Card title="Cash flow statement" subtitle={`Every line as read from the file${unitNote ? `, ${unitNote}` : ''}. Lines that match a standard item are in bold.`} flush>
+            <div className="table-wrap" tabIndex={0} style={{ border: 0, borderRadius: 0 }}>
+              <table className="data">
+                <thead><tr><th>Line</th>{r.periods.map((p) => <th key={p} className="r">{p}</th>)}{n > 0 && <th className="r">Change</th>}</tr></thead>
+                <tbody>{cf.map((l, i) => {
+                  const ch = n > 0 ? l.changes[n] : null;
+                  return (
+                    <tr key={`${l.label}-${i}`}>
+                      <td style={{ whiteSpace: 'normal', fontWeight: l.key ? 600 : 400 }}>{l.label}</td>
+                      {l.values.map((v, j) => <td key={j} className="r num">{num(v)}</td>)}
+                      {n > 0 && <td className="r num">{ch && isNum(ch.pct) ? fmtPctPoints(ch.pct, 1) : '—'}</td>}
+                    </tr>
+                  );
+                })}</tbody>
+              </table>
+            </div>
+          </Card>
+
+          <div className="grid cols-2">
+            <Card title="Cash metrics" subtitle="From the statements engine; each uses the lines above and the income statement and balance sheet in the same file">
+              <div className="table-wrap" tabIndex={0}>
+                <table className="data">
+                  <thead><tr><th>Metric</th>{r.periods.map((p) => <th key={p} className="r">{p}</th>)}</tr></thead>
+                  <tbody>{CASH_METRICS.map(([k, label, kind]) => <tr key={k}><td style={{ whiteSpace: 'normal' }}>{label}</td>{r.periods.map((_, i) => <td key={i} className="r num">{metric(k, kind, i)}</td>)}</tr>)}</tbody>
+                </table>
+              </div>
+              <p className="faint mt-sm" style={{ fontSize: 12 }}>A metric shows a dash when a line it needs is not in the file; nothing is estimated.</p>
+            </Card>
+            <Card title="Reconciliation checks" subtitle="Do the cash flow lines add up?">
+              {cashChecks.length ? cashChecks.map((c, i) => (
+                <div key={i} className="metric-row" style={{ alignItems: 'flex-start' }}>
+                  <span style={{ whiteSpace: 'normal' }}>{c.name} <span className="faint">({c.period})</span><div className="faint" style={{ fontSize: 11.5 }}>{c.detail}</div></span>
+                  <Badge tone={c.status === 'pass' ? 'accent' : 'neg'}>{c.status === 'pass' ? 'Pass' : `Fails by ${num(c.difference)}`}</Badge>
+                </div>
+              )) : <p className="faint" style={{ margin: 0 }}>No cash check could be run: the file lacks the opening cash, net change or ending cash lines.</p>}
+            </Card>
+          </div>
+          <Callout tone="info">Figures read from a PDF can be misaligned. Confirm the key numbers against the source page before relying on them.</Callout>
+        </>
+      )}
+    </div>
+  );
+}
+
 interface WCRes {
   dso: number; dio: number; dpo: number; ccc: number; target_dso: number; target_dio: number; target_dpo: number; target_ccc: number;
   receivables: number; inventory: number; payables: number; target_receivables: number; target_inventory: number; target_payables: number;
@@ -216,6 +358,7 @@ function WorkingCapital() {
   const { settings } = useSettings();
   const cur = settings.currency;
   const [v, setV] = useState<Record<string, number | null>>({ revenue: 5000, cogs: 3100, receivables: 720, inventory: 610, payables: 430, target_dso: 45, target_dio: 60, target_dpo: 55, days: 365 });
+  const [fromFile, setFromFile] = useState<string | null>(null);
   const ok = Object.values(v).every(isNum);
   const req = useDebounced(ok ? v : null, 150);
   const res = useAsync((signal) => api.post<WCRes>('/api/finance/working-capital', req, { signal }), [JSON.stringify(req)], !!req);
@@ -228,7 +371,10 @@ function WorkingCapital() {
   return (
     <div className="grid cols-3">
       <div className="stack">
-        <Card title="Current position" subtitle="Example inputs — annual flows and closing balances">
+        <FromUpload title="Use figures from a file" keys={['revenue', 'cogs', 'receivables', 'inventory', 'accounts_payable']}
+          labels={{ revenue: 'Revenue', cogs: 'Cost of goods sold', receivables: 'Receivables', inventory: 'Inventory', accounts_payable: 'Payables' }}
+          onApply={(f) => { setFromFile(`${f.name}, ${f.period}`); setV((x) => ({ ...x, revenue: f.value('revenue'), cogs: f.value('cogs'), receivables: f.value('receivables'), inventory: f.value('inventory'), payables: f.value('accounts_payable') })); }} />
+        <Card title="Current position" subtitle={fromFile ? `From ${fromFile}: annual flows and closing balances. Days in period assumes a full year; change it for a quarter.` : 'Example inputs — annual flows and closing balances'}>
           <div className="form-grid">{f('revenue', 'Revenue')}{f('cogs', 'COGS')}{f('receivables', 'Receivables')}{f('inventory', 'Inventory')}{f('payables', 'Payables')}{f('days', 'Days in period')}</div>
         </Card>
         <Card title="Targets">

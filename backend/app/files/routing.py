@@ -58,6 +58,18 @@ def _norm(label: str) -> str:
     return re.sub(r"\s+", " ", re.sub(r"[^\w&' ]", " ", label.lower())).strip()
 
 
+# Costs that the engines hold as positive amounts. Many models show them as negatives (revenue plus costs gives profit).
+COST_KEYS = {"cogs", "depreciation_amortization", "interest_expense", "income_tax", "sga", "operating_expenses", "employee_cost"}
+
+
+def costs_positive(key: str | None, values: list) -> tuple[list, bool]:
+    """Return the values as positive costs when the whole series is negative (a sign convention), and whether it was reversed."""
+    nums = [v for v in values if v is not None]
+    if key in COST_KEYS and nums and all(v <= 0 for v in nums) and any(v < 0 for v in nums):
+        return [None if v is None else -v for v in values], True
+    return values, False
+
+
 def match_item(label: str) -> str | None:
     n = _norm(label)
     for key, pats in SYNONYMS.items():
@@ -73,6 +85,8 @@ def suggest_statement_mapping(sheets: list[dict], file_name: str, all_items: boo
     profit and profit before tax (used by the tax audit's clause 40)."""
     found: dict[str, dict] = {}
     for sheet in sheets:
+        if sheet.get("section") is not None and not sheet["section"].get("type"):
+            continue  # a schedule or driver block of a model: its lines are not statement figures
         for s in sheet.get("series", []):
             if s["orientation"] != "row":
                 continue
@@ -80,6 +94,7 @@ def suggest_statement_mapping(sheets: list[dict], file_name: str, all_items: boo
             if not key or key in found or (key not in ITEMS and not all_items):
                 continue
             vals, refs, periods = s["values"], s["refs"], s["period_labels"]
+            vals, reversed_sign = costs_positive(key, list(vals))
             # Ignore non-period columns such as "Growth" or "% of sales" when the row has periods.
             keep = [i for i, p in enumerate(periods) if is_period_label(p)]
             if keep:
@@ -88,7 +103,8 @@ def suggest_statement_mapping(sheets: list[dict], file_name: str, all_items: boo
                 if len(years) > 1 and all(y is not None for y in years) and years == sorted(years, reverse=True) and years[0] != years[-1]:
                     vals, refs, periods = vals[::-1], refs[::-1], periods[::-1]  # newest-first -> oldest-first
             found[key] = {
-                "item": key, "item_label": ITEMS.get(key, key.replace("_", " ").capitalize()), "source_label": s["label"],
+                "item": key, "item_label": ITEMS.get(key, key.replace("_", " ").capitalize()),
+                "source_label": s["label"] + (" (sign reversed: the file shows this cost as a negative)" if reversed_sign else ""),
                 "value": vals[-1], "source": f"{file_name} › {sheet['name']} › {refs[-1]}", "period": periods[-1],
                 "prior_value": vals[-2] if len(vals) >= 2 else None,
                 "prior_source": f"{file_name} › {sheet['name']} › {refs[-2]}" if len(vals) >= 2 else None,
@@ -96,6 +112,8 @@ def suggest_statement_mapping(sheets: list[dict], file_name: str, all_items: boo
             }
     if "total_debt" not in found:
         for sheet in sheets:
+            if sheet.get("section") is not None and sheet["section"].get("type") != "balance":
+                continue
             rows = [x for x in sheet.get("series", []) if x["orientation"] == "row"]
             parts = _debt_parts(sheet)
             if not parts or _statement_of(sheet["name"], [x["label"] for x in rows]) != "balance":
@@ -219,7 +237,8 @@ _YEAR = re.compile(r"(?:FY\s?)?((?:19|20)\d{2})|FY\s?(\d{2})\b", re.I)
 
 # Borrowing lines that add up to total debt when a balance sheet shows no single "Total debt" line.
 _DEBT_PART = re.compile(r"^(commercial paper|term debt|(short|long) term (debt|borrowings)|current (portion|maturities) of (long term )?(debt|borrowings)|"
-                        r"(current|non current) borrowings|notes payable|bonds payable|debentures)$")
+                        r"(current|non current) borrowings|notes payable|bonds payable|debentures|"
+                        r"(revolving )?(credit (line|facility)|line of credit)|revolver|(bank )?overdraft)$")
 
 
 def _debt_parts(sheet: dict) -> list[dict]:
@@ -244,11 +263,37 @@ def _period_year(label: str) -> int | None:
     return int(m.group(1)) if m.group(1) else 2000 + int(m.group(2))
 
 
-_PERIODISH = re.compile(r"\b(?:FY|CY|H[12]|Q[1-4])\s?(?:FY)?\s?'?\d{2,4}\b|\b(?:19|20)\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-']*\d{2,4}\b", re.I)
+_PERIODISH = re.compile(r"\b(?:year|yr|period)\s?-?\d{1,2}\b|\b(?:FY|CY|H[12]|Q[1-4])\s?(?:FY)?\s?'?\d{2,4}\b|\b(?:19|20)\d{2}\b|\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*[\s\-']*\d{2,4}\b", re.I)
 
 
 def is_period_label(label: str) -> bool:
     return bool(_PERIODISH.search(label))
+
+
+# Cash flow models often label a total just "Subtotal" and rely on the heading above it (CASH FROM OPERATING ...).
+_TOTAL = r"^(sub ?)?total$|^net( cash)?( flow| from [a-z ]+)?$"
+CASHFLOW_CONTEXT = [
+    (r"operat", [(_TOTAL, "operating_cash_flow")]),
+    (r"invest", [(_TOTAL, "investing_cash_flow")]),
+    (r"financ", [(_TOTAL, "financing_cash_flow")]),
+    (r"cash (balance|position|reconciliation)|net change|movement in cash", [
+        (r"^(beginning|opening)( cash| balance| of the (year|period))?$|^start of the (year|period)$", "beginning_cash"),
+        (r"^(net )?(increase|decrease)( decrease)?( in cash)?$|^net change( in cash)?$", "net_change_in_cash"),
+        (r"^(end|closing)( cash| balance| of the (year|period))?$", "ending_cash")]),
+]
+
+
+def _context_key(label: str, row: int, headings: list[dict]) -> tuple[str, str] | None:
+    """The standard cash flow item a generic label means, judged from the heading above it: (key, that heading)."""
+    head = next((h["text"] for h in reversed(headings) if h["row"] < row), None)
+    if head is None:
+        return None
+    n = _norm(label)
+    for heading_rx, rules in CASHFLOW_CONTEXT:
+        if re.search(heading_rx, head.lower()):
+            key = next((k for rx, k in rules if re.match(rx, n)), None)
+            return (key, head) if key else None
+    return None
 
 
 def _statement_of(sheet_name: str, labels: list[str]) -> str:
@@ -269,6 +314,9 @@ def suggest_statements(sheets: list[dict], file_name: str) -> list[dict]:
     """
     out = []
     for sheet in sheets:
+        section = sheet.get("section")
+        if section is not None and not section.get("type"):
+            continue  # a schedule or driver block of a model, not a financial statement
         rows = [s for s in sheet.get("series", []) if s["orientation"] == "row"]
         if len(rows) < 2:
             continue
@@ -282,7 +330,7 @@ def suggest_statements(sheets: list[dict], file_name: str) -> list[dict]:
         reversed_ = all(y is not None for y in years) and len(years) > 1 and years == sorted(years, reverse=True) and years[0] != years[-1]
         if reversed_:
             periods = periods[::-1]
-        statement = _statement_of(sheet["name"], [r["label"] for r in rows])
+        statement = (section or {}).get("type") or _statement_of(sheet["name"], [r["label"] for r in rows])
         lines, used = [], set()
         for r in rows:
             vals, refs = [], []
@@ -295,15 +343,22 @@ def suggest_statements(sheets: list[dict], file_name: str) -> list[dict]:
                     vals.append(None)
                     refs.append(None)
             key = match_item(r["label"])
+            shown = r["label"]
             if statement == "cashflow" and key not in CASHFLOW_KEYS:
                 key = None  # e.g. "Accounts receivable, net (3,994)" is a change in the balance, not the balance
+            if statement == "cashflow" and key is None and str(r.get("id", "")).startswith("row:"):
+                ctx = _context_key(r["label"], int(r["id"].split(":")[1]), sheet.get("headings", []))
+                if ctx and ctx[0] not in used:
+                    key, shown = ctx[0], f"{r['label']} ({ctx[1].strip().lower()})"
             if key in used:
                 key = None
             if key:
                 used.add(key)
+            vals, reversed_sign = costs_positive(key, vals)
             src_refs = [x for x in refs if x]
-            lines.append({"label": r["label"], "key": key, "values": vals,
-                          "source": f"{file_name} › {sheet['name']} › {src_refs[0]}–{src_refs[-1]}" if src_refs else None})
+            lines.append({"label": shown, "key": key, "values": vals,
+                          "source": (f"{file_name} › {sheet['name']} › {src_refs[0]}–{src_refs[-1]}" if src_refs else None)
+                          + (" (sign reversed: the file shows this cost as a negative)" if reversed_sign and src_refs else "") if src_refs or reversed_sign else None})
         parts = _debt_parts(sheet) if statement == "balance" else []
         if parts and not any(l["key"] == "total_debt" for l in lines):
             by_label = {id(r): dict(zip(r["period_labels"], r["values"])) for r in rows}
@@ -315,4 +370,18 @@ def suggest_statements(sheets: list[dict], file_name: str) -> list[dict]:
                           "values": sums, "derived": True, "source": f"{file_name} › {sheet['name']} › sum of {len(parts)} borrowing lines"})
         out.append({"sheet": sheet["name"], "statement": statement, "periods": periods, "reordered": reversed_, "lines": lines,
                     "months": (sheet.get("source") or {}).get("months")})
-    return out
+    return _drop_repeats(out)
+
+
+def _drop_repeats(out: list[dict]) -> list[dict]:
+    """Keep the fuller of two statements of the same kind and periods whose line names largely coincide (a dashboard
+    that repeats the model's own statement). Different periods or mostly different lines are both kept."""
+    keep: list[dict] = []
+    for cand in sorted(out, key=lambda s: -len(s["lines"])):
+        names = {l["label"].strip().lower() for l in cand["lines"]}
+        repeat = any(k["statement"] == cand["statement"] and k["periods"] == cand["periods"]
+                     and names and len(names & {l["label"].strip().lower() for l in k["lines"]}) / len(names) >= 0.5 for k in keep)
+        if not repeat:
+            keep.append(cand)
+    order = {id(s): i for i, s in enumerate(out)}
+    return sorted(keep, key=lambda s: order[id(s)])

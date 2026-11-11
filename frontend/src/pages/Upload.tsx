@@ -3,6 +3,8 @@ import { useCallback, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CodeView } from '../components/CodeView';
+import { GuideSteps, Hint } from '../components/Guide';
+import { useGuide } from '../lib/guide';
 import { SheetPreview, type Sheet } from '../components/SheetPreview';
 import { UploadReveal, type RevealUpload } from '../components/UploadReveal';
 import { Badge, Callout, Card, EmptyState, ErrorBox, PageHeader, Skeleton, Warnings } from '../components/ui';
@@ -39,6 +41,7 @@ function iconFor(cat: string) {
 
 export function UploadPage() {
   const toast = useToast();
+  const { dismiss } = useGuide();
   const { active, activeId } = useProjects();
   const { user } = useAuth();
   const [params, setParams] = useSearchParams();
@@ -71,6 +74,7 @@ export function UploadPage() {
           setFresh((f) => ({ ...f, [r.upload.id]: r.upload }));
           toast(`${file.name} analysed`);
           setParams({ file: r.upload.id });
+          dismiss('upload-drop');
         } else {
           setPending((p) => p.map((x) => x.key === key ? { ...x, state: 'error', error: r.error } : x));
         }
@@ -79,7 +83,7 @@ export function UploadPage() {
       }
       list.reload();
     }
-  }, [list, maxMb, setParams, toast, activeId]);
+  }, [list, maxMb, setParams, toast, activeId, dismiss]);
 
   const retry = (p: Pending) => { setPending((all) => all.filter((x) => x.key !== p.key)); send([p.file]); };
 
@@ -90,6 +94,9 @@ export function UploadPage() {
 
       <div className="grid cols-3">
         <div className="stack">
+          <Hint id="upload-drop" step={1} title="Start here" dir="down">
+            Drop your Excel, CSV or PDF in the box below, or click the box to choose a file. A statement with an income statement, balance sheet or cash flow works best.
+          </Hint>
           <div
             className={`dropzone ${over ? 'over' : ''}`}
             role="button" tabIndex={0} aria-label="Upload files: drop here or press Enter to browse"
@@ -167,6 +174,7 @@ export function UploadPage() {
                 references), then the calculations the app ran on it: formula, numbers used, result and source. Uncertain matches ask for
                 your confirmation.
               </EmptyState>
+              <GuideSteps compact />
             </Card>
           )}
         </div>
@@ -226,6 +234,9 @@ function FileDetail({ id, initial, slot, onDeleted, onReplace, onMoved }: { id: 
         {u.recommendations.length > 0 && (
           <div>
             <div className="field-label" style={{ marginBottom: 8 }}>Recommended analyses (please confirm they fit your file)</div>
+            <Hint id="upload-open" step={2} title="Pick an analysis" dir="down">
+              Click a card below to open it. Choose <b>Financial Statements</b> to see your income statement, balance sheet and cash flow, or <b>Ratio Analysis</b> for the ratios.
+            </Hint>
             <div className="grid cols-2">
               {u.recommendations.map((r) => (
                 <Link key={r.module} to={`${r.route}?file=${u.id}`} className="card interactive" style={{ padding: 12, textDecoration: 'none', color: 'inherit' }}>

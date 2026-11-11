@@ -2,6 +2,7 @@ import { Download, KeyRound, LogOut, MonitorSmartphone, Trash2, UserX } from 'lu
 import { useState } from 'react';
 import { Modal } from '../components/Modal';
 import { useAuth } from '../lib/auth';
+import { useGuide } from '../lib/guide';
 import { useProjects } from '../lib/project';
 import { downloadFile } from '../lib/format';
 import { Callout, Card, Field, PageHeader, Skeleton, Tabs } from '../components/ui';
@@ -59,6 +60,7 @@ export function SettingsPage() {
           </div>
           <p className="faint mt" style={{ fontSize: 12.5 }}>The currency setting changes labels only. It never converts values — no exchange rates are applied.</p>
         </Card>
+        <GuidanceTips />
         <Card title="AI provider">
           {ai.loading ? <Skeleton h={40} /> : ai.data && (
             <Callout tone={ai.data.configured ? 'success' : 'info'} title={ai.data.configured ? `Configured: ${ai.data.provider}` : 'Not configured'}>{ai.data.message}</Callout>
@@ -198,6 +200,20 @@ function DataCard({ retentionDays }: { retentionDays: number }) {
           <Field label={<>Type <b>DELETE</b> to confirm</>}><input className="input" value={typed} onChange={(e) => setTyped(e.target.value)} /></Field>
         </div>
       </Modal>
+    </Card>
+  );
+}
+
+
+function GuidanceTips() {
+  const guide = useGuide();
+  return (
+    <Card title="Guidance tips">
+      <p className="faint" style={{ marginTop: 0, fontSize: 13 }}>Short tips with arrows that show first-time users how to upload a file and see their statements.</p>
+      <label className="row" style={{ gap: 8, fontSize: 13.5 }}>
+        <input type="checkbox" checked={!guide.off} onChange={(e) => guide.setOff(!e.target.checked)} />Show tips
+      </label>
+      <div className="row mt-sm"><button className="btn" onClick={guide.reset}>Show all tips again</button></div>
     </Card>
   );
 }

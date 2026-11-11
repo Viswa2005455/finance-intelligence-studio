@@ -38,6 +38,9 @@ ITEMS = {
     "total_liabilities": "Total liabilities",
     "total_equity": "Shareholders' equity",
     "tax_rate": "Effective tax rate (decimal)",
+    "income_tax": "Income tax expense",
+    "pretax_income": "Profit before tax",
+    "wacc": "Cost of capital (WACC, decimal)",
     "debt_service": "Debt service (interest + principal)",
     "shares_outstanding": "Shares outstanding",
     "share_price": "Share price",
@@ -88,6 +91,22 @@ class _Ctx:
         return v
 
 
+def _tax_rate(c: "_Ctx") -> float | None:
+    """The tax rate to use: the one supplied, else income tax / profit before tax from the statements.
+
+    A derived rate is only used when profit before tax is positive and the rate falls between 0 and 1;
+    the inputs and the derivation are recorded so the result shows where the rate came from."""
+    if "tax_rate" in c.data:
+        return c.get("tax_rate")
+    tax, pbt = c.data.get("income_tax"), c.data.get("pretax_income")
+    if tax is not None and pbt is not None and pbt > 0 and 0 <= tax / pbt < 1:
+        rate = float(tax) / float(pbt)
+        c.used["income tax expense"], c.used["profit before tax"] = float(tax), float(pbt)
+        c.notes.append(f"Effective tax rate derived as income tax / profit before tax = {rate:.1%}; enter a rate to override it.")
+        return rate
+    return c.get("tax_rate")  # records the missing input
+
+
 def _fmt(v: float) -> str:
     return f"{v:,.4g}" if abs(v) < 1000 else f"{v:,.0f}"
 
@@ -129,6 +148,9 @@ def compute_ratios(data: dict[str, float | None], period_days: int = 365) -> lis
     t = data.get("tax_rate")
     if t is not None and not 0 <= t < 1:
         raise FinanceInputError("Tax rate must be a decimal between 0 and 1 (enter 0.25 for 25%).")
+    w = data.get("wacc")
+    if w is not None and not 0 <= w < 1:
+        raise FinanceInputError("WACC must be a decimal between 0 and 1 (enter 0.10 for 10%).")
     sh = data.get("shares_outstanding")
     if sh is not None and sh <= 0:
         raise FinanceInputError("Shares outstanding must be a positive number.")
@@ -205,21 +227,86 @@ def compute_ratios(data: dict[str, float | None], period_days: int = 365) -> lis
     add("roe", "Return on equity", "Profitability", "Net income / Average shareholders' equity x 100", "%",
         lambda v: "Return generated for shareholders (boosted by leverage)", roe)
 
-    def roic(c: _Ctx):
-        ebit, t, debt, eq = c.get("operating_income"), c.get("tax_rate"), c.get("total_debt", True), c.get("total_equity", True)
-        if None in (ebit, t, debt, eq):
+    def nopat_of(c: _Ctx):
+        ebit, t = c.get("operating_income"), _tax_rate(c)
+        if None in (ebit, t):
+            return None
+        return ebit * (1 - t), f"EBIT {_fmt(ebit)} x (1 - {t:.1%}) = {ebit * (1 - t):,.2f}"
+
+    def invested_capital(c: _Ctx, average: bool):
+        debt, eq = c.get("total_debt", average), c.get("total_equity", average)
+        if None in (debt, eq):
             return None
         cash = data.get("cash")
-        invested = debt + eq - (float(cash) if cash is not None else 0)
         if cash is None:
             c.notes.append("Cash not supplied; invested capital not reduced by cash.")
         else:
             c.used["cash"] = float(cash)
-        if invested <= 0:
+        if data.get("marketable_securities") is not None:
+            c.notes.append("Marketable securities are not deducted from invested capital (only cash is).")
+        return debt + eq - (float(cash) if cash is not None else 0)
+
+    def nopat(c: _Ctx):
+        out = nopat_of(c)
+        return (out[0], out[1]) if out else None
+    add("nopat", "Net operating profit after tax (NOPAT)", "Profitability", "EBIT x (1 - tax rate)", "currency",
+        lambda v: "Operating profit after tax, before financing costs: what the business earns for all capital providers", nopat)
+
+    def nopat_margin(c: _Ctx):
+        out, rev = nopat_of(c), c.get("revenue")
+        if out is None or rev is None:
+            return None
+        return _div(out[0], rev, "NOPAT", "Revenue", 100)
+    add("nopat_margin", "NOPAT margin", "Profitability", "NOPAT / Revenue x 100", "%",
+        lambda v: "Operating loss after tax" if v < 0 else f"Keeps {v:.1f}% of revenue as after-tax operating profit", nopat_margin)
+
+    def invested(c: _Ctx):
+        ic = invested_capital(c, False)
+        if ic is None:
+            return None
+        return ic, f"Debt + Equity - Cash = {ic:,.2f}"
+    add("invested_capital", "Invested capital", "Profitability", "Total debt + Equity - Cash", "currency",
+        lambda v: "Capital that funds the operating business", invested)
+
+    def roic(c: _Ctx):
+        out, ic = nopat_of(c), invested_capital(c, True)
+        if out is None or ic is None:
+            return None
+        if ic <= 0:
             return None, "Invested capital is zero or negative, so ROIC is not meaningful."
-        return _div(ebit * (1 - t), invested, "NOPAT", "Invested capital", 100)
-    add("roic", "Return on invested capital", "Profitability", "EBIT x (1 - tax rate) / (Debt + Equity - Cash) x 100", "%",
+        return _div(out[0], ic, "NOPAT", "Invested capital", 100)
+    add("roic", "Return on invested capital", "Profitability", "NOPAT / (Debt + Equity - Cash) x 100", "%",
         lambda v: "Compare with WACC: ROIC above WACC creates value", roic)
+
+    def ic_turnover(c: _Ctx):
+        rev, ic = c.get("revenue"), invested_capital(c, True)
+        if rev is None or ic is None:
+            return None
+        if ic <= 0:
+            return None, "Invested capital is zero or negative, so the turnover is not meaningful."
+        return _div(rev, ic, "Revenue", "Invested capital")
+    add("invested_capital_turnover", "Invested capital turnover", "Efficiency", "Revenue / (Debt + Equity - Cash)", "x",
+        lambda v: f"Generates {v:.2f} of revenue per unit of invested capital", ic_turnover)
+
+    def spread(c: _Ctx):
+        out, ic, w = nopat_of(c), invested_capital(c, True), c.get("wacc")
+        if out is None or ic is None or w is None:
+            return None
+        if ic <= 0:
+            return None, "Invested capital is zero or negative, so the spread is not meaningful."
+        roic_v = out[0] / ic * 100
+        return roic_v - w * 100, f"ROIC {roic_v:.2f}% - WACC {w * 100:.2f}% = {roic_v - w * 100:.2f} points"
+    add("roic_wacc_spread", "ROIC minus WACC", "Profitability", "ROIC - WACC", "%",
+        lambda v: "Earns more than its cost of capital: creates value" if v > 0 else "Earns less than its cost of capital: destroys value", spread)
+
+    def eva(c: _Ctx):
+        out, ic, w = nopat_of(c), invested_capital(c, True), c.get("wacc")
+        if out is None or ic is None or w is None:
+            return None
+        v = out[0] - w * ic
+        return v, f"NOPAT {_fmt(out[0])} - WACC {w:.2%} x Invested capital {_fmt(ic)} = {v:,.2f}"
+    add("economic_profit", "Economic profit (EVA)", "Profitability", "NOPAT - WACC x Invested capital", "currency",
+        lambda v: "Profit left after charging for all capital: positive means value is being created" if v > 0 else "Profit does not cover the cost of capital", eva)
 
     # ---------------- Efficiency ----------------
     add("inventory_turnover", "Inventory turnover", "Efficiency", "COGS / Average inventory", "x",

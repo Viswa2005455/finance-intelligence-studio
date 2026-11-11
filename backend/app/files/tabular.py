@@ -74,9 +74,66 @@ def _header_row(grid: list[list[Any]]) -> int | None:
     return None
 
 
+_YEAR_MIN, _YEAR_MAX = 1990, 2100
+
+
+def _timeline(row: list[Any]) -> tuple[str, dict[int, str]] | None:
+    """A row of period markers instead of text headers: consecutive integers (a model's year index such as -2 ... 5),
+    calendar years, or dates. Returns (kind, {column: label}) or None. Every number in the row must belong to the sequence,
+    so an ordinary row of figures is never mistaken for one."""
+    numbers = [(c, v) for c, v in enumerate(row) if isinstance(v, (int, float)) and not isinstance(v, bool)]
+    if len(numbers) >= 4 and all(float(v).is_integer() for _, v in numbers):
+        vals = [int(v) for _, v in numbers]
+        if all(_YEAR_MIN <= v <= _YEAR_MAX for v in vals) and all(b > a for a, b in zip(vals, vals[1:])):
+            return "year", {c: str(int(v)) for c, v in numbers}
+        if all(b - a == 1 for a, b in zip(vals, vals[1:])):
+            return "index", {c: f"Year {int(v)}" for c, v in numbers}
+    dates = [(c, v) for c, v in enumerate(row) if isinstance(v, (dt.date, dt.datetime))]
+    if len(dates) >= 3 and not numbers:
+        return "date", {c: v.strftime("%b %Y") for c, v in dates}
+    return None
+
+
+_BLOCK_TYPES = [
+    ("income", re.compile(r"income statement|statement of (income|operations|comprehensive income)|profit (and|&|or) loss|p&l", re.I)),
+    ("balance", re.compile(r"balance sheet|financial position", re.I)),
+    ("cashflow", re.compile(r"cash ?flow", re.I)),
+]
+
+
+def _block_type(title: str) -> str | None:
+    return next((t for t, rx in _BLOCK_TYPES if rx.search(title)), None)
+
+
+def split_blocks(grid: list[list[Any]]) -> list[dict]:
+    """Statements stacked on one sheet, each under a title with its own timeline row (a common model layout).
+
+    A block runs from its title row to the next block's title. A sheet with a single timeline row is not split."""
+    marks = [(r, tl) for r, row in enumerate(grid[:MAX_ROWS]) if (tl := _timeline(row))]
+    if len(marks) < 2:
+        return []
+    blocks: list[dict] = []
+    for i, (r, tl) in enumerate(marks):
+        lo = marks[i - 1][0] + 1 if i else 0
+        start, title = r, None
+        for k in range(r - 1, max(lo - 1, r - 5), -1):
+            cells = [v for v in grid[k] if not _is_blank(v)]
+            if len(cells) == 1 and isinstance(cells[0], str):
+                start, title = k, re.sub(r"\s+", " ", cells[0]).strip()
+                break
+        if title is None:
+            continue  # a row of figures that happens to count 1, 2, 3, 4 is not a new block: a block has a title above its timeline
+        blocks.append({"timeline_row": r, "start": start, "title": title, "kind": tl[0]})
+    if len(blocks) < 2:
+        return []
+    for i, b in enumerate(blocks):
+        b["end"] = blocks[i + 1]["start"] if i + 1 < len(blocks) else len(grid)
+    return blocks
+
+
 def analyse_grid(name: str, grid: list[list[Any]], *, excel: bool, formulas: dict[tuple[int, int], str] | None = None,
                  number_formats: dict[int, Counter] | None = None, truncated: bool = False,
-                 calculated: set[tuple[int, int]] | None = None) -> dict:
+                 calculated: set[tuple[int, int]] | None = None, header_row: int | None = None) -> dict:
     """Common analysis for one sheet / CSV. `grid` is row-major, 0-based.
 
     `calculated` holds the cells whose value was computed by formula_eval because the file had
@@ -90,9 +147,19 @@ def analyse_grid(name: str, grid: list[list[Any]], *, excel: bool, formulas: dic
     def ref(r: int, c: int) -> str:
         return f"{get_column_letter(c + 1)}{r + 1}" if excel else f"row {r + 1}, col {c + 1}"
 
-    hdr = _header_row(grid)
+    hdr = header_row if header_row is not None else _header_row(grid)
+    timeline = None
+    if hdr is None:  # no text header: a row of period markers (model year index, years or dates) can serve
+        for r in range(min(len(grid), 30)):
+            timeline = _timeline(grid[r])
+            if timeline:
+                hdr = r
+                break
+    elif header_row is not None:
+        timeline = _timeline(grid[hdr])
     data_start = (hdr + 1) if hdr is not None else 0
-    headers = [str(grid[hdr][c]).strip() if hdr is not None and not _is_blank(grid[hdr][c]) else f"Column {get_column_letter(c + 1)}"
+    marks = timeline[1] if timeline else {}
+    headers = [marks[c] if c in marks else str(grid[hdr][c]).strip() if hdr is not None and not _is_blank(grid[hdr][c]) else f"Column {get_column_letter(c + 1)}"
                for c in range(n_cols)]
 
     columns = []
@@ -154,6 +221,16 @@ def analyse_grid(name: str, grid: list[list[Any]], *, excel: bool, formulas: dic
             if len(series) >= 300:
                 break
 
+    # Heading rows (a label with no figures, for example CASH FROM OPERATING) give meaning to lines such as "Subtotal" below them.
+    headings = []
+    if label_col is not None:
+        for r in range(data_start, n_rows):
+            lab = grid[r][label_col]
+            if isinstance(lab, str) and lab.strip() and all(_is_blank(v) for c, v in enumerate(grid[r]) if c != label_col):
+                headings.append({"row": r, "text": lab.strip()})
+                if len(headings) >= 300:
+                    break
+
     warnings = []
     if truncated:
         warnings.append(f"Only the first {MAX_ROWS} rows and {MAX_COLS} columns were analysed.")
@@ -163,6 +240,9 @@ def analyse_grid(name: str, grid: list[list[Any]], *, excel: bool, formulas: dic
         warnings.append("Some numbers are stored as text and were converted; please confirm them.")
     if hdr is None and n_rows:
         warnings.append("No header row detected; generic column names were used.")
+    if timeline and timeline[0] == "index":
+        warnings.append("The columns are model year numbers (for example Year -2 to Year 5), not calendar years; the last column is the final "
+                        "year of the model, which may be a projection. Check which columns are actuals before relying on a ratio.")
     if calculated:
         examples = ", ".join(ref(r, c) for r, c in sorted(calculated)[:3])
         warnings.append(f"{len(calculated)} formula result(s) were not saved in the file, so Finance Intelligence "
@@ -190,7 +270,9 @@ def analyse_grid(name: str, grid: list[list[Any]], *, excel: bool, formulas: dic
         "duplicate_rows": duplicates,
         "series": series,
         "sparse_rows": sparse_rows,
+        "headings": headings,
         "warnings": warnings,
+        **({"timeline": timeline[0]} if timeline else {}),
     }
 
 
@@ -242,6 +324,22 @@ def parse_xlsx(data: bytes) -> dict:
         width = max((max((i + 1 for i, v in enumerate(row) if not _is_blank(v)), default=0) for row in grid), default=0)
         width = max([width] + [c + 1 for r, c in formulas if r < len(grid)])
         grid = [row[:width] for row in grid]
+        block_sheets = []
+        for b in split_blocks(grid):
+            lo, hi = b["start"], b["end"]
+            only = [row if lo <= r < hi else [None] * len(row) for r, row in enumerate(grid)]
+            part = analyse_grid(f"{title} · {b['title']}", only, excel=True, formulas={k: v for k, v in formulas.items() if lo <= k[0] < hi},
+                                number_formats=fmts, truncated=truncated, header_row=b["timeline_row"],
+                                calculated={k for k in results if lo <= k[0] < hi and k[0] < len(grid)})
+            if len(part["series"]) < 3:
+                continue  # not a block of figures
+            part["section"] = {"type": _block_type(b["title"]), "title": b["title"], "parent": title, "first_row": lo + 1, "last_row": hi}
+            part["preview"] = {"rows": [[_jsonable(v) for v in row] for row in grid[lo:lo + PREVIEW_ROWS]], "first_row_number": lo + 1,
+                               "column_letters": [get_column_letter(i + 1) for i in range(max((len(r) for r in grid), default=0))]}
+            block_sheets.append(part)
+        if len(block_sheets) >= 2:
+            sheets.extend(block_sheets)  # the stacked statements replace the combined sheet
+            continue
         sheet = analyse_grid(title, grid, excel=True, formulas=formulas, number_formats=fmts, truncated=truncated,
                              calculated={k for k in results if k[0] < len(grid)})
         if find_layout(grid[:400]):
