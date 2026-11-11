@@ -10,7 +10,8 @@ from openpyxl import Workbook
 # P&L: expenses 700 + 300 + 100 = 1,100  ->  net profit = 1,900.
 
 
-def taccount_bytes(*, bad_gross_profit: bool = False, with_balance_sheet: bool = True, title: str = "TRADING AND PROFIT & LOSS A/C FOR THE YEAR ENDED 31/03/2025") -> bytes:
+def taccount_bytes(*, bad_gross_profit: bool = False, with_balance_sheet: bool = True, bad_balance: bool = False, extra_block: bool = True,
+                   title: str = "TRADING AND PROFIT & LOSS A/C FOR THE YEAR ENDED 31/03/2025", bs_title: str = "BALANCE SHEET AS ON 31/03/2025") -> bytes:
     wb = Workbook()
     ws = wb.active
     ws.title = "Sheet3"
@@ -38,12 +39,19 @@ def taccount_bytes(*, bad_gross_profit: bool = False, with_balance_sheet: bool =
         for col, v in {**left, **right}.items():
             ws[f"{col}{r}"] = v
     if with_balance_sheet:
-        ws["B30"] = "BALANCE SHEET AS ON 31/03/2025"
-        ws["C31"], ws["E31"], ws["G31"], ws["H31"] = "LIABILITIES", "Amount", "ASSETS", "Amount"
-        ws["B32"], ws["C32"], ws["E32"] = "To ", "Capital Account", 12345
-        ws["F32"], ws["G32"], ws["H32"] = "By ", "Building", 12345
-        ws["E33"], ws["H33"] = 12345, 12345
-        ws["B34"], ws["C34"], ws["E34"] = "To ", "Sundry Creditors", 555  # must not be read as an expense
+        # Balance sheet: left 1,500 + 100 + 1,400 + 2,000 = 5,000; right 2,000 + 500 + 400 + 600 + 1,500 = 5,000.
+        ws["B30"] = bs_title
+        ws["C31"], ws["E31"], ws["G31"], ws["H31"] = "LIABILITIES", "AMOUNT ", "ASSETS", "AMOUNT "
+        ws["G33"] = "FIXED ASSETS"
+        ws["C34"], ws["E34"], ws["G34"], ws["H34"] = "Capital Account", 1500, "Building", 2000
+        ws["C35"], ws["E35"], ws["G35"], ws["H35"] = "God's Account", 100, "Furniture", 500
+        ws["C36"], ws["G36"] = "Current Liabilities :", "CURRENT ASSETS"
+        ws["C37"], ws["E37"], ws["G37"], ws["H37"] = "Sundry Creditors", 1400, "Cash on Hand", 400
+        ws["C38"], ws["G38"], ws["H38"] = "Secured Loan:", "Cash at Bank", 600
+        ws["C39"], ws["E39"], ws["G39"], ws["H39"] = "Bank Loan", 2000, "Closing Stock", 1500
+        ws["E40"], ws["H40"] = 5000 + (7 if bad_balance else 0), 5000
+    if extra_block:  # another firm's account further down the same sheet: must not be read
+        ws["B50"], ws["C50"], ws["E50"] = "To ", "Other Firm Rent", 777
     ws2 = wb.create_sheet("Notes")
     ws2["A1"] = "Just a note"
     buf = io.BytesIO()

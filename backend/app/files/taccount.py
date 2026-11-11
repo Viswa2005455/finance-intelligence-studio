@@ -98,7 +98,7 @@ def _period_of(grid: list[list[Any]]) -> str | None:
     for row in grid[:12]:
         for v in row:
             s = _s(v)
-            if not s or not re.search(r"year ended|period ended|for the year", s, re.I):
+            if not s or not re.search(r"year ended|period ended|for the year|as on|as at", s, re.I):
                 continue
             m = re.search(r"(\d{1,2})\s*[/.\-]\s*(\d{1,2})\s*[/.\-]\s*((?:19|20)\d{2})", s)
             if m:
@@ -205,6 +205,126 @@ def _is(label: str, *pats: str) -> bool:
     return any(re.match(p, n) for p in pats)
 
 
+# ---- the balance sheet that often follows the account: LIABILITIES on the left, ASSETS on the right, with
+# group headings (FIXED ASSETS, CURRENT ASSETS, Current Liabilities) instead of "To" / "By".
+
+def _find_bs_layout(grid, start: int) -> dict | None:
+    for r in range(start, min(len(grid), start + 60)):
+        row = grid[r]
+        amt = [c for c, v in enumerate(row) if isinstance(v, str) and _AMOUNT_HEADER.match(v)]
+        if len(amt) < 2:
+            continue
+        left = " ".join(filter(None, (_s(row[c]) for c in range(amt[0]) if c < len(row)))).lower()
+        right = " ".join(filter(None, (_s(row[c]) for c in range(amt[0] + 1, amt[1]) if c < len(row)))).lower()
+        if "liabilit" in left and "asset" in right:
+            return {"header_row": r, "left_amount": amt[0], "right_amount": amt[1],
+                    "left_labels": list(range(0, amt[0])), "right_labels": list(range(amt[0] + 1, amt[1]))}
+    return None
+
+
+def _bs_end(grid, lay) -> tuple[int, float, float, str, str] | None:
+    """The line with a total on both sides: (row, left total, right total, left cell, right cell)."""
+    la, ra = lay["left_amount"], lay["right_amount"]
+    for r in range(lay["header_row"] + 1, len(grid)):
+        row = grid[r]
+        has_label = any(_s(row[c]) for c in lay["left_labels"] + lay["right_labels"] if c < len(row))
+        lv, rv = (_num(row[la]) if la < len(row) else None), (_num(row[ra]) if ra < len(row) else None)
+        if not has_label and lv is not None and rv is not None:
+            return r, lv, rv, f"{get_column_letter(la + 1)}{r + 1}", f"{get_column_letter(ra + 1)}{r + 1}"
+    return None
+
+
+def _read_bs_side(grid, lay, side: str, end: int) -> list[dict]:
+    amt = lay["left_amount"] if side == "left" else lay["right_amount"]
+    cols = lay["left_labels"] if side == "left" else lay["right_labels"]
+    items: list[dict] = []
+    group: str | None = None
+    headed = False
+    for r in range(lay["header_row"] + 1, end):
+        row = grid[r]
+        texts = [t for t in (_s(row[c]) for c in cols if c < len(row)) if t]
+        if not texts:
+            continue
+        label = " ".join(texts)
+        clean = label.rstrip(":").strip()
+        value = _num(row[amt]) if amt < len(row) else None
+        if value is None:  # a heading such as FIXED ASSETS or "Current Liabilities :"
+            group, headed = clean, True
+            continue
+        heading_like = label.endswith(":")  # "Unsecured Loan:" with its amount on the same line
+        items.append({"label": clean, "value": value, "ref": f"{get_column_letter(amt + 1)}{r + 1}",
+                      "group": None if heading_like else group, "before_heading": not headed})
+        if heading_like:
+            group, headed = None, True
+    return items
+
+
+def _add_balance_sheet(grid, title: str, start: int, pl_period: str | None, add, keyed, notes: list[str]) -> int | None:
+    """Add the balance sheet lines; returns the row (0-based) of its totals line, or None when none was imported."""
+    lay = _find_bs_layout(grid, start)
+    if lay is None:
+        return None
+    tot = _bs_end(grid, lay)
+    if tot is None:
+        return None
+    end, lt, rt, lref, rref = tot
+    left, right = _read_bs_side(grid, lay, "left", end), _read_bs_side(grid, lay, "right", end)
+    bs_period = _period_of(grid[max(0, lay["header_row"] - 8):lay["header_row"] + 1])
+    if abs(sum(i["value"] for i in left) - lt) > TOLERANCE or abs(sum(i["value"] for i in right) - rt) > TOLERANCE or abs(lt - rt) > TOLERANCE:
+        notes.append("A balance sheet was found, but its lines do not add up to the totals shown in the file, so it was not imported. "
+                     "Please check the balance sheet in the file.")
+        return None
+    if bs_period and pl_period and bs_period != pl_period:
+        notes.append(f"The balance sheet is dated {bs_period} but the account is for {pl_period}, so the balance sheet was not imported.")
+        return None
+
+    def names(items: list[dict]) -> str:
+        return " + ".join(re.sub(r"[()]", "", i["label"]) for i in items)
+
+    def total(items: list[dict]) -> float:
+        return sum(i["value"] for i in items)
+
+    def put(label: str, key: str | None, value: float, source: str, kind: str = "reported"):
+        add(label, key, value, source, kind, "balance")
+
+    cash = [i for i in right if _is(i["label"], r"^cash\b", r"^bank\b", r"^balances? with banks?", r"^cash (on|in) hand", r"^cash at bank")]
+    stock = [i for i in right if _is(i["label"], r"^(closing )?stock\b", r"^inventor(y|ies)\b")]
+    debtors = [i for i in right if _is(i["label"], r"^(sundry |trade )?debtors\b", r"^(trade )?receivables?\b") and not _is(i["label"], r".*\b(gst|tds|tax)\b")]
+    creditors = [i for i in left if _is(i["label"], r"^(sundry |trade )?creditors\b", r"^(trade )?payables?\b", r"^accounts payable")]
+    debt = [i for i in left if re.search(r"loan|borrowing|overdraft|cash credit|debenture", i["label"], re.I)]
+    fixed = [i for i in right if i["group"] and re.search(r"fixed assets", i["group"], re.I)]
+    current_a = [i for i in right if i["group"] and re.search(r"current assets", i["group"], re.I)]
+    current_l = [i for i in left if i["group"] and re.search(r"current liabilit", i["group"], re.I)]
+    headed_left = any(not i["before_heading"] for i in left)
+    equity = [i for i in left if i["before_heading"]] if headed_left else [i for i in left if re.search(r"capital|reserve|surplus|proprietor|partner", i["label"], re.I)]
+
+    single = {id(i): k for lst, k in ((stock, "inventory"), (debtors, "receivables"), (creditors, "accounts_payable"), (cash, "cash")) for i in lst if len(lst) == 1}
+    for item in right + left:
+        put(item["label"], keyed(single.get(id(item))), item["value"], f"{title}!{item['ref']}")
+    if len(cash) > 1:
+        put(f"Cash and bank (derived: {names(cash)})", keyed("cash"), total(cash), "derived", "derived")
+    if len(stock) > 1:
+        put(f"Inventory (derived: {names(stock)})", keyed("inventory"), total(stock), "derived", "derived")
+    if len(debtors) > 1:
+        put(f"Receivables (derived: {names(debtors)})", keyed("receivables"), total(debtors), "derived", "derived")
+    if fixed:
+        put(f"Fixed assets (derived: the lines under {re.sub(r'[()]', '', fixed[0]['group'])})", keyed("ppe"), total(fixed), "derived", "derived")
+    if current_a:
+        put(f"Current assets (derived: the lines under {re.sub(r'[()]', '', current_a[0]['group'])})", keyed("current_assets"), total(current_a), "derived", "derived")
+    put("Total assets", keyed("total_assets"), rt, f"{title}!{rref}")
+    if equity:
+        put(f"Total equity (derived: {names(equity)})", keyed("total_equity"), total(equity), "derived", "derived")
+        put("Total liabilities (derived: total of the liabilities side less the owner's funds above)", keyed("total_liabilities"), lt - total(equity), "derived", "derived")
+    if current_l:
+        put(f"Current liabilities (derived: the lines under {re.sub(r'[()]', '', current_l[0]['group'])})", keyed("current_liabilities"), total(current_l), "derived", "derived")
+    if debt:
+        put(f"Total debt (derived: {names(debt)})", keyed("total_debt"), total(debt), "derived", "derived")
+    notes.append("The balance sheet was read as written: assets and liabilities are grouped exactly as the file groups them (FIXED ASSETS, "
+                 "CURRENT ASSETS, Current Liabilities). Owner's funds are the lines above the first heading on the liabilities side. "
+                 "Loans are not counted as current liabilities unless the file lists them under that heading.")
+    return end
+
+
 def parse_taccount(data: bytes, sheet: str | None = None) -> dict:
     wb = load_workbook(io.BytesIO(data), read_only=True, data_only=True)
     try:
@@ -237,9 +357,9 @@ def parse_taccount(data: bytes, sheet: str | None = None) -> dict:
     lines: list[dict] = []
     notes: list[str] = []
 
-    def add(label: str, key: str | None, value: float, source: str | None, kind: str = "reported"):
-        lines.append({"label": label, "statement": "income", "key": key, "values": [value],
-                      "source": "derived" if kind == "derived" else src(source)})
+    def add(label: str, key: str | None, value: float, source: str | None, kind: str = "reported", statement: str = "income"):
+        lines.append({"label": label, "statement": statement, "key": key, "values": [value],
+                      "source": "derived" if kind == "derived" else (source if statement == "balance" else src(source))})
 
     used: set[str] = set()
 
@@ -362,6 +482,11 @@ def parse_taccount(data: bytes, sheet: str | None = None) -> dict:
         raise NotTAccount("A two-sided account was found, but none of its lines (Sales, Gross profit, Net profit) could be read.")
 
     period = _period_of(grid)
+    bs_end = _add_balance_sheet(grid, title, end, period, add, keyed, notes)
+    last_row = end
+    if bs_end is not None:
+        last_row = bs_end + 1
+        below = any(_num(v) is not None for row in grid[last_row:] for v in row)
     if period is None:
         period = "Current year"
         notes.append("The account does not state its year-end in a form that could be read, so the period is labelled 'Current year'.")
@@ -374,9 +499,11 @@ def parse_taccount(data: bytes, sheet: str | None = None) -> dict:
     notes.append("The account covers one year, so growth and change calculations are not possible. Net profit is as shown in the account; "
                  "this layout does not deduct income tax.")
     if below:
-        notes.append(f"Only the first account (down to row {end}) was imported. The sheet continues below it (for example a balance "
-                     "sheet or other accounts); that part was not read.")
-    notes.append("Balance sheet and cash flow figures are not part of this import, so ratios that need them show 'Needs data'.")
+        what = "first account and its balance sheet" if bs_end is not None else "first account"
+        notes.append(f"Only the {what} (down to row {last_row}) was imported. The sheet continues below it (for example other "
+                     "accounts or a balance sheet); that part was not read.")
+    notes.append("Cash flow figures are not part of this import" + ("" if bs_end is not None else ", nor is a balance sheet")
+                 + ", so ratios that need them show 'Needs data'.")
     return {
         "company": _company_of(grid),
         "periods": [period],

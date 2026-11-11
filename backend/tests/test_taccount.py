@@ -41,13 +41,51 @@ def test_cogs_is_dropped_when_it_does_not_reconcile():
     assert any("does not equal the gross profit" in n for n in r["notes"])
 
 
-def test_stops_after_the_first_account():
+def test_stops_after_the_first_account_and_its_balance_sheet():
     r = parse_taccount(taccount_bytes())
     names = [l["label"] for l in r["lines"]]
-    assert "Capital Account" not in names and "Sundry Creditors" not in names and "Building" not in names
+    assert "Other Firm Rent" not in names
     assert any("continues below" in n for n in r["notes"])
-    r2 = parse_taccount(taccount_bytes(with_balance_sheet=False))
+    r2 = parse_taccount(taccount_bytes(extra_block=False))
     assert not any("continues below" in n for n in r2["notes"])
+    # the profit & loss lines never include the balance sheet's lines, and the other way round
+    inc = {l["label"] for l in r2["lines"] if l["statement"] == "income"}
+    assert "Building" not in inc and "Capital Account" not in inc
+
+
+def test_balance_sheet_is_read_with_the_files_own_groups():
+    r = parse_taccount(taccount_bytes())
+    bal = {l["key"]: l for l in r["lines"] if l["statement"] == "balance" and l["key"]}
+    assert bal["total_assets"]["values"] == [5000] and bal["total_assets"]["source"] == "Sheet3!H40"
+    assert bal["ppe"]["values"] == [2500] and "FIXED ASSETS" in bal["ppe"]["label"]
+    assert bal["current_assets"]["values"] == [2500] and bal["cash"]["values"] == [1000]
+    assert bal["inventory"]["values"] == [1500] and bal["inventory"]["source"] == "Sheet3!H39"
+    assert bal["accounts_payable"]["values"] == [1400] and bal["current_liabilities"]["values"] == [1400]
+    assert bal["total_debt"]["values"] == [2000]  # the loan under "Secured Loan:", never counted as a current liability
+    # owner's funds are the lines above the first heading; total liabilities is what is left of the liabilities side
+    assert bal["total_equity"]["values"] == [1600] and bal["total_liabilities"]["values"] == [3400]
+    assert bal["total_equity"]["values"][0] + bal["total_liabilities"]["values"][0] == bal["total_assets"]["values"][0]
+    for k in ("ppe", "current_assets", "cash", "total_equity", "total_liabilities", "current_liabilities", "total_debt"):
+        assert bal[k]["source"] == "derived" and "derived" in bal[k]["label"]
+
+
+def test_balance_sheet_that_does_not_add_up_is_not_imported():
+    r = parse_taccount(taccount_bytes(bad_balance=True))
+    assert not [l for l in r["lines"] if l["statement"] == "balance"]
+    assert any("do not add up" in n for n in r["notes"])
+    assert by_key(r)["net_income"]["values"] == [1900]  # the profit & loss is still read
+
+
+def test_balance_sheet_with_another_date_is_skipped():
+    r = parse_taccount(taccount_bytes(bs_title="BALANCE SHEET AS ON 31/03/2024"))
+    assert not [l for l in r["lines"] if l["statement"] == "balance"]
+    assert any("balance sheet was not imported" in n for n in r["notes"])
+
+
+def test_account_without_a_balance_sheet_says_so():
+    r = parse_taccount(taccount_bytes(with_balance_sheet=False, extra_block=False))
+    assert not [l for l in r["lines"] if l["statement"] == "balance"]
+    assert any("nor is a balance sheet" in n for n in r["notes"])
 
 
 def test_period_comes_from_the_title_or_is_labelled_unknown():

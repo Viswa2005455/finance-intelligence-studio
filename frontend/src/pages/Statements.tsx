@@ -91,7 +91,15 @@ export function Statements() {
   };
   const loadScreener = async (id: string) => {
     try {
-      const r = await api.post<ScreenerImport>(`/api/analysis/screener/${id}`, {});
+      let r: ScreenerImport;
+      try {
+        r = await api.post<ScreenerImport>(`/api/analysis/screener/${id}`, {});
+      } catch (first) {
+        // Not a Screener workbook: try a two-sided (To / By) Trading and Profit & Loss account with its balance sheet.
+        try { r = await api.post<ScreenerImport>(`/api/analysis/taccount/${id}`, {}); }
+        catch { throw new Error('This file is neither a Screener.in export nor a two-sided Trading and Profit & Loss account with Amount columns. Use "Import from any statement file" for other layouts.'); }
+        void first;
+      }
       setScreener({ ...r, name: r.company ? titleCase(r.company) : r.file.replace(/\.xlsx?m?$/i, ''), approx: false });
       setPending(null);
     } catch (e) { toast((e as Error).message, 'error'); }
@@ -169,7 +177,7 @@ export function Statements() {
         </>} />
 
       <div className="grid cols-2">
-        <Card title="Import a Screener.in export" subtitle="One click: the full 10-year P&L, balance sheet, cash flow, share price and shares, with cell references">
+        <Card title="Import a Screener.in export or a Trading & P&L account" subtitle="One click: a Screener workbook (10-year P&L, balance sheet, cash flow, price and shares) or a two-sided To / By Trading and Profit & Loss account with its balance sheet, with cell references">
           {excelUploads.length ? <div className="row">{excelUploads.map((u) => <button key={u.id} className="btn sm" onClick={() => loadScreener(u.id)}><FileUp size={14} />{u.name}</button>)}</div>
             : <p className="muted">On screener.in, open a company and click <b>Export to Excel</b>, then <Link to="/upload">upload the file</Link>.</p>}
         </Card>
@@ -181,13 +189,13 @@ export function Statements() {
 
       {screener && (
         <div className="mt">
-          <Card title={`Screener import: ${screener.company ?? screener.file}`} subtitle={`${screener.periods[0]} – ${screener.periods[screener.periods.length - 1]} · ${screener.lines.length} lines · ₹ ${screener.units}`}>
+          <Card title={`Import: ${screener.company ?? screener.file}`} subtitle={`${screener.periods[0]} – ${screener.periods[screener.periods.length - 1]} · ${screener.lines.length} lines${screener.units ? ` · ₹ ${screener.units}` : ' · amounts as written in the file'}`}>
             <div className="stack">
               <div className="grid cols-2">
                 <Field label="Company name (used across the app)"><input className="input" value={screener.name} maxLength={120} onChange={(e) => setScreener({ ...screener, name: e.target.value })} /></Field>
                 <div className="stack" style={{ gap: 4, fontSize: 13 }}>
                   <span><b>{screener.lines.filter((l) => l.key).length}</b> lines mapped to standard items; <b>{screener.lines.filter((l) => l.source === 'derived').length}</b> derived (labelled)</span>
-                  <span>Market data: {screener.market.share_price ? 'share price ✓' : 'no share price'} · {screener.market.shares_outstanding ? 'shares outstanding ✓' : 'no share count'}</span>
+                  {Object.keys(screener.market ?? {}).length > 0 && <span>Market data: {screener.market.share_price ? 'share price ✓' : 'no share price'} · {screener.market.shares_outstanding ? 'shares outstanding ✓' : 'no share count'}</span>}
                 </div>
               </div>
               {Object.keys(screener.approximations).length > 0 && (
@@ -243,7 +251,7 @@ export function Statements() {
         <Tabs label="View" value={tab} onChange={setTab} options={[
           { value: 'overview', label: 'Overview' }, { value: 'horizontal', label: 'Horizontal' }, { value: 'vertical', label: 'Common-size' },
           { value: 'checks', label: <>Checks {fails.length > 0 && <Badge tone="neg">{fails.length}</Badge>}</> }, { value: 'edit', label: 'Edit data' }]} />
-        {r && <span className="faint" style={{ fontSize: 12.5 }}>{r.lines.length} lines · {r.periods.length} periods · {settings.currency} {UNIT_LABEL[settings.units] || 'in units'}</span>}
+        {r && <span className="faint" style={{ fontSize: 12.5 }}>{r.lines.length} lines · {r.periods.length} periods · {data.units === '' ? 'amounts as written in the file (no unit stated)' : data.units ? `${settings.currency} in ${data.units}` : `${settings.currency} ${UNIT_LABEL[settings.units] || 'in units'}`}</span>}
       </div>
       {res.error && <div className="mt"><ErrorBox error={res.error} /></div>}
       {!complete && <div className="mt"><Callout tone="warn">Every line and period needs a name.</Callout></div>}
