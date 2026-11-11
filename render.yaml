@@ -13,10 +13,10 @@ services:
     envVars:
       - key: FIS_ENV
         value: production
+      # Paste your external PostgreSQL address (for example from Neon) when Render asks.
+      # Render's own free database expires after about 30 days, so it is no longer used here.
       - key: DATABASE_URL
-        fromDatabase:
-          name: finance-studio-db
-          property: connectionString
+        sync: false
       # The site's own address is added automatically (RENDER_EXTERNAL_URL).
       - key: FIS_CORS_ORIGINS
         value: ""
