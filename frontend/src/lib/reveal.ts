@@ -13,13 +13,16 @@ export interface SheetData {
   name: string; n_rows: number; n_cols: number; header_row: number | null;
   columns: { index: number; letter: string; name: string; dtype: string; number_format?: string }[];
   series?: Series[]; warnings: string[];
+  /** 't_account' marks a two-sided (To / By) Trading and Profit & Loss account. */
+  layout?: string;
 }
 export interface Mapping { item: string; item_label: string; source_label: string; value: number; source: string; period: string; prior_value: number | null; prior_source: string | null; prior_period: string | null }
 export interface SuggestedStatement { sheet: string; statement: Stmt; periods: string[]; reordered: boolean; lines: { label: string; key: string | null; values: (number | null)[]; source: string | null }[] }
 export interface VarianceSuggestion { sheet: string; budget_column: string; actual_column: string; lines: { name: string; kind: 'revenue' | 'expense'; budget: number; actual: number; source: string }[]; note: string }
 export interface Recommendation { module: string; route: string; reason: string; confidence: string }
 export interface ScreenerLine { label: string; statement: Stmt; key: string | null; values: (number | null)[]; source?: string | null }
-export interface ScreenerImport { company: string | null; periods: string[]; units: string; lines: ScreenerLine[]; approximations: Record<string, ScreenerLine>; notes: string[] }
+/** A company import: a Screener.in workbook, or a two-sided (To / By) Trading and Profit & Loss account (then `sheet` names the sheet read). */
+export interface ScreenerImport { company: string | null; periods: string[]; units: string; lines: ScreenerLine[]; approximations: Record<string, ScreenerLine>; notes: string[]; sheet?: string }
 
 /** One input line for the engines. `refs` are cell references per period when the parser knows them. */
 export interface InLine {
@@ -116,7 +119,7 @@ export function inputFromUpload(statements: SuggestedStatement[], sheets: SheetD
 export function inputFromScreener(sc: ScreenerImport, optIn: Set<string>): EngineInput {
   const kindOf = (l: ScreenerLine): InLine['kind'] => (l.source === 'derived' ? 'derived' : l.source === 'approximation' ? 'approximation' : 'reported');
   const lines = [...sc.lines, ...Object.entries(sc.approximations).filter(([k]) => optIn.has(k)).map(([, l]) => l)]
-    .map((l) => ({ label: l.label, statement: l.statement, key: l.key, values: l.values, refs: null, sheet: 'Data Sheet',
+    .map((l) => ({ label: l.label, statement: l.statement, key: l.key, values: l.values, refs: null, sheet: sc.sheet ?? 'Data Sheet',
       source: l.source ?? null, kind: kindOf(l) }));
   return trimPeriods({ periods: sc.periods, lines });
 }

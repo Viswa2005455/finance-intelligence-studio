@@ -28,7 +28,7 @@ function facts(u: RevealUpload, screener: ScreenerImport | null) {
   const cur = new Set(Object.keys(u.analysis.context?.currencies ?? {}));
   sheets.forEach((s) => s.columns.forEach((c) => { const m = c.number_format?.match(SYMBOL); if (m) cur.add(m[0].replace('[$', '')); }));
   const units = new Set(Object.keys(u.analysis.context?.units ?? {}));
-  if (screener) units.add(screener.units);
+  if (screener?.units) units.add(screener.units);
   // Titles such as "Statement of profit and loss (₹ in lakhs)" state the currency and units in words.
   sheets.forEach((s) => [s.name, ...s.columns.map((c) => c.name), ...s.preview.rows.slice(0, 6).flat().map((v) => (typeof v === 'string' ? v : ''))]
     .forEach((t) => {
@@ -51,9 +51,12 @@ const val = (v: number | null | undefined) => (isNum(v) ? fmtNum(v, Math.abs(v) 
 /** Everything the parser extracted from one upload, then the calculations the engines ran on it. */
 export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNode }) {
   const tabular = u.status === 'processed' && u.analysis.kind === 'tabular' && !!u.analysis.sheets?.length;
-  const isScreener = tabular && !!u.analysis.sheets?.some((s) => s.name.toLowerCase() === 'data sheet');
+  const isScreenerBook = tabular && !!u.analysis.sheets?.some((s) => s.name.toLowerCase() === 'data sheet');
+  // A two-sided (To / By) Trading and Profit & Loss account is read by its own endpoint into the same company-import shape.
+  const isTAccount = tabular && !isScreenerBook && !!u.analysis.sheets?.some((s) => s.layout === 't_account');
+  const isScreener = isScreenerBook || isTAccount;
   const items = useAsync((signal) => api.get<{ items: Record<string, { label: string }> }>('/api/finance/statements/items', { signal }), [], tabular);
-  const screener = useAsync((signal) => api.post<ScreenerImport>(`/api/analysis/screener/${u.id}`, {}, { signal }), [u.id], isScreener);
+  const screener = useAsync((signal) => api.post<ScreenerImport>(`/api/analysis/${isTAccount ? 'taccount' : 'screener'}/${u.id}`, {}, { signal }), [u.id, isTAccount], isScreener);
   const key = `fis.reveal.${u.id}`;
   const [state, setState] = useState<{ decisions: Record<string, Decision>; optIn: string[] }>(() => loadRaw(key, { decisions: {}, optIn: [] }));
   useEffect(() => setState(loadRaw(key, { decisions: {}, optIn: [] })), [key]);

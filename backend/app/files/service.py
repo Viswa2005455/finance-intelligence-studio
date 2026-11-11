@@ -142,7 +142,7 @@ def summary_out(u: Upload) -> dict:
 
 # Bump when the parsers or the statement matching change. An upload analysed by an older revision is
 # re-analysed from its stored original the next time it is opened, so fixes reach existing uploads too.
-PARSER_REV = 3
+PARSER_REV = 4
 
 
 def refresh_if_stale(db: Session, u: Upload, settings: Settings) -> Upload:

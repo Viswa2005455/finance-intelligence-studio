@@ -13,6 +13,7 @@ from openpyxl import load_workbook
 from openpyxl.utils import get_column_letter
 
 from .formula_eval import FormulaError, Unsupported, WorkbookEvaluator
+from .taccount import find_layout
 
 MAX_ROWS = 5000
 MAX_COLS = 200
@@ -241,8 +242,11 @@ def parse_xlsx(data: bytes) -> dict:
         width = max((max((i + 1 for i, v in enumerate(row) if not _is_blank(v)), default=0) for row in grid), default=0)
         width = max([width] + [c + 1 for r, c in formulas if r < len(grid)])
         grid = [row[:width] for row in grid]
-        sheets.append(analyse_grid(title, grid, excel=True, formulas=formulas, number_formats=fmts, truncated=truncated,
-                                   calculated={k for k in results if k[0] < len(grid)}))
+        sheet = analyse_grid(title, grid, excel=True, formulas=formulas, number_formats=fmts, truncated=truncated,
+                             calculated={k for k in results if k[0] < len(grid)})
+        if find_layout(grid[:400]):
+            sheet["layout"] = "t_account"  # a two-sided (To / By) Trading and Profit & Loss account
+        sheets.append(sheet)
     return {"kind": "tabular", "sheets": sheets}
 
 

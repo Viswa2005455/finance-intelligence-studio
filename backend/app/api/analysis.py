@@ -15,6 +15,7 @@ from ..db.session import get_db
 from ..files import archive, service
 from ..files.model_check import check_workbook
 from ..files.screener import NotScreener, parse_screener
+from ..files.taccount import NotTAccount, parse_taccount
 from ..finance import forensic, peers, profile
 from .base import BaseModel
 from .finance import clean
@@ -66,6 +67,20 @@ def screener_import(upload_id: str, user: User = Depends(current_user), db: Sess
         raise HTTPException(422, str(e)) from e
     except Exception as e:
         raise HTTPException(422, f"The Screener workbook could not be read ({type(e).__name__}).") from e
+    return clean({"upload_id": up.id.hex, "file": up.name, **result})
+
+
+@router.post("/taccount/{upload_id}")
+def taccount_import(upload_id: str, sheet: str | None = None, user: User = Depends(current_user), db: Session = Depends(get_db),
+                    settings: Settings = Depends(get_settings)):
+    """Read a two-sided (To / By) Trading and Profit & Loss account into the same shape as the Screener import."""
+    up, data = _excel_bytes(upload_id, user, db, settings, "account import")
+    try:
+        result = parse_taccount(data, sheet)
+    except NotTAccount as e:
+        raise HTTPException(422, str(e)) from e
+    except Exception as e:
+        raise HTTPException(422, f"The account could not be read ({type(e).__name__}).") from e
     return clean({"upload_id": up.id.hex, "file": up.name, **result})
 
 
