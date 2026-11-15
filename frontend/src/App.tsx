@@ -1,4 +1,4 @@
-import { lazy } from 'react';
+import { lazy, Suspense } from 'react';
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DCFModelProvider } from './lib/dcfModel';
@@ -38,9 +38,24 @@ const IncomeTax = lazy(() => import('./pages/IncomeTax').then((m) => ({ default:
 const GST = lazy(() => import('./pages/GST').then((m) => ({ default: m.GST })));
 const Markets = lazy(() => import('./pages/Markets').then((m) => ({ default: m.Markets })));
 const Reports = lazy(() => import('./pages/Reports').then((m) => ({ default: m.Reports })));
+const ServicesList = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServicesList })));
+const ServiceDetail = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServiceDetail })));
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
 
 export function App() {
+  // The services catalogue is public: visitors see it without an account.
+  if (window.location.pathname === '/services' || window.location.pathname.startsWith('/services/')) {
+    return (
+      <BrowserRouter>
+        <Suspense fallback={null}>
+          <Routes>
+            <Route path="/services" element={<ServicesList />} />
+            <Route path="/services/:slug" element={<ServiceDetail />} />
+          </Routes>
+        </Suspense>
+      </BrowserRouter>
+    );
+  }
   return (
     <SettingsProvider>
       <ToastProvider>

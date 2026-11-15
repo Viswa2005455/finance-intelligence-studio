@@ -112,6 +112,7 @@ export function AuthScreen() {
               : <>Already have an account? <button type="button" className="link-btn" onClick={() => { setMode('login'); setError(null); }}>Sign in</button></>}
           </div>
         </form>
+        <div className="mt" style={{ textAlign: 'center', fontSize: 13.5 }}>Looking to hire? <a className="link-btn" href="/services">See my 50 services →</a></div>
         <div className="auth-foot faint"><ShieldCheck size={14} /> Passwords are hashed with scrypt. Sessions use secure, HttpOnly cookies. Educational tool — not investment advice.</div>
       </div>
     </div>
