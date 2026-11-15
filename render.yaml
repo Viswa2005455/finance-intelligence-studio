@@ -28,6 +28,11 @@ services:
       # Secrets: Render asks for these when the Blueprint is applied; leave blank to skip.
       - key: ANTHROPIC_API_KEY
         sync: false
+      # Razorpay keys for paid service orders on /services (optional; payment stays off until set).
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
       # Live share prices (optional): eodhd or twelvedata, plus that provider's key.
       - key: FIS_MARKET_PROVIDER
         value: none

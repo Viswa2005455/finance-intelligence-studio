@@ -1,0 +1,902 @@
+{
+ "custom-excel-dashboard": {
+  "id": 1,
+  "title": "Custom Excel dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 2000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 3500,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 6
+   }
+  }
+ },
+ "personal-budget-tracker-customised": {
+  "id": 2,
+  "title": "Personal budget tracker (customised)",
+  "tiers": {
+   "Basic": {
+    "price": 499,
+    "days": 1
+   },
+   "Standard": {
+    "price": 999,
+    "days": 2
+   },
+   "Premium": {
+    "price": 1999,
+    "days": 3
+   }
+  }
+ },
+ "small-business-profit-and-loss-dashboard-customised": {
+  "id": 3,
+  "title": "Small business profit & loss dashboard (customised)",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 3
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 5
+   }
+  }
+ },
+ "budget-vs-actual-variance-report": {
+  "id": 4,
+  "title": "Budget vs actual variance report",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4500,
+    "days": 5
+   }
+  }
+ },
+ "cash-flow-forecast-model-12-months": {
+  "id": 5,
+  "title": "Cash flow forecast model (12 months)",
+  "tiers": {
+   "Basic": {
+    "price": 2500,
+    "days": 3
+   },
+   "Standard": {
+    "price": 4000,
+    "days": 4
+   },
+   "Premium": {
+    "price": 6000,
+    "days": 6
+   }
+  }
+ },
+ "sales-tracking-dashboard": {
+  "id": 6,
+  "title": "Sales tracking dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4500,
+    "days": 5
+   }
+  }
+ },
+ "inventory-stock-tracker": {
+  "id": 7,
+  "title": "Inventory / stock tracker",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 4
+   }
+  }
+ },
+ "expense-tracker-for-shops": {
+  "id": 8,
+  "title": "Expense tracker for shops",
+  "tiers": {
+   "Basic": {
+    "price": 999,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1999,
+    "days": 2
+   },
+   "Premium": {
+    "price": 2999,
+    "days": 3
+   }
+  }
+ },
+ "gst-invoice-and-register-template": {
+  "id": 9,
+  "title": "GST invoice and register template",
+  "tiers": {
+   "Basic": {
+    "price": 999,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1999,
+    "days": 2
+   },
+   "Premium": {
+    "price": 2999,
+    "days": 3
+   }
+  }
+ },
+ "financial-ratio-analysis-workbook": {
+  "id": 10,
+  "title": "Financial ratio analysis workbook",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 4
+   }
+  }
+ },
+ "excel-data-cleaning-and-formatting": {
+  "id": 11,
+  "title": "Excel data cleaning and formatting",
+  "tiers": {
+   "Basic": {
+    "price": 500,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1000,
+    "days": 1
+   },
+   "Premium": {
+    "price": 2000,
+    "days": 2
+   }
+  }
+ },
+ "pivottable-reports-from-your-data": {
+  "id": 12,
+  "title": "PivotTable reports from your data",
+  "tiers": {
+   "Basic": {
+    "price": 800,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1500,
+    "days": 2
+   },
+   "Premium": {
+    "price": 2500,
+    "days": 3
+   }
+  }
+ },
+ "power-bi-sales-dashboard": {
+  "id": 13,
+  "title": "Power BI sales dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 5000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 7000,
+    "days": 7
+   }
+  }
+ },
+ "power-bi-financial-kpi-dashboard": {
+  "id": 14,
+  "title": "Power BI financial KPI dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 5000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 7000,
+    "days": 7
+   }
+  }
+ },
+ "excel-to-power-bi-conversion": {
+  "id": 15,
+  "title": "Excel to Power BI conversion",
+  "tiers": {
+   "Basic": {
+    "price": 2000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 4000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 6000,
+    "days": 7
+   }
+  }
+ },
+ "monthly-management-report-mis": {
+  "id": 16,
+  "title": "Monthly management report (MIS)",
+  "tiers": {
+   "Basic": {
+    "price": 2000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 3500,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 6
+   }
+  }
+ },
+ "coaching-centre-fee-and-admission-dashboard": {
+  "id": 17,
+  "title": "Coaching centre fee and admission dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 2500,
+    "days": 3
+   },
+   "Standard": {
+    "price": 4000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 6000,
+    "days": 7
+   }
+  }
+ },
+ "restaurant-revenue-and-expense-dashboard": {
+  "id": 18,
+  "title": "Restaurant revenue and expense dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 2000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 3500,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 6
+   }
+  }
+ },
+ "retail-shop-profit-dashboard": {
+  "id": 19,
+  "title": "Retail shop profit dashboard",
+  "tiers": {
+   "Basic": {
+    "price": 2000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 3500,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 6
+   }
+  }
+ },
+ "budget-planning-model-for-startups": {
+  "id": 20,
+  "title": "Budget planning model for startups",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 5000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 7000,
+    "days": 7
+   }
+  }
+ },
+ "break-even-and-pricing-analysis": {
+  "id": 21,
+  "title": "Break-even and pricing analysis",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 4
+   }
+  }
+ },
+ "monthly-dashboard-update-recurring": {
+  "id": 22,
+  "title": "Monthly dashboard update (recurring)",
+  "tiers": {
+   "Basic": {
+    "price": 1000,
+    "days": 2
+   },
+   "Standard": {
+    "price": 1500,
+    "days": 2
+   },
+   "Premium": {
+    "price": 2500,
+    "days": 2
+   }
+  }
+ },
+ "one-page-landing-page": {
+  "id": 23,
+  "title": "One-page landing page",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 4000,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 5
+   }
+  }
+ },
+ "small-business-website-up-to-5-pages": {
+  "id": 24,
+  "title": "Small business website (up to 5 pages)",
+  "tiers": {
+   "Basic": {
+    "price": 6000,
+    "days": 5
+   },
+   "Standard": {
+    "price": 9000,
+    "days": 7
+   },
+   "Premium": {
+    "price": 12000,
+    "days": 10
+   }
+  }
+ },
+ "personal-portfolio-website": {
+  "id": 25,
+  "title": "Personal portfolio website",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 4500,
+    "days": 4
+   },
+   "Premium": {
+    "price": 6000,
+    "days": 5
+   }
+  }
+ },
+ "coaching-centre-website-with-enquiry-form": {
+  "id": 26,
+  "title": "Coaching centre website with enquiry form",
+  "tiers": {
+   "Basic": {
+    "price": 5000,
+    "days": 5
+   },
+   "Standard": {
+    "price": 8000,
+    "days": 7
+   },
+   "Premium": {
+    "price": 12000,
+    "days": 10
+   }
+  }
+ },
+ "restaurant-website-with-menu": {
+  "id": 27,
+  "title": "Restaurant website with menu",
+  "tiers": {
+   "Basic": {
+    "price": 4000,
+    "days": 4
+   },
+   "Standard": {
+    "price": 6000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 9000,
+    "days": 7
+   }
+  }
+ },
+ "website-redesign-refresh": {
+  "id": 28,
+  "title": "Website redesign / refresh",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 4
+   },
+   "Standard": {
+    "price": 5000,
+    "days": 6
+   },
+   "Premium": {
+    "price": 8000,
+    "days": 8
+   }
+  }
+ },
+ "mobile-responsiveness-fix": {
+  "id": 29,
+  "title": "Mobile responsiveness fix",
+  "tiers": {
+   "Basic": {
+    "price": 1000,
+    "days": 1
+   },
+   "Standard": {
+    "price": 2000,
+    "days": 2
+   },
+   "Premium": {
+    "price": 3000,
+    "days": 3
+   }
+  }
+ },
+ "google-business-profile-setup": {
+  "id": 30,
+  "title": "Google Business Profile setup",
+  "tiers": {
+   "Basic": {
+    "price": 500,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1000,
+    "days": 2
+   },
+   "Premium": {
+    "price": 1500,
+    "days": 2
+   }
+  }
+ },
+ "website-maintenance-monthly": {
+  "id": 31,
+  "title": "Website maintenance (monthly)",
+  "tiers": {
+   "Basic": {
+    "price": 1000,
+    "days": 30
+   },
+   "Standard": {
+    "price": 1500,
+    "days": 30
+   },
+   "Premium": {
+    "price": 2000,
+    "days": 30
+   }
+  }
+ },
+ "basic-on-page-seo-setup": {
+  "id": 32,
+  "title": "Basic on-page SEO setup",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 5
+   }
+  }
+ },
+ "automated-weekly-sales-report": {
+  "id": 33,
+  "title": "Automated weekly sales report",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 4
+   },
+   "Standard": {
+    "price": 5000,
+    "days": 6
+   },
+   "Premium": {
+    "price": 8000,
+    "days": 8
+   }
+  }
+ },
+ "google-sheets-lead-enquiry-tracker": {
+  "id": 34,
+  "title": "Google Sheets lead / enquiry tracker",
+  "tiers": {
+   "Basic": {
+    "price": 1000,
+    "days": 1
+   },
+   "Standard": {
+    "price": 2000,
+    "days": 2
+   },
+   "Premium": {
+    "price": 3000,
+    "days": 3
+   }
+  }
+ },
+ "google-form-to-sheet-to-email-automation": {
+  "id": 35,
+  "title": "Google Form to Sheet to email automation",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 3
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 5
+   }
+  }
+ },
+ "invoice-generator-in-sheets-excel": {
+  "id": 36,
+  "title": "Invoice generator in Sheets/Excel",
+  "tiers": {
+   "Basic": {
+    "price": 1000,
+    "days": 1
+   },
+   "Standard": {
+    "price": 2000,
+    "days": 2
+   },
+   "Premium": {
+    "price": 3000,
+    "days": 3
+   }
+  }
+ },
+ "student-attendance-and-fee-tracker": {
+  "id": 37,
+  "title": "Student attendance and fee tracker",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 4
+   }
+  }
+ },
+ "appointment-booking-tracker": {
+  "id": 38,
+  "title": "Appointment / booking tracker",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 4
+   }
+  }
+ },
+ "n8n-make-workflow-setup-simple": {
+  "id": 39,
+  "title": "n8n / Make workflow setup (simple)",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 4
+   },
+   "Standard": {
+    "price": 6000,
+    "days": 6
+   },
+   "Premium": {
+    "price": 10000,
+    "days": 10
+   }
+  }
+ },
+ "excel-automation-with-formulas-no-macros": {
+  "id": 40,
+  "title": "Excel automation with formulas (no macros)",
+  "tiers": {
+   "Basic": {
+    "price": 1000,
+    "days": 1
+   },
+   "Standard": {
+    "price": 2000,
+    "days": 2
+   },
+   "Premium": {
+    "price": 3000,
+    "days": 3
+   }
+  }
+ },
+ "data-entry-system-with-dropdowns-and-validation": {
+  "id": 41,
+  "title": "Data entry system with dropdowns and validation",
+  "tiers": {
+   "Basic": {
+    "price": 800,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1500,
+    "days": 2
+   },
+   "Premium": {
+    "price": 2500,
+    "days": 3
+   }
+  }
+ },
+ "company-financial-analysis-report": {
+  "id": 42,
+  "title": "Company financial analysis report",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 6
+   }
+  }
+ },
+ "industry-market-research-report": {
+  "id": 43,
+  "title": "Industry / market research report",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 3
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 6
+   }
+  }
+ },
+ "competitor-analysis": {
+  "id": 44,
+  "title": "Competitor analysis",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 2500,
+    "days": 3
+   },
+   "Premium": {
+    "price": 4000,
+    "days": 5
+   }
+  }
+ },
+ "business-plan-financial-projections": {
+  "id": 45,
+  "title": "Business plan financial projections",
+  "tiers": {
+   "Basic": {
+    "price": 3000,
+    "days": 3
+   },
+   "Standard": {
+    "price": 5000,
+    "days": 5
+   },
+   "Premium": {
+    "price": 8000,
+    "days": 7
+   }
+  }
+ },
+ "pitch-deck-financial-slides": {
+  "id": 46,
+  "title": "Pitch deck financial slides",
+  "tiers": {
+   "Basic": {
+    "price": 2000,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3500,
+    "days": 4
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 5
+   }
+  }
+ },
+ "professional-powerpoint-presentation": {
+  "id": 47,
+  "title": "Professional PowerPoint presentation",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 3
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 5
+   }
+  }
+ },
+ "linkedin-profile-optimisation": {
+  "id": 48,
+  "title": "LinkedIn profile optimisation",
+  "tiers": {
+   "Basic": {
+    "price": 800,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1500,
+    "days": 2
+   },
+   "Premium": {
+    "price": 2500,
+    "days": 3
+   }
+  }
+ },
+ "resume-cv-for-finance-roles": {
+  "id": 49,
+  "title": "Resume / CV for finance roles",
+  "tiers": {
+   "Basic": {
+    "price": 500,
+    "days": 1
+   },
+   "Standard": {
+    "price": 1000,
+    "days": 2
+   },
+   "Premium": {
+    "price": 1500,
+    "days": 3
+   }
+  }
+ },
+ "social-media-content-calendar-1-month": {
+  "id": 50,
+  "title": "Social media content calendar (1 month)",
+  "tiers": {
+   "Basic": {
+    "price": 1500,
+    "days": 2
+   },
+   "Standard": {
+    "price": 3000,
+    "days": 3
+   },
+   "Premium": {
+    "price": 5000,
+    "days": 5
+   }
+  }
+ }
+}

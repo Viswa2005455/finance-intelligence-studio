@@ -1,7 +1,8 @@
-import { Activity, ArrowLeft, CheckCircle2, Clock, Mail, MessageCircle, RefreshCw, Search, ShoppingBag } from 'lucide-react';
+import { Activity, ArrowLeft, CheckCircle2, Clock, CreditCard, LockKeyhole, Mail, RefreshCw, Search, ShoppingBag } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import { CATEGORIES, CONTACT, SERVICES, emailLink, formatINR, whatsappLink, type CategoryId, type Service } from '../lib/services';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { CATEGORIES, CONTACT, SERVICES, formatINR, type CategoryId, type Tier } from '../lib/services';
+import { OrderModal, ThankYou } from './ServiceOrder';
 
 function useTitle(title: string) {
   useEffect(() => { document.title = title; window.scrollTo(0, 0); }, [title]);
@@ -17,24 +18,15 @@ function Shell({ children }: { children: ReactNode }) {
         </Link>
         <nav className="svc-top-links">
           <a className="btn sm ghost" href={CONTACT.store} target="_blank" rel="noreferrer"><ShoppingBag size={15} />Templates</a>
-          <a className="btn sm primary" href={`https://wa.me/${CONTACT.whatsapp}`} target="_blank" rel="noreferrer"><MessageCircle size={15} />WhatsApp</a>
+          <a className="btn sm primary" href={`mailto:${CONTACT.email}`}><Mail size={15} />Email</a>
         </nav>
       </header>
       <main className="svc-main">{children}</main>
       <footer className="svc-foot">
-        <div><b>How it works.</b> Message me with the service you want. I confirm the details and price in writing, you pay 50% to start and the rest on delivery. Revisions are as listed in each package.</div>
+        <div><b>How it works.</b> Pick a package, tell me what you need and pay online (UPI, card or netbanking via Razorpay). You get a receipt by email, and I deliver the finished work to that email within the listed days. Revisions are as listed in each package.</div>
         <div><b>Your data stays private.</b> I use your files only for your project and delete them after delivery if you ask.</div>
-        <div className="faint">Prices are starting prices in Indian rupees. Final price depends on the size of your data and requirements. Contact: <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a> · WhatsApp {CONTACT.whatsappDisplay}</div>
+        <div className="faint">Prices are starting prices in Indian rupees. Final price depends on the size of your data and requirements. Questions: <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div>
       </footer>
-    </div>
-  );
-}
-
-function ContactButtons({ s, compact }: { s: Service; compact?: boolean }) {
-  return (
-    <div className="row">
-      <a className={`btn primary${compact ? ' sm' : ''}`} href={whatsappLink(s)} target="_blank" rel="noreferrer"><MessageCircle size={15} />Request on WhatsApp</a>
-      <a className={`btn${compact ? ' sm' : ''}`} href={emailLink(s)}><Mail size={15} />Email</a>
     </div>
   );
 }
@@ -53,7 +45,7 @@ export function ServicesList() {
     <Shell>
       <section className="svc-hero">
         <h1>50 finance, data and website services</h1>
-        <p>Excel dashboards, Power BI reports, websites, automation and research for students, shops and small businesses. Every price is listed. Pick a service and message me.</p>
+        <p>Excel dashboards, Power BI reports, websites, automation and research for students, shops and small businesses. Every price is listed. Pick a package, pay online, and get the work by email.</p>
       </section>
 
       <div className="svc-filters">
@@ -71,7 +63,7 @@ export function ServicesList() {
         </div>
       </div>
 
-      {shown.length === 0 && <p className="muted mt">No service matches “{q}”. Try another word, or message me what you need.</p>}
+      {shown.length === 0 && <p className="muted mt">No service matches “{q}”. Try another word, or email me what you need.</p>}
 
       <div className="svc-grid">
         {shown.map((s) => (
@@ -85,7 +77,7 @@ export function ServicesList() {
             <div className="svc-price">From <b>{formatINR(s.tiers[0].price)}</b> · <Clock size={13} /> {s.tiers[0].days} day{s.tiers[0].days > 1 ? 's' : ''}</div>
             <div className="svc-card-actions">
               <Link className="btn sm" to={`/services/${s.slug}`}>See packages</Link>
-              <a className="btn sm primary" href={whatsappLink(s)} target="_blank" rel="noreferrer"><MessageCircle size={14} />Request</a>
+              <Link className="btn sm primary" to={`/services/${s.slug}?order=Basic`}><CreditCard size={14} />Order {formatINR(s.tiers[0].price)}</Link>
             </div>
           </article>
         ))}
@@ -96,7 +88,15 @@ export function ServicesList() {
 
 export function ServiceDetail() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const s = SERVICES.find((x) => x.slug === slug);
+  const [ordering, setOrdering] = useState<Tier | null>(null);
+  useEffect(() => {
+    // "Order" on the list page links here with ?order=<tier> to open the form straight away.
+    const want = new URLSearchParams(window.location.search).get('order');
+    const t = s?.tiers.find((x) => x.name === want);
+    if (t) { setOrdering(t); navigate(`/services/${s!.slug}`, { replace: true }); }
+  }, [s, navigate]);
   useTitle(s ? `${s.title} · Services` : 'Service not found');
 
   if (!s) {
@@ -133,7 +133,7 @@ export function ServiceDetail() {
                 <li><Clock size={14} /> Delivery in {t.days} day{t.days > 1 ? 's' : ''}</li>
                 <li><RefreshCw size={14} /> {t.revisions} revision{t.revisions > 1 ? 's' : ''}</li>
               </ul>
-              <a className={`btn sm${t.name === 'Standard' ? ' primary' : ''}`} href={whatsappLink(s, t)} target="_blank" rel="noreferrer"><MessageCircle size={14} />Choose {t.name}</a>
+              <button className={`btn sm${t.name === 'Standard' ? ' primary' : ''}`} onClick={() => setOrdering(t)}><CreditCard size={14} />Order {t.name} · {formatINR(t.price)}</button>
             </div>
           ))}
         </div>
@@ -143,7 +143,10 @@ export function ServiceDetail() {
           <div><b>What you send me:</b> {s.youSend}.</div>
         </div>
 
-        <div className="mt"><ContactButtons s={s} /></div>
+        <div className="svc-send mt-sm">
+          <LockKeyhole size={17} />
+          <div><b>Pay online, get it by email.</b> Secure payment by Razorpay (UPI, cards, netbanking). After paying you get a receipt, and the finished work arrives at your email. Questions first? <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div>
+        </div>
       </div>
 
       {related.length > 0 && (
@@ -160,6 +163,12 @@ export function ServiceDetail() {
           </div>
         </section>
       )}
+      <OrderModal service={s} tier={ordering} onClose={() => setOrdering(null)} />
     </Shell>
   );
+}
+
+export function ServiceThankYou() {
+  useTitle('Order confirmation · Services');
+  return <Shell><ThankYou /></Shell>;
 }

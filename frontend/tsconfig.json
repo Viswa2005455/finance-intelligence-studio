@@ -14,5 +14,7 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "include": ["src"]
+  "include": ["src"],
+  // Reads backend/app/payments/service_catalog.json, which the Docker web build does not copy; vitest still runs it.
+  "exclude": ["src/lib/services.test.ts"]
 }

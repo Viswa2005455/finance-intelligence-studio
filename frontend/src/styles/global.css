@@ -781,3 +781,25 @@ table.data.fixed-cols td:first-child { min-width: 0; }
   .svc-filters .tabs { display: flex; flex-wrap: nowrap; overflow-x: auto; max-width: 100%; }
   .svc-filters .tab { flex: none; }
 }
+
+/* Service order form and confirmation */
+.svc-order-sum { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; padding: 12px 14px; margin-bottom: 14px;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--positive-soft); }
+.svc-order-sum span { display: block; font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+.svc-order-price { text-align: right; font-size: 20px; font-weight: 700; color: var(--heading); white-space: nowrap; }
+.svc-order-price small { display: block; font-size: 11.5px; font-weight: 400; color: var(--text-faint); }
+.svc-order-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.svc-order-text { min-height: 110px; resize: vertical; font: inherit; }
+.svc-order-agree { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+.svc-order-agree input { margin-top: 3px; }
+.svc-order-pay { width: 100%; justify-content: center; padding-block: 11px; font-size: 15px; }
+.svc-order-safe { display: flex; gap: 6px; align-items: center; justify-content: center; font-size: 12px; color: var(--text-faint); }
+.svc-order-off { display: grid; gap: 12px; justify-items: start; }
+.svc-thanks h1 { display: flex; gap: 10px; align-items: center; }
+.svc-thanks .svc-ok { color: var(--positive-strong, var(--positive)); }
+.svc-next { margin: 14px 0 0; padding-left: 20px; display: grid; gap: 8px; }
+@media (max-width: 640px) {
+  .svc-order-grid { grid-template-columns: 1fr; }
+  .svc-order-sum { flex-direction: column; }
+  .svc-order-price { text-align: left; }
+}

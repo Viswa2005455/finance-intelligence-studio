@@ -40,6 +40,7 @@ const Markets = lazy(() => import('./pages/Markets').then((m) => ({ default: m.M
 const Reports = lazy(() => import('./pages/Reports').then((m) => ({ default: m.Reports })));
 const ServicesList = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServicesList })));
 const ServiceDetail = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServiceDetail })));
+const ServiceThankYou = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServiceThankYou })));
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
 
 export function App() {
@@ -50,6 +51,7 @@ export function App() {
         <Suspense fallback={null}>
           <Routes>
             <Route path="/services" element={<ServicesList />} />
+            <Route path="/services/thank-you" element={<ServiceThankYou />} />
             <Route path="/services/:slug" element={<ServiceDetail />} />
           </Routes>
         </Suspense>

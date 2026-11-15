@@ -43,6 +43,10 @@ class Settings(BaseSettings):
     fis_market_provider: str = "none"
     fis_market_api_key: SecretStr | None = None
 
+    # Razorpay (paid service orders on /services). Leave unset to keep online payment switched off.
+    razorpay_key_id: str | None = None
+    razorpay_key_secret: SecretStr | None = None
+
     fis_ai_provider: str = "none"
     anthropic_api_key: SecretStr | None = None
     fis_ai_model: str = "claude-opus-5-5"
