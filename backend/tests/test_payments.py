@@ -100,3 +100,17 @@ def test_verify_rejects_forged_signature_and_accepts_real_one(client, monkeypatc
     assert r.status_code == 200
     out = r.json()
     assert out["paid"] is True and out["amount"] == 2000 and out["delivery_days"] == 3
+
+
+def test_keys_ignore_pasted_whitespace(monkeypatch):
+    from app.config import get_settings
+    get_settings.cache_clear()
+    monkeypatch.setenv("RAZORPAY_KEY_ID", "rzp_live_abc\n")
+    monkeypatch.setenv("RAZORPAY_KEY_SECRET", " secret123 \n")
+    try:
+        assert api._keys() == ("rzp_live_abc", "secret123")
+        monkeypatch.setenv("RAZORPAY_KEY_SECRET", "  \n")
+        get_settings.cache_clear()
+        assert api._keys() is None
+    finally:
+        get_settings.cache_clear()

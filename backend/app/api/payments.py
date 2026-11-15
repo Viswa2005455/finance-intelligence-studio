@@ -20,10 +20,11 @@ _ID = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 
 
 def _keys() -> tuple[str, str] | None:
+    # Keys pasted into a hosting dashboard often carry a stray space or line break; Razorpay rejects those.
     s = get_settings()
-    if not s.razorpay_key_id or s.razorpay_key_secret is None:
-        return None
-    return s.razorpay_key_id, s.razorpay_key_secret.get_secret_value()
+    key_id = (s.razorpay_key_id or "").strip()
+    secret = s.razorpay_key_secret.get_secret_value().strip() if s.razorpay_key_secret else ""
+    return (key_id, secret) if key_id and secret else None
 
 
 class CheckoutIn(BaseModel):
