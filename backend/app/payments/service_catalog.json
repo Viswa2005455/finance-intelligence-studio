@@ -4,15 +4,15 @@
   "title": "Custom Excel dashboard",
   "tiers": {
    "Basic": {
-    "price": 2000,
+    "price": 499,
     "days": 3
    },
    "Standard": {
-    "price": 3500,
+    "price": 899,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    }
   }
@@ -22,15 +22,15 @@
   "title": "Personal budget tracker (customised)",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 349,
     "days": 1
    },
    "Standard": {
-    "price": 999,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 1999,
+    "price": 799,
     "days": 3
    }
   }
@@ -40,15 +40,15 @@
   "title": "Small business profit & loss dashboard (customised)",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 599,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 899,
     "days": 3
    },
    "Premium": {
-    "price": 5000,
+    "price": 1299,
     "days": 5
    }
   }
@@ -58,15 +58,15 @@
   "title": "Budget vs actual variance report",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Premium": {
-    "price": 4500,
+    "price": 1099,
     "days": 5
    }
   }
@@ -76,15 +76,15 @@
   "title": "Cash flow forecast model (12 months)",
   "tiers": {
    "Basic": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Standard": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    },
    "Premium": {
-    "price": 6000,
+    "price": 1499,
     "days": 6
    }
   }
@@ -94,15 +94,15 @@
   "title": "Sales tracking dashboard",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Premium": {
-    "price": 4500,
+    "price": 1099,
     "days": 5
    }
   }
@@ -112,15 +112,15 @@
   "title": "Inventory / stock tracker",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    }
   }
@@ -130,15 +130,15 @@
   "title": "Expense tracker for shops",
   "tiers": {
    "Basic": {
-    "price": 999,
+    "price": 249,
     "days": 1
    },
    "Standard": {
-    "price": 1999,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 2999,
+    "price": 749,
     "days": 3
    }
   }
@@ -148,15 +148,15 @@
   "title": "GST invoice and register template",
   "tiers": {
    "Basic": {
-    "price": 999,
+    "price": 249,
     "days": 1
    },
    "Standard": {
-    "price": 1999,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 2999,
+    "price": 749,
     "days": 3
    }
   }
@@ -166,15 +166,15 @@
   "title": "Financial ratio analysis workbook",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    }
   }
@@ -184,15 +184,15 @@
   "title": "Excel data cleaning and formatting",
   "tiers": {
    "Basic": {
-    "price": 500,
+    "price": 99,
     "days": 1
    },
    "Standard": {
-    "price": 1000,
+    "price": 249,
     "days": 1
    },
    "Premium": {
-    "price": 2000,
+    "price": 499,
     "days": 2
    }
   }
@@ -202,15 +202,15 @@
   "title": "PivotTable reports from your data",
   "tiers": {
    "Basic": {
-    "price": 800,
+    "price": 199,
     "days": 1
    },
    "Standard": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Premium": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    }
   }
@@ -220,15 +220,15 @@
   "title": "Power BI sales dashboard",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Standard": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    },
    "Premium": {
-    "price": 7000,
+    "price": 1799,
     "days": 7
    }
   }
@@ -238,15 +238,15 @@
   "title": "Power BI financial KPI dashboard",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Standard": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    },
    "Premium": {
-    "price": 7000,
+    "price": 1799,
     "days": 7
    }
   }
@@ -256,15 +256,15 @@
   "title": "Excel to Power BI conversion",
   "tiers": {
    "Basic": {
-    "price": 2000,
+    "price": 499,
     "days": 3
    },
    "Standard": {
-    "price": 4000,
+    "price": 999,
     "days": 5
    },
    "Premium": {
-    "price": 6000,
+    "price": 1499,
     "days": 7
    }
   }
@@ -274,15 +274,15 @@
   "title": "Monthly management report (MIS)",
   "tiers": {
    "Basic": {
-    "price": 2000,
+    "price": 499,
     "days": 3
    },
    "Standard": {
-    "price": 3500,
+    "price": 899,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    }
   }
@@ -292,15 +292,15 @@
   "title": "Coaching centre fee and admission dashboard",
   "tiers": {
    "Basic": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Standard": {
-    "price": 4000,
+    "price": 999,
     "days": 5
    },
    "Premium": {
-    "price": 6000,
+    "price": 1499,
     "days": 7
    }
   }
@@ -310,15 +310,15 @@
   "title": "Restaurant revenue and expense dashboard",
   "tiers": {
    "Basic": {
-    "price": 2000,
+    "price": 499,
     "days": 3
    },
    "Standard": {
-    "price": 3500,
+    "price": 899,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    }
   }
@@ -328,15 +328,15 @@
   "title": "Retail shop profit dashboard",
   "tiers": {
    "Basic": {
-    "price": 2000,
+    "price": 499,
     "days": 3
    },
    "Standard": {
-    "price": 3500,
+    "price": 899,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    }
   }
@@ -346,15 +346,15 @@
   "title": "Budget planning model for startups",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Standard": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    },
    "Premium": {
-    "price": 7000,
+    "price": 1799,
     "days": 7
    }
   }
@@ -364,15 +364,15 @@
   "title": "Break-even and pricing analysis",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    }
   }
@@ -382,15 +382,15 @@
   "title": "Monthly dashboard update (recurring)",
   "tiers": {
    "Basic": {
-    "price": 1000,
+    "price": 249,
     "days": 2
    },
    "Standard": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Premium": {
-    "price": 2500,
+    "price": 599,
     "days": 2
    }
   }
@@ -400,15 +400,15 @@
   "title": "One-page landing page",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Standard": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    }
   }
@@ -418,15 +418,15 @@
   "title": "Small business website (up to 5 pages)",
   "tiers": {
    "Basic": {
-    "price": 6000,
+    "price": 1499,
     "days": 5
    },
    "Standard": {
-    "price": 9000,
+    "price": 2199,
     "days": 7
    },
    "Premium": {
-    "price": 12000,
+    "price": 2999,
     "days": 10
    }
   }
@@ -436,15 +436,15 @@
   "title": "Personal portfolio website",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Standard": {
-    "price": 4500,
+    "price": 1099,
     "days": 4
    },
    "Premium": {
-    "price": 6000,
+    "price": 1499,
     "days": 5
    }
   }
@@ -454,15 +454,15 @@
   "title": "Coaching centre website with enquiry form",
   "tiers": {
    "Basic": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    },
    "Standard": {
-    "price": 8000,
+    "price": 1999,
     "days": 7
    },
    "Premium": {
-    "price": 12000,
+    "price": 2999,
     "days": 10
    }
   }
@@ -472,15 +472,15 @@
   "title": "Restaurant website with menu",
   "tiers": {
    "Basic": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    },
    "Standard": {
-    "price": 6000,
+    "price": 1499,
     "days": 5
    },
    "Premium": {
-    "price": 9000,
+    "price": 2199,
     "days": 7
    }
   }
@@ -490,15 +490,15 @@
   "title": "Website redesign / refresh",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 4
    },
    "Standard": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    },
    "Premium": {
-    "price": 8000,
+    "price": 1999,
     "days": 8
    }
   }
@@ -508,15 +508,15 @@
   "title": "Mobile responsiveness fix",
   "tiers": {
    "Basic": {
-    "price": 1000,
+    "price": 249,
     "days": 1
    },
    "Standard": {
-    "price": 2000,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    }
   }
@@ -526,15 +526,15 @@
   "title": "Google Business Profile setup",
   "tiers": {
    "Basic": {
-    "price": 500,
+    "price": 99,
     "days": 1
    },
    "Standard": {
-    "price": 1000,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    }
   }
@@ -544,15 +544,15 @@
   "title": "Website maintenance (monthly)",
   "tiers": {
    "Basic": {
-    "price": 1000,
+    "price": 249,
     "days": 30
    },
    "Standard": {
-    "price": 1500,
+    "price": 399,
     "days": 30
    },
    "Premium": {
-    "price": 2000,
+    "price": 499,
     "days": 30
    }
   }
@@ -562,15 +562,15 @@
   "title": "Basic on-page SEO setup",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 5
    }
   }
@@ -580,15 +580,15 @@
   "title": "Automated weekly sales report",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 4
    },
    "Standard": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    },
    "Premium": {
-    "price": 8000,
+    "price": 1999,
     "days": 8
    }
   }
@@ -598,15 +598,15 @@
   "title": "Google Sheets lead / enquiry tracker",
   "tiers": {
    "Basic": {
-    "price": 1000,
+    "price": 249,
     "days": 1
    },
    "Standard": {
-    "price": 2000,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    }
   }
@@ -616,15 +616,15 @@
   "title": "Google Form to Sheet to email automation",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    }
   }
@@ -634,15 +634,15 @@
   "title": "Invoice generator in Sheets/Excel",
   "tiers": {
    "Basic": {
-    "price": 1000,
+    "price": 249,
     "days": 1
    },
    "Standard": {
-    "price": 2000,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    }
   }
@@ -652,15 +652,15 @@
   "title": "Student attendance and fee tracker",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    }
   }
@@ -670,15 +670,15 @@
   "title": "Appointment / booking tracker",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 4
    }
   }
@@ -688,15 +688,15 @@
   "title": "n8n / Make workflow setup (simple)",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 4
    },
    "Standard": {
-    "price": 6000,
+    "price": 1499,
     "days": 6
    },
    "Premium": {
-    "price": 10000,
+    "price": 2499,
     "days": 10
    }
   }
@@ -706,15 +706,15 @@
   "title": "Excel automation with formulas (no macros)",
   "tiers": {
    "Basic": {
-    "price": 1000,
+    "price": 249,
     "days": 1
    },
    "Standard": {
-    "price": 2000,
+    "price": 499,
     "days": 2
    },
    "Premium": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    }
   }
@@ -724,15 +724,15 @@
   "title": "Data entry system with dropdowns and validation",
   "tiers": {
    "Basic": {
-    "price": 800,
+    "price": 199,
     "days": 1
    },
    "Standard": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Premium": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    }
   }
@@ -742,15 +742,15 @@
   "title": "Company financial analysis report",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    }
   }
@@ -760,15 +760,15 @@
   "title": "Industry / market research report",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 3
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 6
    }
   }
@@ -778,15 +778,15 @@
   "title": "Competitor analysis",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    },
    "Premium": {
-    "price": 4000,
+    "price": 999,
     "days": 5
    }
   }
@@ -796,15 +796,15 @@
   "title": "Business plan financial projections",
   "tiers": {
    "Basic": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Standard": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    },
    "Premium": {
-    "price": 8000,
+    "price": 1999,
     "days": 7
    }
   }
@@ -814,15 +814,15 @@
   "title": "Pitch deck financial slides",
   "tiers": {
    "Basic": {
-    "price": 2000,
+    "price": 499,
     "days": 2
    },
    "Standard": {
-    "price": 3500,
+    "price": 899,
     "days": 4
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    }
   }
@@ -832,15 +832,15 @@
   "title": "Professional PowerPoint presentation",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    }
   }
@@ -850,15 +850,15 @@
   "title": "LinkedIn profile optimisation",
   "tiers": {
    "Basic": {
-    "price": 800,
+    "price": 199,
     "days": 1
    },
    "Standard": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Premium": {
-    "price": 2500,
+    "price": 599,
     "days": 3
    }
   }
@@ -868,15 +868,15 @@
   "title": "Resume / CV for finance roles",
   "tiers": {
    "Basic": {
-    "price": 500,
+    "price": 99,
     "days": 1
    },
    "Standard": {
-    "price": 1000,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 1500,
+    "price": 399,
     "days": 3
    }
   }
@@ -886,15 +886,15 @@
   "title": "Social media content calendar (1 month)",
   "tiers": {
    "Basic": {
-    "price": 1500,
+    "price": 399,
     "days": 2
    },
    "Standard": {
-    "price": 3000,
+    "price": 749,
     "days": 3
    },
    "Premium": {
-    "price": 5000,
+    "price": 1199,
     "days": 5
    }
   }

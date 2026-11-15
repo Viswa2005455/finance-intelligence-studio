@@ -23,7 +23,7 @@ def test_catalog_has_fifty_services_with_three_packages():
 
 
 def test_find_package_rejects_unknown_tier_and_slug():
-    assert find_package("custom-excel-dashboard", "Basic")[1]["price"] == 2000
+    assert find_package("custom-excel-dashboard", "Basic")[1]["price"] == 499
     assert find_package("custom-excel-dashboard", "Gold") is None
     assert find_package("no-such-service", "Basic") is None
 
@@ -41,7 +41,7 @@ def test_payment_link_uses_catalog_price_in_paise():
                               files_link="", callback_url="https://site/services/thank-you",
                               client=httpx.Client(transport=httpx.MockTransport(handler)))
     assert out["url"] == "https://rzp.io/i/abc"
-    assert seen["body"]["amount"] == 350000
+    assert seen["body"]["amount"] == 89900
     assert seen["body"]["currency"] == "INR"
     notes = seen["body"]["notes"]
     assert len(notes) <= 15 and all(len(v) <= 256 for v in notes.values())
@@ -82,7 +82,7 @@ def test_checkout_validates_and_ignores_client_prices(client, monkeypatch):
             "requirements": "Monthly sales dashboard please", "price": 1}
     r = client.post("/api/payments/checkout", json=base)
     assert r.status_code == 200 and r.json() == {"url": "https://rzp.io/i/x"}
-    assert captured["package"]["price"] == 5000
+    assert captured["package"]["price"] == 1199
     assert captured["callback_url"].endswith("/services/thank-you")
     assert client.post("/api/payments/checkout", json={**base, "tier": "Gold"}).status_code == 422
     assert client.post("/api/payments/checkout", json={**base, "email": "nope"}).status_code == 422
@@ -92,14 +92,14 @@ def test_checkout_validates_and_ignores_client_prices(client, monkeypatch):
 def test_verify_rejects_forged_signature_and_accepts_real_one(client, monkeypatch):
     monkeypatch.setattr(api, "_keys", lambda: ("key", SECRET))
     monkeypatch.setattr(api, "fetch_payment_link", lambda **kw: {
-        "status": "paid", "description": "Custom Excel dashboard (Basic package)", "amount": 200000, "amount_paid": 200000,
+        "status": "paid", "description": "Custom Excel dashboard (Basic package)", "amount": 49900, "amount_paid": 49900,
         "notes": {"service": "#1 Custom Excel dashboard", "package": "Basic", "customer_email": "asha@example.com"}})
     q = {"payment_link_id": "plink_1", "payment_link_reference_id": "svc_ab", "payment_link_status": "paid", "payment_id": "pay_1"}
     assert client.post("/api/payments/verify", json={**q, "signature": "0" * 64}).status_code == 400
     r = client.post("/api/payments/verify", json={**q, "signature": _sign("plink_1", "svc_ab", "paid", "pay_1")})
     assert r.status_code == 200
     out = r.json()
-    assert out["paid"] is True and out["amount"] == 2000 and out["delivery_days"] == 3
+    assert out["paid"] is True and out["amount"] == 499 and out["delivery_days"] == 3
 
 
 def test_keys_ignore_pasted_whitespace(monkeypatch):
