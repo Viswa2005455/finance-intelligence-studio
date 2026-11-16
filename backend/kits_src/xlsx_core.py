@@ -9,7 +9,7 @@ from openpyxl.chart import Reference
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-from lib import (BORDER, FIRST, GREEN, LAST, MONEY, MONEY2, PCT, SOFT, TEAL, bar, calc, col, dropdown, head, inp, new_wb,
+from lib import (add_dashboard, BORDER, FIRST, GREEN, LAST, MONEY, MONEY2, PCT, SOFT, TEAL, bar, calc, col, dropdown, head, inp, new_wb,
                  start_sheet, title, widths)
 
 EQUITY = "Shareholders' equity"
@@ -69,7 +69,7 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
 
     sm = wb.create_sheet("Summary")
     sm.sheet_view.showGridLines = False
-    title(sm, f"{heading}: summary", "Updates automatically from the Data sheet. Nothing to type here except the yellow start month.")
+    title(sm, f"{heading}: summary", "Updates automatically from the Data sheet. Nothing to type here except the peach start month.")
     base = [("Total " + value.lower(), f"=SUM({R(value)})", MONEY), ("Number of entries", f"=COUNT({R(value)})", "0"),
             ("Average per entry", f"=IFERROR(AVERAGE({R(value)}),0)", MONEY), ("Largest entry", f"=MAX({R(value)})", MONEY)]
     rows = list(base)
@@ -175,7 +175,7 @@ def budget_tracker():
 
     s = wb.create_sheet("Month view")
     s.sheet_view.showGridLines = False
-    title(s, "Month view: budget vs actual", "Change the yellow month to see any month. Red means over budget.")
+    title(s, "Month view: budget vs actual", "Change the peach month to see any month. Red means over budget.")
     s["A3"], s["B3"] = "Month (1st of month)", D(2026, 1, 1)
     inp(s["B3"], "mmm-yyyy")
     s["A4"], s["B4"] = "Total income", '=SUMIFS(Transactions!$E$5:$E$1004,Transactions!$B$5:$B$1004,"Income",Transactions!$A$5:$A$1004,">="&B3,Transactions!$A$5:$A$1004,"<"&EDATE(B3,1))'
@@ -221,6 +221,13 @@ def budget_tracker():
         calc(e.cell(row=r, column=5, value=f'=IF(B{r}="","",-PMT(C{r}/1200,D{r}*12,B{r}))'), MONEY)
         calc(e.cell(row=r, column=6, value=f'=IF(B{r}="","",E{r}*D{r}*12)'), MONEY)
         calc(e.cell(row=r, column=7, value=f'=IF(B{r}="","",F{r}-B{r})'), MONEY)
+    add_dashboard(wb, "Personal budget: dashboard", [
+        ("Income this month", "='Month view'!B4", MONEY), ("Expenses this month", "='Month view'!B5", MONEY),
+        ("Savings this month", "='Month view'!B6", MONEY), ("Savings rate", "='Month view'!B7", PCT),
+        ("Total monthly budget", "=Budget!B15", MONEY), ("Saved towards goals", "=SUM('Savings goals'!C5:C14)", MONEY),
+        ("Months to reach goals", "=IFERROR(MAX('Savings goals'!G5:G14),0)", "0"), ("EMIs per month", "=SUM('EMI tracker'!E5:E12)", MONEY)],
+        [dict(kind="bar", title="Budget vs actual (month chosen on Month view)", cats=cats,
+              series=[("Budget", [f"='Month view'!B{10 + i}" for i in range(10)]), ("Actual", [f"='Month view'!C{10 + i}" for i in range(10)])])])
     start_sheet(wb, "Start here", "Personal budget tracker", [
         "Budget sheet: type your planned monthly amount for each category.",
         "Transactions sheet: add every income and expense (one row each). Sample rows are examples; type over them.",
@@ -236,7 +243,7 @@ def pnl_dashboard(heading="Monthly profit and loss dashboard", rev=("Product sal
     wb = new_wb()
     ws = wb.create_sheet("Monthly P&L")
     ws.sheet_view.showGridLines = False
-    title(ws, heading, "Type your monthly figures in the yellow cells. Totals, profit and margins calculate by themselves.")
+    title(ws, heading, "Type your monthly figures in the peach cells. Totals, profit and margins calculate by themselves.")
     head(ws, 4, ["Line"] + MONTHS + ["Year total"])
     widths(ws, [28] + [11] * 12 + [14])
     ws.freeze_panes = "B5"
@@ -288,8 +295,16 @@ def pnl_dashboard(heading="Monthly profit and loss dashboard", rev=("Product sal
         s = Series(Reference(ws, min_col=2, max_col=13, min_row=rowno), title=name)
         ch.series.append(s)
     ch.set_categories(Reference(ws, min_col=2, max_col=13, min_row=4))
+    mcols = [col(2 + m) for m in range(12)]
+    add_dashboard(wb, f"{heading}: dashboard", [
+        ("Revenue (year)", f"='Monthly P&L'!N{t_rev}", MONEY), ("Gross profit", f"='Monthly P&L'!N{gp}", MONEY),
+        ("Net profit", f"='Monthly P&L'!N{npf}", MONEY), ("Net margin", f"='Monthly P&L'!N{nm}", PCT),
+        ("Gross margin", f"='Monthly P&L'!N{gm}", PCT), ("Total expenses", f"='Monthly P&L'!N{t_opex}", MONEY),
+        ("Best month profit", f"=MAX('Monthly P&L'!B{npf}:M{npf})", MONEY), ("Loss-making months", f"=COUNTIF('Monthly P&L'!B{npf}:M{npf},{chr(34)}<0{chr(34)})", "0")],
+        [dict(kind="bar", zero=False, title="Revenue and net profit by month", cats=MONTHS,
+              series=[("Revenue", [f"='Monthly P&L'!{c}{t_rev}" for c in mcols]), ("Net profit", [f"='Monthly P&L'!{c}{npf}" for c in mcols])])])
     start_sheet(wb, "Start here", heading, [
-        "Open Monthly P&L. Type each month's revenue, cost of goods and expenses in the yellow cells (the first six months are examples).",
+        "Open Monthly P&L. Type each month's revenue, cost of goods and expenses in the peach cells (the first six months are examples).",
         "Edit the line names in column A to match your business.",
         "Read gross profit, net profit and margins at the bottom. A red net profit means a loss that month.",
         "Use the chart to see revenue and profit trends across the year.",
@@ -342,6 +357,13 @@ def variance_report():
     for r in range(5, 25):
         for cc in range(1, 6):
             inp(c.cell(row=r, column=cc))
+    add_dashboard(wb, "Budget vs actual: dashboard", [
+        ("Revenue (actual)", "=Variance!D27", MONEY), ("Revenue (budget)", "=Variance!C27", MONEY),
+        ("Profit (actual)", "=Variance!D29", MONEY), ("Profit vs budget", "=Variance!E29", MONEY),
+        ("Total cost (actual)", "=Variance!D28", MONEY), ("Lines to review", '=COUNTIF(Variance!H6:H25,"Review")', "0"),
+        ("Unfavourable lines", '=COUNTIF(Variance!G6:G25,"Unfavourable")', "0"), ("Review threshold", "=Variance!B3", "0%")],
+        [dict(kind="bar", title="Budget vs actual by line", cats=[f"=Variance!A{6 + i}" for i in range(8)],
+              series=[("Budget", [f"=Variance!C{6 + i}" for i in range(8)]), ("Actual", [f"=Variance!D{6 + i}" for i in range(8)])])])
     start_sheet(wb, "Start here", "Budget vs actual variance report", [
         "Variance sheet: type each line's budget and actual. Mark it Revenue or Cost (this decides whether higher is good or bad).",
         "Change the review threshold in cell B3 (10% by default). Lines further off than this show Review in red.",
@@ -409,6 +431,14 @@ def cashflow_forecast():
     ch.series = []
     ch.series.append(Series(Reference(ws, min_col=2, max_col=13, min_row=cl), title="Closing cash"))
     ch.set_categories(Reference(ws, min_col=2, max_col=13, min_row=5))
+    mc = [col(2 + m) for m in range(12)]
+    add_dashboard(wb, "Cash flow: dashboard", [
+        ("Opening cash", "='12-month forecast'!B3", MONEY), ("Total cash in", f"='12-month forecast'!N{t_in}", MONEY),
+        ("Total cash out", f"='12-month forecast'!N{t_out}", MONEY), ("Closing cash (December)", f"='12-month forecast'!M{cl}", MONEY),
+        ("Lowest closing cash", f"=MIN('12-month forecast'!B{cl}:M{cl})", MONEY), ("Months short of cash", f'=COUNTIF({chr(39)}12-month forecast{chr(39)}!B{warn}:M{warn},"CASH SHORT")', "0"),
+        ("Average monthly net", f"=AVERAGE('12-month forecast'!B{net}:M{net})", MONEY), ("Months below safe level", f'=COUNTIF({chr(39)}12-month forecast{chr(39)}!B{warn}:M{warn},"Low")', "0")],
+        [dict(kind="line", title="Closing cash by month", cats=MONTHS, series=[("Closing cash", [f"='12-month forecast'!{c}{cl}" for c in mc])]),
+         dict(kind="bar", title="Cash in vs cash out", cats=MONTHS, series=[("Cash in", [f"='12-month forecast'!{c}{t_in}" for c in mc]), ("Cash out", [f"='12-month forecast'!{c}{t_out}" for c in mc])])])
     start_sheet(wb, "Start here", "12-month cash flow forecast", [
         "Type your opening cash (cell B3) and the minimum cash you want to keep safe (cell E3).",
         "Fill in expected cash in and cash out for each month. The examples are placeholders: type over them.",
@@ -422,7 +452,7 @@ def breakeven():
     wb = new_wb()
     ws = wb.create_sheet("Break-even")
     ws.sheet_view.showGridLines = False
-    title(ws, "Break-even and pricing analysis", "Type the yellow cells. See how many units you must sell to cover costs, and test different prices.")
+    title(ws, "Break-even and pricing analysis", "Type the peach cells. See how many units you must sell to cover costs, and test different prices.")
     labels = [("Selling price per unit", 250, MONEY), ("Variable cost per unit", 140, MONEY), ("Fixed costs per month", 55000, MONEY), ("Target profit per month", 20000, MONEY)]
     for i, (l, v, f) in enumerate(labels):
         ws.cell(row=3 + i, column=1, value=l).font = Font(bold=True)
@@ -461,6 +491,15 @@ def breakeven():
         calc(pr.cell(row=r, column=3, value=f"=IFERROR(ROUNDUP('Break-even'!$B$5/B{r},0),\"n/a\")"), "#,##0")
         calc(pr.cell(row=r, column=4, value=f"='Break-even'!$B$15*B{r}-'Break-even'!$B$5"), MONEY)
         calc(pr.cell(row=r, column=5, value=f"=IFERROR(B{r}/A{r},0)"), PCT)
+    add_dashboard(wb, "Break-even: dashboard", [
+        ("Break-even units / month", "='Break-even'!B10", "#,##0"), ("Break-even sales / month", "='Break-even'!B11", MONEY),
+        ("Contribution per unit", "='Break-even'!B8", MONEY), ("Contribution margin", "='Break-even'!B9", PCT),
+        ("Units for target profit", "='Break-even'!B12", "#,##0"), ("Sales for target profit", "='Break-even'!B13", MONEY),
+        ("Profit at expected units", "='Break-even'!B16", MONEY), ("Margin of safety", "='Break-even'!B17", PCT)],
+        [dict(kind="line", title="Sales vs total cost (they cross at break-even)", cats=[f"='Break-even'!D{4 + i}" for i in range(13)],
+              series=[("Sales", [f"='Break-even'!E{4 + i}" for i in range(13)]), ("Total cost", [f"='Break-even'!F{4 + i}" for i in range(13)])]),
+         dict(kind="bar", zero=False, title="Profit at each volume", cats=[f"='Break-even'!D{4 + i}" for i in range(13)],
+              series=[("Profit", [f"='Break-even'!G{4 + i}" for i in range(13)])])])
     start_sheet(wb, "Start here", "Break-even and pricing analysis", [
         "Break-even sheet: type your price, cost per unit, fixed costs per month and the profit you want.",
         "Read the green cells: how many units and how much sales you need to break even and to reach your target.",
@@ -526,6 +565,13 @@ def ratio_workbook(heading="Financial ratio analysis workbook"):
         calc(rt.cell(row=r, column=3, value=f("C")), fmt)
         rt.cell(row=r, column=4, value=rng_).border = BORDER
         calc(rt.cell(row=r, column=5, value="=" + read.format(r=r)))
+    add_dashboard(wb, f"{heading}: dashboard", [
+        ("Current ratio", "=Ratios!B6", "0.00"), ("Quick ratio", "=Ratios!B7", "0.00"), ("Net profit margin", "=Ratios!B10", PCT), ("Return on equity", "=Ratios!B11", PCT),
+        ("Debt to equity", "=Ratios!B14", "0.00"), ("Interest cover (times)", "=Ratios!B15", "0.0"), ("Debtor days", "=Ratios!B19", "0"), ("Inventory days", "=Ratios!B18", "0")],
+        [dict(kind="bar", title="Profitability: this year vs last year", fmt=PCT, cats=["Gross margin", "Net margin", "Return on equity", "Return on assets"],
+              series=[("This year", ["=Ratios!B9", "=Ratios!B10", "=Ratios!B11", "=Ratios!B12"]), ("Last year", ["=Ratios!C9", "=Ratios!C10", "=Ratios!C11", "=Ratios!C12"])]),
+         dict(kind="bar", title="Working capital days", fmt="0", cats=["Inventory days", "Debtor days", "Creditor days"],
+              series=[("This year", ["=Ratios!B18", "=Ratios!B19", "=Ratios!B20"]), ("Last year", ["=Ratios!C18", "=Ratios!C19", "=Ratios!C20"])])])
     start_sheet(wb, "Start here", heading, [
         "Inputs sheet: type two years of figures from the profit and loss account and balance sheet (examples are placeholders).",
         "Ratios sheet: ratios for both years calculate by themselves, with a plain-English reading for the latest year.",
@@ -538,7 +584,7 @@ def ratio_workbook(heading="Financial ratio analysis workbook"):
 def projections(heading="3-year financial projections", years=3):
     wb = new_wb()
     a = wb.create_sheet("Assumptions")
-    title(a, "Assumptions", "Yellow cells are your assumptions. Change them and the projections update.")
+    title(a, "Assumptions", "Peach cells are your assumptions. Change them and the projections update.")
     items = [("Year 1 revenue", 1200000, MONEY), ("Revenue growth per year", 0.35, "0%"), ("Cost of goods as % of revenue", 0.45, "0%"),
              ("Salaries (Year 1)", 360000, MONEY), ("Rent and utilities (Year 1)", 120000, MONEY), ("Marketing as % of revenue", 0.08, "0%"),
              ("Other expenses as % of revenue", 0.04, "0%"), ("Annual increase in salaries and rent", 0.08, "0%"), ("Income tax rate", 0.25, "0%"),
@@ -579,6 +625,16 @@ def projections(heading="3-year financial projections", years=3):
     for rowno, name in ((5, "Revenue"), (16, "Net profit")):
         ch.series.append(Series(Reference(p, min_col=2, max_col=1 + years, min_row=rowno), title=name))
     ch.set_categories(Reference(p, min_col=2, max_col=1 + years, min_row=4))
+    lastc = col(1 + years)
+    add_dashboard(wb, f"{heading}: dashboard", [
+        ("Year 1 revenue", "=Projections!B5", MONEY), (f"Year {years} revenue", f"=Projections!{lastc}5", MONEY),
+        ("Year 1 net profit", "=Projections!B16", MONEY), (f"Year {years} net profit", f"=Projections!{lastc}16", MONEY),
+        (f"Year {years} net margin", f"=Projections!{lastc}17", PCT), (f"Cash at end of year {years}", f"=Projections!{lastc}18", MONEY),
+        ("Opening cash / funding", "=Assumptions!B12", MONEY), ("Revenue growth per year", "=Assumptions!B4", "0%")],
+        [dict(kind="bar", zero=False, title="Revenue and net profit by year", cats=[f"Year {i}" for i in range(1, years + 1)],
+              series=[("Revenue", [f"=Projections!{col(1 + i)}5" for i in range(1, years + 1)]), ("Net profit", [f"=Projections!{col(1 + i)}16" for i in range(1, years + 1)])]),
+         dict(kind="line", title="Cash at end of year", cats=[f"Year {i}" for i in range(1, years + 1)],
+              series=[("Cash", [f"=Projections!{col(1 + i)}18" for i in range(1, years + 1)])])])
     start_sheet(wb, "Start here", heading, [
         "Assumptions sheet: type your Year 1 revenue, growth, cost percentages, salaries, tax rate and funding. The values are examples.",
         "Projections sheet: revenue, costs, profit and cash for each year calculate automatically.",
@@ -593,8 +649,8 @@ def startup_budget():
     ws = wb.create_sheet("Startup budget")
     ws.sheet_view.showGridLines = False
     title(ws, "Startup budget planning model", "Plan 12 months: revenue growth, costs, funding and cash runway.")
-    a = [("Starting monthly revenue", 60000, MONEY), ("Monthly revenue growth", 0.09, "0%"), ("Cost of goods %", 0.40, "0%"),
-         ("Opening cash (funding)", 600000, MONEY), ("One-time setup costs (month 1)", 150000, MONEY)]
+    a = [("Starting monthly revenue", 60000, MONEY), ("Monthly revenue growth", 0.12, "0%"), ("Cost of goods %", 0.40, "0%"),
+         ("Opening cash (funding)", 700000, MONEY), ("One-time setup costs (month 1)", 150000, MONEY)]
     for i, (n, v, f) in enumerate(a):
         ws.cell(row=3 + i, column=1, value=n).font = Font(bold=True)
         inp(ws.cell(row=3 + i, column=2, value=v), f)
@@ -641,6 +697,14 @@ def startup_budget():
     ch.series = []
     ch.series.append(Series(Reference(ws, min_col=2, max_col=13, min_row=21), title="Cash"))
     ch.set_categories(Reference(ws, min_col=2, max_col=13, min_row=9))
+    sc = [col(2 + m) for m in range(12)]
+    add_dashboard(wb, "Startup budget: dashboard", [
+        ("Revenue (12 months)", "='Startup budget'!N10", MONEY), ("Gross profit (12 months)", "='Startup budget'!N12", MONEY),
+        ("Cash at month 12", "='Startup budget'!M21", MONEY), ("Lowest cash balance", "=MIN('Startup budget'!B21:M21)", MONEY),
+        ("Months of cash left", "='Startup budget'!B24", "0"), ("Months out of cash", '=COUNTIF(' + chr(39) + 'Startup budget' + chr(39) + '!B22:M22,"Out of cash")', "0"),
+        ("Starting cash (funding)", "='Startup budget'!B6", MONEY), ("One-time setup costs", "='Startup budget'!B7", MONEY)],
+        [dict(kind="line", title="Cash at the end of each month", cats=MONTHS, series=[("Cash", [f"='Startup budget'!{c}21" for c in sc])]),
+         dict(kind="bar", title="Revenue vs fixed costs", cats=MONTHS, series=[("Revenue", [f"='Startup budget'!{c}10" for c in sc]), ("Fixed costs", [f"='Startup budget'!{c}19" for c in sc])])])
     start_sheet(wb, "Start here", "Startup budget planning model", [
         "Type starting revenue, monthly growth, cost of goods %, funding and one-time setup costs at the top.",
         "Edit the fixed-cost lines (salaries, rent, tools, marketing) by month.",
@@ -654,7 +718,7 @@ def mis_report():
     wb = new_wb()
     ws = wb.create_sheet("MIS report")
     ws.sheet_view.showGridLines = False
-    title(ws, "Monthly management report (MIS)", "One-page monthly report for owners and managers. Fill the yellow cells each month.")
+    title(ws, "Monthly management report (MIS)", "One-page monthly report for owners and managers. Fill the peach cells each month.")
     ws["A3"], ws["B3"] = "Month", "January 2026"
     inp(ws["B3"])
     head(ws, 5, ["Key figure", "Actual", "Budget / target", "Last month", "vs Budget", "vs Last month"])
@@ -688,6 +752,13 @@ def mis_report():
     bar(ws, "H5", "Actual vs budget", Reference(ws, min_col=1, min_row=6, max_row=9), Reference(ws, min_col=2, max_col=3, min_row=5, max_row=9))
     ws.page_setup.fitToWidth = 1
     ws.sheet_properties.pageSetUpPr.fitToPage = True
+    add_dashboard(wb, "Monthly MIS: dashboard", [
+        ("Revenue", "='MIS report'!B6", MONEY), ("Gross profit", "='MIS report'!B7", MONEY), ("Net profit", "='MIS report'!B9", MONEY), ("Cash in bank", "='MIS report'!B10", MONEY),
+        ("Gross margin", "='MIS report'!B15", PCT), ("Net margin", "='MIS report'!B16", PCT), ("Receivables", "='MIS report'!B11", MONEY), ("Debtor days", "='MIS report'!B17", "0")],
+        [dict(kind="bar", title="Actual vs budget", cats=[f"='MIS report'!A{6 + i}" for i in range(4)],
+              series=[("Actual", [f"='MIS report'!B{6 + i}" for i in range(4)]), ("Budget", [f"='MIS report'!C{6 + i}" for i in range(4)])]),
+         dict(kind="bar", title="This month vs last month", cats=[f"='MIS report'!A{6 + i}" for i in range(4)],
+              series=[("This month", [f"='MIS report'!B{6 + i}" for i in range(4)]), ("Last month", [f"='MIS report'!D{6 + i}" for i in range(4)])])])
     start_sheet(wb, "Start here", "Monthly management report (MIS)", [
         "MIS report sheet: change the month and type actual, budget and last month's figures.",
         "Read the percentage columns to see where you are ahead or behind.",

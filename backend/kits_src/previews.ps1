@@ -4,7 +4,7 @@ param([string]$SpecPath, [string]$OutDir)
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 $spec = Get-Content $SpecPath -Raw | ConvertFrom-Json
-$order = @("Weekly report", "Month view", "Monthly P&L", "Variance", "12-month forecast", "Break-even", "Ratios", "Startup budget", "MIS report", "Projections", "Invoice",
+$order = @("Dashboard", "Weekly report", "Month view", "Monthly P&L", "Variance", "12-month forecast", "Break-even", "Ratios", "Startup budget", "MIS report", "Projections", "Invoice",
            "Comparison", "Market size", "Keywords", "30-day calendar", "Formula demos", "Cleaner", "Pivot-style report", "Fees", "Summary", "Sales", "Financials", "Clean table", "Monthly summary")
 
 function Save-Clip($path) {

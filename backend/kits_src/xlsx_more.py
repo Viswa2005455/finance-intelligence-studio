@@ -9,7 +9,7 @@ from openpyxl.chart import Reference
 from openpyxl.formatting.rule import FormulaRule
 from openpyxl.styles import Alignment, Font, PatternFill
 
-from lib import BORDER, FIRST, GREEN, LAST, MONEY, PCT, bar, calc, col, dropdown, head, inp, new_wb, start_sheet, title, widths
+from lib import BORDER, FIRST, GREEN, LAST, MONEY, PCT, add_dashboard, bar, calc, col, dropdown, head, inp, new_wb, start_sheet, title, widths
 from xlsx_core import MONTHS, tracker
 
 D = dt.date
@@ -195,7 +195,7 @@ def gst_invoice():
     wb = new_wb()
     iv = wb.create_sheet("Invoice")
     iv.sheet_view.showGridLines = False
-    title(iv, "TAX INVOICE", "Fill the yellow cells and print. Check current GST rules with your CA before filing.")
+    title(iv, "TAX INVOICE", "Fill the peach cells and print. Check current GST rules with your CA before filing.")
     widths(iv, [6, 34, 12, 8, 12, 10, 14, 14])
     for r, (l, v) in enumerate([("Seller name", "Your Business Name"), ("Seller GSTIN", "33ABCDE1234F1Z5"), ("Seller state", "Tamil Nadu"),
                                 ("Invoice no", "INV-001"), ("Invoice date", D(2026, 1, 15)), ("Buyer name", "Customer Name"), ("Buyer GSTIN", ""), ("Buyer state", "Tamil Nadu")], start=3):
@@ -247,6 +247,13 @@ def gst_invoice():
         sm.cell(row=5 + i, column=1, value=l).font = Font(bold=True)
         calc(sm.cell(row=5 + i, column=2, value=f"=SUMIFS('Sales register'!${c}$5:${c}$504,'Sales register'!$B$5:$B$504,\">=\"&$B$3,'Sales register'!$B$5:$B$504,\"<\"&EDATE($B$3,1))"), MONEY, True)
     widths(sm, [22, 16])
+    add_dashboard(wb, "GST: dashboard", [
+        ("Invoices recorded", "=COUNTA('Sales register'!A5:A504)", "0"), ("Taxable value", "=SUM('Sales register'!E5:E504)", MONEY),
+        ("CGST + SGST", "=SUM('Sales register'!F5:G504)", MONEY), ("IGST", "=SUM('Sales register'!H5:H504)", MONEY),
+        ("Total GST", "=SUM('Sales register'!F5:H504)", MONEY), ("Total invoiced", "=SUM('Sales register'!I5:I504)", MONEY),
+        ("Average invoice", "=IFERROR(AVERAGE('Sales register'!E5:E504),0)", MONEY), ("Largest invoice", "=MAX('Sales register'!E5:E504)", MONEY)],
+        [dict(kind="bar", title="GST by type", cats=["CGST", "SGST", "IGST"],
+              series=[("Amount", ["=SUM('Sales register'!F5:F504)", "=SUM('Sales register'!G5:G504)", "=SUM('Sales register'!H5:H504)"])])])
     start_sheet(wb, "Start here", "GST invoice and register template", [
         "Invoice sheet: type your details, the buyer's details, and each item with its GST %. CGST/SGST or IGST is chosen from the two states.",
         "Print the Invoice sheet or save it as PDF to send to the customer.",
@@ -311,10 +318,17 @@ def invoice_generator():
         for c in range(1, 7):
             inp(lg.cell(row=r, column=c), MONEY if c == 4 else ("dd-mmm-yyyy" if c in (2, 6) else None))
     dropdown(lg, "E5:E204", ["Yes", "No"])
+    add_dashboard(wb, "Invoices: dashboard", [
+        ("Invoices sent", "=COUNTA('Invoice log'!A5:A204)", "0"), ("Total invoiced", "=SUM('Invoice log'!D5:D204)", MONEY),
+        ("Paid", "=SUMIFS('Invoice log'!D5:D204,'Invoice log'!E5:E204,\"Yes\")", MONEY), ("Still unpaid", "=SUMIFS('Invoice log'!D5:D204,'Invoice log'!E5:E204,\"No\")", MONEY),
+        ("Unpaid invoices", "=COUNTIF('Invoice log'!E5:E204,\"No\")", "0"), ("Collected so far", "=IFERROR(SUMIFS('Invoice log'!D5:D204,'Invoice log'!E5:E204,\"Yes\")/SUM('Invoice log'!D5:D204),0)", PCT),
+        ("Customers saved", "=COUNTA(Customers!A5:A34)", "0"), ("Items saved", "=COUNTA(Items!A5:A34)", "0")],
+        [dict(kind="bar", title="Paid vs unpaid", cats=["Paid", "Unpaid"],
+              series=[("Amount", ["=SUMIFS('Invoice log'!D5:D204,'Invoice log'!E5:E204,\"Yes\")", "=SUMIFS('Invoice log'!D5:D204,'Invoice log'!E5:E204,\"No\")"])])])
     start_sheet(wb, "Start here", "Invoice generator", [
         "Customers and Items sheets: add your customers and your items with rates once.",
         "Invoice sheet: change the invoice number and date, pick the customer and items from the dropdowns, type quantities.",
-        "Print or save the Invoice sheet as PDF and send it. For the next invoice, just change the yellow cells.",
+        "Print or save the Invoice sheet as PDF and send it. For the next invoice, just change the peach cells.",
         "Record every invoice in the Invoice log so you know who has not paid.",
     ])
     return wb
@@ -373,6 +387,13 @@ def attendance_fees():
     for c in ("I6", "I7"):
         calc(fe[c], MONEY, True)
     fe.conditional_formatting.add("E5:E44", FormulaRule(formula=['E5="Not paid"'], fill=PatternFill("solid", bgColor="FFC7CE", fgColor="FFC7CE")))
+    add_dashboard(wb, "Attendance and fees: dashboard", [
+        ("Students", "=COUNTA(Students!B5:B44)", "0"), ("Average attendance", "=IFERROR(AVERAGE(Attendance!AI5:AI44),0)", PCT),
+        ("Fees due", "=Fees!I5", MONEY), ("Fees collected", "=Fees!I6", MONEY), ("Balance to collect", "=Fees!I7", MONEY),
+        ("Students below 75% attendance", "=COUNTIF(Attendance!AI5:AI44,\"<0.75\")", "0"), ("Fees not paid", "=COUNTIF(Fees!E5:E44,\"Not paid\")", "0"), ("Fees part paid", "=COUNTIF(Fees!E5:E44,\"Part paid\")", "0")],
+        [dict(kind="bar", title="Fees: due, collected, balance", cats=["Due", "Collected", "Balance"], series=[("Amount", ["=Fees!I5", "=Fees!I6", "=Fees!I7"])]),
+         dict(kind="bar", title="Fee status", fmt="0", cats=["Paid", "Part paid", "Not paid"],
+              series=[("Students", ["=COUNTIF(Fees!E5:E44,\"Paid\")", "=COUNTIF(Fees!E5:E44,\"Part paid\")", "=COUNTIF(Fees!E5:E44,\"Not paid\")"])])])
     start_sheet(wb, "Start here", "Student attendance and fee tracker", [
         "Students sheet: list each student, batch and monthly fee.",
         "Attendance sheet: pick the month, then type P or A for each day. Absent days turn red; attendance below 75% is highlighted.",
@@ -423,6 +444,15 @@ def content_calendar():
                              ("WhatsApp status", "8-10 am, 6-8 pm", "Short offers and photos.")]):
         for c, v in enumerate(row, start=1):
             ps.cell(row=5 + i, column=c, value=v)
+    add_dashboard(wb, "Content calendar: dashboard", [
+        ("Posts planned", "=COUNTA('30-day calendar'!E5:E34)", "0"), ("Posted", "=COUNTIF('30-day calendar'!H5:H34,\"Posted\")", "0"),
+        ("Scheduled", "=COUNTIF('30-day calendar'!H5:H34,\"Scheduled\")", "0"), ("Still to design", "=COUNTIF('30-day calendar'!H5:H34,\"Planned\")", "0"),
+        ("LinkedIn posts", "=COUNTIF('30-day calendar'!C5:C34,\"LinkedIn\")", "0"), ("Instagram posts", "=COUNTIF('30-day calendar'!C5:C34,\"Instagram\")", "0"),
+        ("Facebook posts", "=COUNTIF('30-day calendar'!C5:C34,\"Facebook\")", "0"), ("Done so far", "=IFERROR(COUNTIF('30-day calendar'!H5:H34,\"Posted\")/COUNTA('30-day calendar'!E5:E34),0)", PCT)],
+        [dict(kind="bar", title="Posts by status", fmt="0", cats=["Planned", "Designed", "Scheduled", "Posted"],
+              series=[("Posts", ["=COUNTIF('30-day calendar'!H5:H34,\"Planned\")", "=COUNTIF('30-day calendar'!H5:H34,\"Designed\")", "=COUNTIF('30-day calendar'!H5:H34,\"Scheduled\")", "=COUNTIF('30-day calendar'!H5:H34,\"Posted\")"])]),
+         dict(kind="bar", title="Posts by platform", fmt="0", cats=["LinkedIn", "Instagram", "Facebook"],
+              series=[("Posts", ["=COUNTIF('30-day calendar'!C5:C34,\"LinkedIn\")", "=COUNTIF('30-day calendar'!C5:C34,\"Instagram\")", "=COUNTIF('30-day calendar'!C5:C34,\"Facebook\")"])])])
     start_sheet(wb, "Start here", "30-day social media content calendar", [
         "Open 30-day calendar. Replace the sample topics with ideas for your business (use the Caption templates sheet for openers).",
         "Pick the platform and content type from the dropdowns. Write your caption draft and hashtags.",
@@ -479,6 +509,11 @@ def comparison_matrix():
     for r in range(5, 15):
         for c in range(1, 8):
             inp(pr.cell(row=r, column=c))
+    add_dashboard(wb, "Competitor analysis: dashboard", [
+        ("Your score", "=Comparison!C17", "0.00"), ("Competitor A", "=Comparison!D17", "0.00"), ("Competitor B", "=Comparison!E17", "0.00"), ("Competitor C", "=Comparison!F17", "0.00"),
+        ("Your rank", "=Comparison!C18", "0"), ("Best score", "=MAX(Comparison!C17:F17)", "0.00"), ("Gap to the best competitor", "=MAX(Comparison!D17:F17)-Comparison!C17", "0.00"), ("Weights add up to", "=Comparison!B16", "0%")],
+        [dict(kind="bar", title="Weighted score (out of 5)", fmt="0.00", cats=["You", "Competitor A", "Competitor B", "Competitor C"],
+              series=[("Score", ["=Comparison!C17", "=Comparison!D17", "=Comparison!E17", "=Comparison!F17"])])])
     start_sheet(wb, "Start here", "Competitor analysis", [
         "Profiles sheet: list each competitor with their offer, prices, strengths and weaknesses (from their website, reviews and social pages).",
         "Comparison sheet: set the weight of each factor (should total 100%), then score everyone 1-5.",
@@ -510,8 +545,12 @@ def market_size():
     for r in (11, 12, 13, 14):
         ws[f"A{r}"].font = Font(bold=True)
         calc(ws[f"B{r}"], MONEY if r != 14 else "#,##0", True)
+    add_dashboard(wb, "Market size: dashboard", [
+        ("TAM: total market", "='Market size'!B11", MONEY), ("SAM: market you can serve", "='Market size'!B12", MONEY),
+        ("SOM: you can win in year 1", "='Market size'!B13", MONEY), ("Customers needed", "='Market size'!B14", "#,##0")],
+        [dict(kind="bar", title="TAM, SAM and SOM (rupees per year)", cats=["TAM", "SAM", "SOM"], series=[("Value", ["='Market size'!B11", "='Market size'!B12", "='Market size'!B13"])])])
     start_sheet(wb, "Start here", "Industry / market research: market size sheet", [
-        "Fill the yellow inputs with your best estimates and note the source of each number.",
+        "Fill the peach inputs with your best estimates and note the source of each number.",
         "TAM, SAM and SOM calculate automatically. SOM is the figure to put in a business plan.",
         "Test a low and a high case. If SOM is tiny, the business needs a bigger market or a different focus.",
         "Use the Word report template to write up your findings with sources.",
@@ -544,6 +583,11 @@ def seo_keywords():
     ws.conditional_formatting.add("G5:G54", FormulaRule(formula=['AND(G5<>"",G5>155)'], fill=PatternFill("solid", bgColor="FFC7CE", fgColor="FFC7CE")))
     dropdown(ws, "C5:C54", ["Learn", "Compare", "Buy", "Contact"])
     dropdown(ws, "H5:H54", ["Planned", "Written", "Done"])
+    add_dashboard(wb, "SEO plan: dashboard", [
+        ("Pages planned", "=COUNTA(Keywords!A5:A54)", "0"), ("Pages done", "=COUNTIF(Keywords!H5:H54,\"Done\")", "0"), ("Written", "=COUNTIF(Keywords!H5:H54,\"Written\")", "0"),
+        ("Still to write", "=COUNTIF(Keywords!H5:H54,\"Planned\")", "0"), ("Titles too long", "=COUNTIF(Keywords!E5:E54,\">60\")", "0"), ("Descriptions too long", "=COUNTIF(Keywords!G5:G54,\">155\")", "0")],
+        [dict(kind="bar", title="Pages by status", fmt="0", cats=["Planned", "Written", "Done"],
+              series=[("Pages", ["=COUNTIF(Keywords!H5:H54,\"Planned\")", "=COUNTIF(Keywords!H5:H54,\"Written\")", "=COUNTIF(Keywords!H5:H54,\"Done\")"])])])
     start_sheet(wb, "Start here", "Basic on-page SEO plan", [
         "List each page of the website and choose one main keyword for it (what a customer would type into Google).",
         "Write a title tag (under 60 characters) and a meta description (under 155). Lengths turn red when too long.",
@@ -670,7 +714,7 @@ def cleaning_toolkit():
     wb = new_wb()
     ws = wb.create_sheet("Cleaner")
     ws.sheet_view.showGridLines = False
-    title(ws, "Excel data cleaning toolkit", "Paste messy data in column A-D (yellow). The cleaned version appears on the right. Copy it and Paste Special > Values.")
+    title(ws, "Excel data cleaning toolkit", "Paste messy data in column A-D (peach). The cleaned version appears on the right. Copy it and Paste Special > Values.")
     head(ws, 4, ["Name (messy)", "Phone (messy)", "Date (as text)", "Amount (as text)", "", "Name (clean)", "Phone (clean)", "Date (real date)", "Amount (number)", "Duplicate?"])
     widths(ws, [24, 18, 14, 14, 3, 24, 16, 14, 14, 12])
     messy = [("  ravi KUMAR ", "98765-43210", "03/01/2026", "₹ 1,200"), ("MEENA  devi", "(98765) 43211", "05/01/2026", "2,500.50"), ("ravi kumar", "98765 43210", "03/01/2026", "1200"),
@@ -696,8 +740,13 @@ def cleaning_toolkit():
     for i, t in enumerate(items):
         ck.cell(row=3 + i, column=1, value=f"☐  {t}")
     ck.column_dimensions["A"].width = 90
+    add_dashboard(wb, "Data cleaning: dashboard", [
+        ("Rows to clean", "=COUNTA(Cleaner!A5:A204)", "0"), ("Duplicates found", "=COUNTIF(Cleaner!J5:J204,\"Duplicate\")", "0"),
+        ("Unique rows", "=COUNTIF(Cleaner!J5:J204,\"Unique\")", "0"), ("Total of clean amounts", "=SUM(Cleaner!I5:I204)", MONEY)],
+        [dict(kind="bar", title="Unique vs duplicate rows", fmt="0", cats=["Unique", "Duplicate"],
+              series=[("Rows", ["=COUNTIF(Cleaner!J5:J204,\"Unique\")", "=COUNTIF(Cleaner!J5:J204,\"Duplicate\")"])])])
     start_sheet(wb, "Start here", "Excel data cleaning and formatting toolkit", [
-        "Paste your messy names, phone numbers, dates and amounts into the yellow columns on the Cleaner sheet.",
+        "Paste your messy names, phone numbers, dates and amounts into the peach columns on the Cleaner sheet.",
         "The cleaned values appear on the right: names tidy, phone numbers 10 digits, text dates become real dates, text amounts become numbers, duplicates flagged.",
         "Copy the clean columns and use Paste Special > Values into your real file.",
         "Work through the Checklist sheet for any dataset before you analyse it.",
@@ -745,6 +794,12 @@ def pivot_report():
         calc(pv.cell(row=r, column=3, value=f"=SUMIFS(Data!$F$5:$F$504,Data!$D$5:$D$504,A{r})"), MONEY)
         calc(pv.cell(row=r, column=4, value=f"=IFERROR(C{r}/$E$9,0)"), PCT)
     bar(pv, "G4", "Sales by region", Reference(pv, min_col=1, min_row=5, max_row=8), Reference(pv, min_col=5, min_row=4, max_row=8))
+    add_dashboard(wb, "Sales analysis: dashboard", [
+        ("Total sales", "='Pivot-style report'!E9", MONEY), ("Units sold", "=SUM(Data!E5:E504)", "#,##0"), ("Orders", "=COUNT(Data!F5:F504)", "0"),
+        ("Average order", "=IFERROR(AVERAGE(Data!F5:F504),0)", MONEY), ("Best region (sales)", "=MAX('Pivot-style report'!E5:E8)", MONEY),
+        ("Best salesperson (sales)", "=MAX('Pivot-style report'!C13:C15)", MONEY)],
+        [dict(kind="bar", title="Sales by region", cats=[f"='Pivot-style report'!A{5 + i}" for i in range(4)], series=[("Sales", [f"='Pivot-style report'!E{5 + i}" for i in range(4)])]),
+         dict(kind="bar", title="Sales by salesperson", cats=[f"='Pivot-style report'!A{13 + i}" for i in range(3)], series=[("Sales", [f"='Pivot-style report'!C{13 + i}" for i in range(3)])])])
     start_sheet(wb, "Start here", "PivotTable reports from your data", [
         "Data sheet: paste your own rows (Date, Region, Product, Salesperson, Quantity, Amount). Sample data is there as an example.",
         "Pivot-style report: SUMIFS grids by region × product and by salesperson update by themselves.",
@@ -758,7 +813,7 @@ def formula_automation():
     wb = new_wb()
     ws = wb.create_sheet("Formula demos")
     ws.sheet_view.showGridLines = False
-    title(ws, "Excel automation with formulas (no macros)", "Working examples of the formulas that replace manual work. Change the yellow cells and watch the results.")
+    title(ws, "Excel automation with formulas (no macros)", "Working examples of the formulas that replace manual work. Change the peach cells and watch the results.")
     widths(ws, [34, 18, 18, 46])
     head(ws, 4, ["Task", "Input", "Result", "Formula used"])
     demo = [("Add up amounts that meet a condition", "=SUMIFS(Lookup!$C$5:$C$14,Lookup!$B$5:$B$14,B6)", "Product A", "=SUMIFS(Amount, Product, B6)"),
@@ -816,7 +871,7 @@ def formula_automation():
         cf.cell(row=4 + i, column=1, value=a)
         cf.cell(row=4 + i, column=2, value=b)
     start_sheet(wb, "Start here", "Excel automation with formulas (no macros)", [
-        "Formula demos: change the yellow inputs and read the green results. Each row shows the formula used.",
+        "Formula demos: change the peach inputs and read the blue-grey results. Each row shows the formula used.",
         "Copy the formula pattern into your own sheet and swap in your ranges.",
         "Cheat sheet: choose the right formula for the job.",
         "Prefer Tables (Ctrl+T), Data Validation and Conditional Formatting over macros: they work everywhere, including Excel online.",

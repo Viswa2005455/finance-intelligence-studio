@@ -136,7 +136,7 @@ def build_one(slug: str, spec, out_dir: Path) -> dict:
                 inside.append(f"{blank_name(name)}: The same workbook, empty and ready for your own data")
     steps = ["Unzip this folder (right-click > Extract All) and open the main file.",
              "Read the Start here sheet or the comments at the top: they take two minutes.",
-             "Replace the sample data/text with your own. Yellow cells (Excel) or lines marked EDIT are yours to change.",
+             "Replace the sample data/text with your own. Peach cells (Excel) or lines marked EDIT are yours to change.",
              "Save a copy before big changes, then use it every day or week as described in the file."]
     has_blank = any("BLANK" in n for n in outputs)
     extra = ["Open the file with example data first to see how it works, then use the BLANK file for your real data."] if has_blank else []

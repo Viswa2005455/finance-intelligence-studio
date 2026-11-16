@@ -312,7 +312,7 @@ def _deck(title, subtitle, slides):
     from pptx.enum.chart import XL_CHART_TYPE, XL_LEGEND_POSITION
     from pptx.util import Inches, Pt
 
-    green, teal, grey = RGBColor(0x0F, 0x3D, 0x2E), RGBColor(0x0F, 0x8A, 0x6E), RGBColor(0x5B, 0x67, 0x70)
+    green, teal, grey = RGBColor(0x14, 0x21, 0x3D), RGBColor(0xFF, 0x6B, 0x5B), RGBColor(0x5B, 0x67, 0x70)
     prs = Presentation()
     prs.slide_width, prs.slide_height = Inches(13.333), Inches(7.5)
     blank = prs.slide_layouts[6]
@@ -342,11 +342,11 @@ def _deck(title, subtitle, slides):
     bg.line.fill.background()
     bar_ = s.shapes.add_shape(1, Inches(0.9), Inches(2.15), Inches(1.6), Inches(0.12))
     bar_.fill.solid()
-    bar_.fill.fore_color.rgb = RGBColor(0xF5, 0xC4, 0x51)
+    bar_.fill.fore_color.rgb = RGBColor(0xFF, 0x6B, 0x5B)
     bar_.line.fill.background()
     text(s, 0.9, 2.4, 11.5, 1.5, title, 44, True, RGBColor(255, 255, 255))
-    text(s, 0.9, 4.1, 11.5, 1, subtitle, 22, False, RGBColor(0xBF, 0xE0, 0xD2))
-    text(s, 0.9, 6.4, 11.5, 0.5, "EDIT: Presenter name · Date", 14, False, RGBColor(0xBF, 0xE0, 0xD2))
+    text(s, 0.9, 4.1, 11.5, 1, subtitle, 22, False, RGBColor(0xC9, 0xD1, 0xE6))
+    text(s, 0.9, 6.4, 11.5, 0.5, "EDIT: Presenter name · Date", 14, False, RGBColor(0xC9, 0xD1, 0xE6))
     for sd in slides:
         s = prs.slides.add_slide(blank)
         band(s, sd["title"])
@@ -367,7 +367,7 @@ def _deck(title, subtitle, slides):
                 cd.add_series(name, vals)
             gf = s.shapes.add_chart(sd.get("type", XL_CHART_TYPE.COLUMN_CLUSTERED), Inches(0.8), Inches(1.5), Inches(7.6), Inches(5.3), cd)
             ch = gf.chart
-            palette = [RGBColor(0x0F, 0x8A, 0x6E), RGBColor(0xF5, 0xC4, 0x51), RGBColor(0x14, 0x56, 0x4A), RGBColor(0xD9, 0x48, 0x0F)]
+            palette = [RGBColor(0xFF, 0x6B, 0x5B), RGBColor(0x14, 0x21, 0x3D), RGBColor(0xF5, 0xC4, 0x51), RGBColor(0x5B, 0x6E, 0xE1)]
             plot = ch.plots[0]
             if sd.get("type") == XL_CHART_TYPE.PIE:
                 for i, pt in enumerate(plot.series[0].points):

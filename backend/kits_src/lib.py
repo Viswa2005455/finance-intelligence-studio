@@ -19,11 +19,11 @@ from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
-GREEN = "0F3D2E"
-TEAL = "0F8A6E"
-SOFT = "E8F3EC"
-INPUT = "FFF4CC"
-GREY = "F3F1EA"
+GREEN = "14213D"  # navy
+TEAL = "D9452F"  # strong coral for accents and text
+SOFT = "E9EDF7"
+INPUT = "FFE8DF"
+GREY = "F4EDE0"
 MONEY = '"₹"#,##0'
 MONEY2 = '"₹"#,##0.00'
 PCT = "0.0%"
@@ -55,7 +55,7 @@ def head(ws, row: int, labels: list[str], start: int = 1) -> None:
 
 
 def title(ws, text: str, sub: str = "") -> None:
-    """A dark-green banner across the top of every sheet with the sheet title and a one-line hint."""
+    """A navy banner across the top of every sheet with the sheet title and a one-line hint."""
     for r in (1, 2):
         for c in range(1, 22):
             ws.cell(row=r, column=c).fill = PatternFill("solid", fgColor=GREEN)
@@ -64,7 +64,7 @@ def title(ws, text: str, sub: str = "") -> None:
     ws.row_dimensions[1].height = 32
     if sub:
         ws["A2"] = sub
-        ws["A2"].font = Font(italic=True, color="BFE0D2")
+        ws["A2"].font = Font(italic=True, color="C9D1E6")
     ws.row_dimensions[2].height = 20
 
 
@@ -74,7 +74,7 @@ def widths(ws, values: list[float], start: int = 1) -> None:
 
 
 def inp(cell, fmt: str | None = None) -> None:
-    """Marks a cell as one the customer fills in (pale yellow)."""
+    """Marks a cell as one the customer fills in (soft peach)."""
     cell.fill = PatternFill("solid", fgColor=INPUT)
     cell.border = BORDER
     if fmt:
@@ -94,7 +94,7 @@ def start_sheet(wb: Workbook, name: str, heading: str, steps: list[str], note: s
     """The first sheet of every workbook: a designed how-to-use page with numbered steps and a colour guide."""
     ws = wb.create_sheet(name, 0)
     ws.sheet_view.showGridLines = False
-    title(ws, heading, "Ready-made template. Yellow cells are for you to fill in; green cells calculate by themselves.")
+    title(ws, heading, "Ready-made template. Peach cells are for you to fill in; blue-grey cells calculate by themselves.")
     ws.column_dimensions["A"].width = 7
     ws.column_dimensions["B"].width = 104
     h = ws.cell(row=4, column=2, value="How to use this template")
@@ -115,10 +115,10 @@ def start_sheet(wb: Workbook, name: str, heading: str, steps: list[str], note: s
     ws.cell(row=r, column=2, value="Colour guide").font = Font(bold=True, size=13, color=GREEN)
     ya = ws.cell(row=r + 1, column=1)
     inp(ya)
-    ws.cell(row=r + 1, column=2, value="Yellow cells: type your own data here").alignment = Alignment(indent=1, vertical="center")
+    ws.cell(row=r + 1, column=2, value="Peach cells: type your own data here").alignment = Alignment(indent=1, vertical="center")
     ga = ws.cell(row=r + 2, column=1)
     calc(ga)
-    ws.cell(row=r + 2, column=2, value="Green cells: calculated automatically, please do not type over them").alignment = Alignment(indent=1, vertical="center")
+    ws.cell(row=r + 2, column=2, value="Blue-grey cells: calculated automatically, please do not type over them").alignment = Alignment(indent=1, vertical="center")
     if note:
         nn = ws.cell(row=r + 4, column=2, value=note)
         nn.alignment = Alignment(wrap_text=True, vertical="top", indent=1)
@@ -126,6 +126,58 @@ def start_sheet(wb: Workbook, name: str, heading: str, steps: list[str], note: s
         ws.row_dimensions[r + 4].height = 48
     f = ws.cell(row=r + 6, column=2, value="Finance Intelligence Studio  ·  Ready-made kits by Viswa Kumar  ·  fabulousviswa2005@gmail.com")
     f.font = Font(size=10, color="5B6770")
+
+
+def add_dashboard(wb: Workbook, heading: str, tiles: list, charts: list | None = None) -> None:
+    """A 'Dashboard' sheet placed right after the cover: up to 8 KPI tiles and up to 4 charts.
+
+    tiles: (label, formula, number_format). charts: dicts with kind ('bar' or 'line'), title, cats (labels)
+    and series [(name, [one formula per label])]; the chart data is written at the far right of the sheet."""
+    ws = wb.create_sheet("Dashboard")
+    ws.sheet_view.showGridLines = False
+    title(ws, heading, "Everything at a glance. It updates by itself from your entries; there is nothing to type on this sheet.")
+    widths(ws, [11] * 12 + [3] + [20, 16, 16, 16])
+    for i, (label, formula, fmt) in enumerate(tiles[:8]):
+        r = 4 + (i // 4) * 3
+        c1 = 1 + (i % 4) * 3
+        c2 = c1 + 2
+        for rowx in (r, r + 1):
+            for cc in range(c1, c2 + 1):
+                cell = ws.cell(row=rowx, column=cc)
+                cell.fill = PatternFill("solid", fgColor=SOFT)
+                if rowx == r:
+                    cell.border = Border(top=Side(style="thick", color=TEAL))
+            ws.merge_cells(start_row=rowx, start_column=c1, end_row=rowx, end_column=c2)
+        lab = ws.cell(row=r, column=c1, value=label)
+        lab.font = Font(size=10, bold=True, color="5B6770")
+        lab.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        val = ws.cell(row=r + 1, column=c1, value=formula)
+        val.number_format = fmt
+        val.font = Font(size=22, bold=True, color=GREEN)
+        val.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        ws.row_dimensions[r].height = 20
+        ws.row_dimensions[r + 1].height = 38
+    top = 4 + ((min(len(tiles), 8) - 1) // 4 + 1) * 3 + 1
+    r0 = 12
+    ws.cell(row=11, column=14, value="Chart data (calculated, please do not edit)").font = Font(size=9, italic=True, color="8A93A6")
+    for ci, ch in enumerate(charts or []):
+        cats, series = ch["cats"], ch["series"]
+        ws.cell(row=r0, column=14, value=ch["title"]).font = Font(size=9, bold=True, color="8A93A6")
+        for j, (name, vals) in enumerate(series):
+            ws.cell(row=r0 + 1, column=15 + j, value=name).font = Font(size=9, color="8A93A6")
+            for k, f in enumerate(vals):
+                c = ws.cell(row=r0 + 2 + k, column=15 + j, value=f)
+                c.font = Font(size=9, color="8A93A6")
+                c.number_format = ch.get("fmt", MONEY)
+        for k, cat in enumerate(cats):
+            ws.cell(row=r0 + 2 + k, column=14, value=cat).font = Font(size=9, color="8A93A6")
+        catref = Reference(ws, min_col=14, min_row=r0 + 2, max_row=r0 + 1 + len(cats))
+        dataref = Reference(ws, min_col=15, max_col=14 + len(series), min_row=r0 + 1, max_row=r0 + 1 + len(cats))
+        anchor = f"{'A' if ci % 2 == 0 else 'G'}{top + (ci // 2) * 17}"
+        bar(ws, anchor, ch["title"], catref, dataref, w=12.8, h=7.6, line=ch.get("kind") == "line")
+        if ch.get("kind") != "line" and ch.get("zero", True):
+            ws._charts[-1].y_axis.scaling.min = 0  # bars always start at zero so differences are not exaggerated
+        r0 += len(cats) + 4
 
 
 def dropdown(ws, rng: str, options: list[str]) -> None:
@@ -161,7 +213,7 @@ def pack(files: dict[str, bytes], out: Path, folder: str) -> None:
             z.writestr(f"{folder}/{name}", data)
 
 
-PALETTE = ["0F8A6E", "F5C451", "14564A", "D9480F", "4F46E5"]
+PALETTE = ["FF6B5B", "14213D", "F5C451", "5B6EE1", "2BB59A"]
 
 
 def _style_chart(ch) -> None:
@@ -185,7 +237,7 @@ def _is_input_fill(cell) -> bool:
 
 
 def make_blank(wb: Workbook) -> None:
-    """Empties the sample entries of big input sheets (more than 40 yellow cells), keeping formulas, dropdowns,
+    """Empties the sample entries of big input sheets (more than 40 peach cells), keeping formulas, dropdowns,
     formatting and the settings in the first four rows. Small settings sheets keep their example values."""
     for ws in wb.worksheets:
         yellow = [c for row in ws.iter_rows(min_row=FIRST) for c in row if _is_input_fill(c)]
@@ -200,7 +252,9 @@ def wb_bytes(wb: Workbook, blank: bool = False) -> bytes:
     from openpyxl.chart import LineChart
     if blank:
         make_blank(wb)
-    for ws in wb.worksheets:  # tab colours: gold for the start sheet, teal for the rest
+    if "Dashboard" in wb.sheetnames and wb.sheetnames[0] == "Start here":
+        wb.move_sheet("Dashboard", offset=1 - wb.sheetnames.index("Dashboard"))
+    for ws in wb.worksheets:  # tab colours: gold for the start sheet, coral for the rest
         ws.sheet_properties.tabColor = "F5C451" if ws.title == "Start here" else TEAL
     for ws in wb.worksheets:  # charts whose series were replaced after bar(): apply the same display fixes
         for ch in ws._charts:
@@ -266,7 +320,7 @@ def new_doc(heading: str, sub: str = "", banner: bool = True, footer: bool = Tru
         st.font.name = "Calibri"
         st.font.size = Pt(size)
         st.font.bold = True
-        st.font.color.rgb = RGBColor(0x0F, 0x3D, 0x2E)
+        st.font.color.rgb = RGBColor(0x14, 0x21, 0x3D)
         st.paragraph_format.space_before = Pt(before)
         st.paragraph_format.space_after = Pt(4)
         st.paragraph_format.keep_with_next = True
@@ -281,13 +335,13 @@ def new_doc(heading: str, sub: str = "", banner: bool = True, footer: bool = Tru
         if sub:
             p2 = cell.add_paragraph()
             r2 = p2.add_run(sub)
-            r2.font.size, r2.font.italic, r2.font.color.rgb = Pt(11), True, RGBColor(0xBF, 0xE0, 0xD2)
+            r2.font.size, r2.font.italic, r2.font.color.rgb = Pt(11), True, RGBColor(0xC9, 0xD1, 0xE6)
             p2.paragraph_format.space_after = Pt(10)
         d.add_paragraph()
     else:
         h = d.add_paragraph()
         hr = h.add_run(heading)
-        hr.font.size, hr.font.bold, hr.font.color.rgb = Pt(26), True, RGBColor(0x0F, 0x3D, 0x2E)
+        hr.font.size, hr.font.bold, hr.font.color.rgb = Pt(26), True, RGBColor(0x14, 0x21, 0x3D)
         if sub:
             sp = d.add_paragraph(sub)
             sp.runs[0].font.color.rgb = RGBColor(0x5B, 0x67, 0x70)
@@ -324,7 +378,7 @@ def table(d: Document, header: list[str], rows: list[list[str]]) -> None:
         for i, v in enumerate(r):
             cells[i].text = v
             if n % 2 == 1:
-                _shade(cells[i], "F3F1EA")
+                _shade(cells[i], "F4EDE0")
     d.add_paragraph()
 
 

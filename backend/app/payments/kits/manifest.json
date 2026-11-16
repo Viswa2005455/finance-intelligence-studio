@@ -7,7 +7,7 @@
    "Custom-Excel-Dashboard-BLANK.xlsx",
    "Custom-Excel-Dashboard.xlsx"
   ],
-  "bytes": 65494
+  "bytes": 65410
  },
  {
   "slug": "personal-budget-tracker-customised",
@@ -17,7 +17,7 @@
    "Personal-Budget-Tracker-BLANK.xlsx",
    "Personal-Budget-Tracker.xlsx"
   ],
-  "bytes": 70591
+  "bytes": 76331
  },
  {
   "slug": "small-business-profit-and-loss-dashboard-customised",
@@ -27,7 +27,7 @@
    "Profit-and-Loss-Dashboard-BLANK.xlsx",
    "Profit-and-Loss-Dashboard.xlsx"
   ],
-  "bytes": 55661
+  "bytes": 61237
  },
  {
   "slug": "budget-vs-actual-variance-report",
@@ -37,7 +37,7 @@
    "Budget-vs-Actual-Variance-BLANK.xlsx",
    "Budget-vs-Actual-Variance.xlsx"
   ],
-  "bytes": 57872
+  "bytes": 63360
  },
  {
   "slug": "cash-flow-forecast-model-12-months",
@@ -47,7 +47,7 @@
    "Cash-Flow-Forecast-12-Months-BLANK.xlsx",
    "Cash-Flow-Forecast-12-Months.xlsx"
   ],
-  "bytes": 55192
+  "bytes": 62702
  },
  {
   "slug": "sales-tracking-dashboard",
@@ -57,7 +57,7 @@
    "Sales-Tracking-Dashboard-BLANK.xlsx",
    "Sales-Tracking-Dashboard.xlsx"
   ],
-  "bytes": 73490
+  "bytes": 73397
  },
  {
   "slug": "inventory-stock-tracker",
@@ -67,7 +67,7 @@
    "Inventory-Stock-Tracker-BLANK.xlsx",
    "Inventory-Stock-Tracker.xlsx"
   ],
-  "bytes": 87248
+  "bytes": 87187
  },
  {
   "slug": "expense-tracker-for-shops",
@@ -77,7 +77,7 @@
    "Shop-Expense-Tracker-BLANK.xlsx",
    "Shop-Expense-Tracker.xlsx"
   ],
-  "bytes": 66106
+  "bytes": 66071
  },
  {
   "slug": "gst-invoice-and-register-template",
@@ -87,7 +87,7 @@
    "GST-Invoice-and-Register-BLANK.xlsx",
    "GST-Invoice-and-Register.xlsx"
   ],
-  "bytes": 68481
+  "bytes": 74646
  },
  {
   "slug": "financial-ratio-analysis-workbook",
@@ -96,7 +96,7 @@
    "00-START-HERE-How-to-use.docx",
    "Financial-Ratio-Analysis.xlsx"
   ],
-  "bytes": 45013
+  "bytes": 48696
  },
  {
   "slug": "excel-data-cleaning-and-formatting",
@@ -106,7 +106,7 @@
    "Data-Cleaning-Toolkit-BLANK.xlsx",
    "Data-Cleaning-Toolkit.xlsx"
   ],
-  "bytes": 64242
+  "bytes": 70927
  },
  {
   "slug": "pivottable-reports-from-your-data",
@@ -116,7 +116,7 @@
    "PivotTable-Guide.docx",
    "PivotTable-Reports.xlsx"
   ],
-  "bytes": 85490
+  "bytes": 88739
  },
  {
   "slug": "power-bi-sales-dashboard",
@@ -126,7 +126,7 @@
    "PowerBI-Sales-Build-Guide.docx",
    "PowerBI-Sales-Data.xlsx"
   ],
-  "bytes": 97589
+  "bytes": 97466
  },
  {
   "slug": "power-bi-financial-kpi-dashboard",
@@ -136,7 +136,7 @@
    "PowerBI-Financial-Data.xlsx",
    "PowerBI-Financial-KPI-Guide.docx"
   ],
-  "bytes": 81889
+  "bytes": 81631
  },
  {
   "slug": "excel-to-power-bi-conversion",
@@ -146,7 +146,7 @@
    "Clean-Table-Template.xlsx",
    "Excel-to-PowerBI-Guide.docx"
   ],
-  "bytes": 79255
+  "bytes": 79110
  },
  {
   "slug": "monthly-management-report-mis",
@@ -156,7 +156,7 @@
    "Monthly-MIS-Report-BLANK.xlsx",
    "Monthly-MIS-Report.xlsx"
   ],
-  "bytes": 53497
+  "bytes": 60500
  },
  {
   "slug": "coaching-centre-fee-and-admission-dashboard",
@@ -166,7 +166,7 @@
    "Coaching-Fee-and-Admission-Dashboard-BLANK.xlsx",
    "Coaching-Fee-and-Admission-Dashboard.xlsx"
   ],
-  "bytes": 83150
+  "bytes": 83056
  },
  {
   "slug": "restaurant-revenue-and-expense-dashboard",
@@ -176,7 +176,7 @@
    "Restaurant-Revenue-and-Expense-Dashboard-BLANK.xlsx",
    "Restaurant-Revenue-and-Expense-Dashboard.xlsx"
   ],
-  "bytes": 72499
+  "bytes": 72456
  },
  {
   "slug": "retail-shop-profit-dashboard",
@@ -186,7 +186,7 @@
    "Retail-Shop-Profit-Dashboard-BLANK.xlsx",
    "Retail-Shop-Profit-Dashboard.xlsx"
   ],
-  "bytes": 77451
+  "bytes": 77323
  },
  {
   "slug": "budget-planning-model-for-startups",
@@ -196,7 +196,7 @@
    "Startup-Budget-Model-BLANK.xlsx",
    "Startup-Budget-Model.xlsx"
   ],
-  "bytes": 55212
+  "bytes": 62729
  },
  {
   "slug": "break-even-and-pricing-analysis",
@@ -205,7 +205,7 @@
    "00-START-HERE-How-to-use.docx",
    "Break-Even-and-Pricing.xlsx"
   ],
-  "bytes": 45834
+  "bytes": 49674
  },
  {
   "slug": "monthly-dashboard-update-recurring",
@@ -216,7 +216,7 @@
    "Monthly-Figures-Log.xlsx",
    "Monthly-Update-Checklist.docx"
   ],
-  "bytes": 102825
+  "bytes": 102622
  },
  {
   "slug": "one-page-landing-page",
@@ -227,7 +227,7 @@
    "website/script.js",
    "website/style.css"
   ],
-  "bytes": 39719
+  "bytes": 42869
  },
  {
   "slug": "small-business-website-up-to-5-pages",
@@ -242,7 +242,7 @@
    "website/services.html",
    "website/style.css"
   ],
-  "bytes": 43363
+  "bytes": 48235
  },
  {
   "slug": "personal-portfolio-website",
@@ -253,7 +253,7 @@
    "website/script.js",
    "website/style.css"
   ],
-  "bytes": 39828
+  "bytes": 42637
  },
  {
   "slug": "coaching-centre-website-with-enquiry-form",
@@ -267,7 +267,7 @@
    "website/script.js",
    "website/style.css"
   ],
-  "bytes": 42498
+  "bytes": 47009
  },
  {
   "slug": "restaurant-website-with-menu",
@@ -280,7 +280,7 @@
    "website/script.js",
    "website/style.css"
   ],
-  "bytes": 41236
+  "bytes": 45142
  },
  {
   "slug": "website-redesign-refresh",
@@ -290,7 +290,7 @@
    "Redesign-Checklist.docx",
    "refresh.css"
   ],
-  "bytes": 72492
+  "bytes": 72448
  },
  {
   "slug": "mobile-responsiveness-fix",
@@ -301,7 +301,7 @@
    "responsive-fixes.css",
    "viewport-snippet.html"
   ],
-  "bytes": 72797
+  "bytes": 72649
  },
  {
   "slug": "google-business-profile-setup",
@@ -310,7 +310,7 @@
    "00-START-HERE-How-to-use.docx",
    "Google-Business-Profile-Kit.docx"
   ],
-  "bytes": 72444
+  "bytes": 72279
  },
  {
   "slug": "website-maintenance-monthly",
@@ -321,7 +321,7 @@
    "Maintenance-Log-BLANK.xlsx",
    "Maintenance-Log.xlsx"
   ],
-  "bytes": 101100
+  "bytes": 100823
  },
  {
   "slug": "basic-on-page-seo-setup",
@@ -335,7 +335,7 @@
    "seo/robots.txt",
    "seo/sitemap.xml"
   ],
-  "bytes": 89592
+  "bytes": 94834
  },
  {
   "slug": "automated-weekly-sales-report",
@@ -346,7 +346,7 @@
    "Weekly-Sales-Report.xlsx",
    "weekly-sales-email.gs"
   ],
-  "bytes": 79810
+  "bytes": 79697
  },
  {
   "slug": "google-sheets-lead-enquiry-tracker",
@@ -356,7 +356,7 @@
    "Lead-Enquiry-Tracker-BLANK.xlsx",
    "Lead-Enquiry-Tracker.xlsx"
   ],
-  "bytes": 67832
+  "bytes": 67753
  },
  {
   "slug": "google-form-to-sheet-to-email-automation",
@@ -368,7 +368,7 @@
    "Form-to-Email-Guide.docx",
    "form-to-email.gs"
   ],
-  "bytes": 100501
+  "bytes": 100363
  },
  {
   "slug": "invoice-generator-in-sheets-excel",
@@ -378,7 +378,7 @@
    "Invoice-Generator-BLANK.xlsx",
    "Invoice-Generator.xlsx"
   ],
-  "bytes": 61667
+  "bytes": 66526
  },
  {
   "slug": "student-attendance-and-fee-tracker",
@@ -388,7 +388,7 @@
    "Student-Attendance-and-Fee-Tracker-BLANK.xlsx",
    "Student-Attendance-and-Fee-Tracker.xlsx"
   ],
-  "bytes": 63232
+  "bytes": 70293
  },
  {
   "slug": "appointment-booking-tracker",
@@ -398,7 +398,7 @@
    "Appointment-Booking-Tracker-BLANK.xlsx",
    "Appointment-Booking-Tracker.xlsx"
   ],
-  "bytes": 65893
+  "bytes": 65821
  },
  {
   "slug": "n8n-make-workflow-setup-simple",
@@ -408,7 +408,7 @@
    "n8n-Make-Workflow-Guide.docx",
    "starter-form-webhook.json"
   ],
-  "bytes": 73236
+  "bytes": 73079
  },
  {
   "slug": "excel-automation-with-formulas-no-macros",
@@ -417,7 +417,7 @@
    "00-START-HERE-How-to-use.docx",
    "Excel-Formula-Automation.xlsx"
   ],
-  "bytes": 45393
+  "bytes": 45319
  },
  {
   "slug": "data-entry-system-with-dropdowns-and-validation",
@@ -427,7 +427,7 @@
    "Data-Entry-System-BLANK.xlsx",
    "Data-Entry-System.xlsx"
   ],
-  "bytes": 89715
+  "bytes": 89622
  },
  {
   "slug": "company-financial-analysis-report",
@@ -437,7 +437,7 @@
    "Company-Ratio-Workbook.xlsx",
    "Financial-Analysis-Report-Template.docx"
   ],
-  "bytes": 81341
+  "bytes": 84950
  },
  {
   "slug": "industry-market-research-report",
@@ -447,7 +447,7 @@
    "Market-Research-Report-Template.docx",
    "Market-Size-Calculator.xlsx"
   ],
-  "bytes": 79013
+  "bytes": 81516
  },
  {
   "slug": "competitor-analysis",
@@ -458,7 +458,7 @@
    "Competitor-Analysis.xlsx",
    "SWOT-and-Action-Plan.docx"
   ],
-  "bytes": 90573
+  "bytes": 95437
  },
  {
   "slug": "business-plan-financial-projections",
@@ -467,7 +467,7 @@
    "00-START-HERE-How-to-use.docx",
    "Business-Plan-Financial-Projections.xlsx"
   ],
-  "bytes": 45574
+  "bytes": 48995
  },
  {
   "slug": "pitch-deck-financial-slides",
@@ -478,7 +478,7 @@
    "Pitch-Deck-Financial-Slides.pptx",
    "Pitch-Deck-Speaker-Notes.docx"
   ],
-  "bytes": 123455
+  "bytes": 126740
  },
  {
   "slug": "professional-powerpoint-presentation",
@@ -488,7 +488,7 @@
    "Presentation-Design-Tips.docx",
    "Presentation-Template.pptx"
   ],
-  "bytes": 108419
+  "bytes": 108298
  },
  {
   "slug": "linkedin-profile-optimisation",
@@ -497,7 +497,7 @@
    "00-START-HERE-How-to-use.docx",
    "LinkedIn-Profile-Kit.docx"
   ],
-  "bytes": 72449
+  "bytes": 72291
  },
  {
   "slug": "resume-cv-for-finance-roles",
@@ -507,7 +507,7 @@
    "Cover-Letter-Template.docx",
    "Resume-Template.docx"
   ],
-  "bytes": 107912
+  "bytes": 107676
  },
  {
   "slug": "social-media-content-calendar-1-month",
@@ -517,6 +517,6 @@
    "Content-Calendar-30-Days-BLANK.xlsx",
    "Content-Calendar-30-Days.xlsx"
   ],
-  "bytes": 56728
+  "bytes": 63784
  }
 ]

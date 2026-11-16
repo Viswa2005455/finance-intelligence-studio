@@ -97,16 +97,16 @@ def doc_page(path: Path) -> Image.Image:
         title, body = body[0].text, body[1:]
         if body and not body[0].style.name.startswith("Heading"):
             sub, body = body[0].text, body[1:]
-    dr.rectangle((0, 0, W, 150), fill="#0F3D2E")
+    dr.rectangle((0, 0, W, 150), fill="#14213D")
     dr.text((50, 36), title[:44], fill="white", font=f_title)
-    dr.text((50, 100), sub[:80], fill="#BFE0D2", font=f_sub)
+    dr.text((50, 100), sub[:80], fill="#C9D1E6", font=f_sub)
     y = 190
     for p in body:
         if y > 700:
             break
         if p.style.name.startswith("Heading"):
             y += 8
-            dr.text((50, y), p.text[:60], fill="#0F3D2E", font=f_h)
+            dr.text((50, y), p.text[:60], fill="#14213D", font=f_h)
             y += 44
         else:
             bullet = "•  " if "List" in p.style.name else ""
@@ -159,7 +159,7 @@ def main() -> None:
     for slug, site in web_jobs:
         png = CACHE / f"{slug}.png"
         if CHROME:
-            subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--window-size=1280,860", f"--screenshot={png}", site.as_uri()], capture_output=True, timeout=120)
+            subprocess.run([CHROME, "--headless=new", "--disable-gpu", "--window-size=1280,860", "--virtual-time-budget=4000", f"--screenshot={png}", site.as_uri()], capture_output=True, timeout=120)
     made, fallback = 0, []
     for slug, svc in catalog.items():
         png = CACHE / f"{slug}.png"
