@@ -1,4 +1,4 @@
-import { Activity, ArrowLeft, CheckCircle2, Clock, CreditCard, LockKeyhole, Mail, RefreshCw, Search, ShoppingBag } from 'lucide-react';
+import { Activity, ArrowLeft, CheckCircle2, Clock, CreditCard, Download, LockKeyhole, Mail, RefreshCw, Search, ShoppingBag } from 'lucide-react';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { CATEGORIES, CONTACT, SERVICES, formatINR, type CategoryId, type Tier } from '../lib/services';
@@ -23,7 +23,7 @@ function Shell({ children }: { children: ReactNode }) {
       </header>
       <main className="svc-main">{children}</main>
       <footer className="svc-foot">
-        <div><b>How it works.</b> Pick a package, tell me what you need and pay online (UPI, card or netbanking via Razorpay). You get a receipt by email, and I deliver the finished work to that email within the listed days. Revisions are as listed in each package.</div>
+        <div><b>How it works.</b> Pick a package and pay online (UPI, card or netbanking via Razorpay). Every package gives you the ready-made kit instantly: a download button appears the moment you pay, and a copy is emailed to you. Standard and Premium also include custom work for you, emailed within the listed days.</div>
         <div><b>Your data stays private.</b> I use your files only for your project and delete them after delivery if you ask.</div>
         <div className="faint">Prices are starting prices in Indian rupees. Final price depends on the size of your data and requirements. Questions: <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div>
       </footer>
@@ -74,7 +74,7 @@ export function ServicesList() {
             </div>
             <h2><Link to={`/services/${s.slug}`}>{s.title}</Link></h2>
             <p>{s.promise}</p>
-            <div className="svc-price">From <b>{formatINR(s.tiers[0].price)}</b> · <Clock size={13} /> {s.tiers[0].days} day{s.tiers[0].days > 1 ? 's' : ''}</div>
+            <div className="svc-price">From <b>{formatINR(s.tiers[0].price)}</b> · <Download size={13} /> Instant download</div>
             <div className="svc-card-actions">
               <Link className="btn sm" to={`/services/${s.slug}`}>See packages</Link>
               <Link className="btn sm primary" to={`/services/${s.slug}?order=Basic`}><CreditCard size={14} />Order {formatINR(s.tiers[0].price)}</Link>
@@ -130,8 +130,13 @@ export function ServiceDetail() {
               <div className="svc-tier-price">{formatINR(t.price)}</div>
               <p>{t.includes}</p>
               <ul>
-                <li><Clock size={14} /> Delivery in {t.days} day{t.days > 1 ? 's' : ''}</li>
-                <li><RefreshCw size={14} /> {t.revisions} revision{t.revisions > 1 ? 's' : ''}</li>
+                <li><Download size={14} /> Instant ready-made kit</li>
+                {t.custom
+                  ? <>
+                      <li><Clock size={14} /> Custom work in {t.days} day{t.days > 1 ? 's' : ''}</li>
+                      <li><RefreshCw size={14} /> {t.revisions} revisions</li>
+                    </>
+                  : <li><CheckCircle2 size={14} /> Kit only, no waiting</li>}
               </ul>
               <button className={`btn sm${t.name === 'Standard' ? ' primary' : ''}`} onClick={() => setOrdering(t)}><CreditCard size={14} />Order {t.name} · {formatINR(t.price)}</button>
             </div>

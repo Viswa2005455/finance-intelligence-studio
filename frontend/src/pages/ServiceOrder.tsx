@@ -1,4 +1,4 @@
-import { CheckCircle2, CreditCard, Loader2, LockKeyhole, Mail, XCircle } from 'lucide-react';
+import { CheckCircle2, CreditCard, Download, Loader2, LockKeyhole, Mail, XCircle } from 'lucide-react';
 import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Modal } from '../components/Modal';
@@ -34,7 +34,7 @@ export function OrderModal({ service, tier, onClose }: { service: Service; tier:
     setError(null);
     if (name.trim().length < 2) return setError('Enter your name.');
     if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError('Enter a valid email address. Your work is delivered there.');
-    if (requirements.trim().length < 10) return setError('Describe what you need in at least a sentence.');
+    if (tier.custom && requirements.trim().length < 10) return setError('Describe what you need in at least a sentence so the custom work can start.');
     if (filesLink && !/^https?:\/\//.test(filesLink.trim())) return setError('The files link must start with https://');
     if (!agree) return setError('Tick the box to confirm the delivery terms.');
     setBusy(true);
@@ -54,7 +54,9 @@ export function OrderModal({ service, tier, onClose }: { service: Service; tier:
     <Modal open onClose={busy ? () => undefined : onClose} title={<>Order: {service.title}</>}>
       <div className="svc-order-sum">
         <div><b>{tier.name} package</b><span>{tier.includes}</span></div>
-        <div className="svc-order-price">{formatINR(tier.price)}<small>Delivery in {tier.days} day{tier.days > 1 ? 's' : ''} · {tier.revisions} revision{tier.revisions > 1 ? 's' : ''}</small></div>
+        <div className="svc-order-price">{formatINR(tier.price)}
+          <small>{tier.custom ? `Kit instantly + custom work in ${tier.days} day${tier.days > 1 ? 's' : ''} · ${tier.revisions} revisions` : 'Instant download. Nothing to wait for.'}</small>
+        </div>
       </div>
 
       {enabled === false ? (
@@ -72,15 +74,21 @@ export function OrderModal({ service, tier, onClose }: { service: Service; tier:
           </div>
           <div className="field"><label className="field-label" htmlFor="o-phone">Phone (optional)</label>
             <input id="o-phone" className="input" type="tel" autoComplete="tel" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} /></div>
-          <div className="field"><label className="field-label" htmlFor="o-req">What do you need?</label>
-            <textarea id="o-req" className="input svc-order-text" rows={5} value={requirements} onChange={(e) => setRequirements(e.target.value)} maxLength={2000}
-              placeholder={service.youSend} />
-            <div className="field-hint">{requirements.length}/2000. Include anything I should know: deadlines, examples, which numbers or pages you want.</div></div>
-          <div className="field"><label className="field-label" htmlFor="o-files">Link to your files (optional)</label>
-            <input id="o-files" className="input" value={filesLink} onChange={(e) => setFilesLink(e.target.value)} maxLength={250} placeholder="https://drive.google.com/…" />
-            <div className="field-hint">Share a Google Drive, OneDrive or Dropbox link. You can also email files after paying.</div></div>
+          {tier.custom && (
+            <>
+              <div className="field"><label className="field-label" htmlFor="o-req">What should the custom work cover?</label>
+                <textarea id="o-req" className="input svc-order-text" rows={5} value={requirements} onChange={(e) => setRequirements(e.target.value)} maxLength={2000}
+                  placeholder={service.youSend} />
+                <div className="field-hint">{requirements.length}/2000. Include anything I should know: deadlines, examples, which numbers or pages you want.</div></div>
+              <div className="field"><label className="field-label" htmlFor="o-files">Link to your files (optional)</label>
+                <input id="o-files" className="input" value={filesLink} onChange={(e) => setFilesLink(e.target.value)} maxLength={250} placeholder="https://drive.google.com/…" />
+                <div className="field-hint">Share a Google Drive, OneDrive or Dropbox link. You can also email files after paying.</div></div>
+            </>
+          )}
           <label className="svc-order-agree"><input type="checkbox" checked={agree} onChange={(e) => setAgree(e.target.checked)} />
-            <span>I understand the work is delivered by email to the address above within {tier.days} day{tier.days > 1 ? 's' : ''} of payment (counted from when I've sent the files needed), with {tier.revisions} revision{tier.revisions > 1 ? 's' : ''} included.</span></label>
+            <span>{tier.custom
+              ? <>I understand I get the ready-made kit instantly (download and email), and the custom work is emailed to the address above within {tier.days} day{tier.days > 1 ? 's' : ''} of me sending the details needed, with {tier.revisions} revisions included.</>
+              : <>I understand I get the ready-made kit instantly (download and email). The Basic package is the kit only, with no custom work.</>}</span></label>
           {error && <div className="callout error" role="alert"><XCircle size={16} /><div>{error}</div></div>}
           <button className="btn primary svc-order-pay" type="submit" disabled={busy || enabled === null}>
             {busy ? <Loader2 size={16} className="spin" /> : <CreditCard size={16} />}{busy ? 'Opening secure payment…' : `Pay ${formatINR(tier.price)}`}
@@ -92,7 +100,16 @@ export function OrderModal({ service, tier, onClose }: { service: Service; tier:
   );
 }
 
-interface Verified { paid: boolean; description: string; amount: number; email: string; delivery_days: number | null; payment_id: string }
+interface Verified { paid: boolean; description: string; amount: number; email: string; delivery_days: number | null; custom: boolean; kit_available: boolean; payment_id: string }
+
+/** The kit download link: the same signed values Razorpay sent back, which the server re-checks. */
+function kitUrl(params: URLSearchParams): string {
+  const keep = ['razorpay_payment_id', 'razorpay_payment_link_id', 'razorpay_payment_link_reference_id', 'razorpay_payment_link_status', 'razorpay_signature'];
+  const map: Record<string, string> = { razorpay_payment_id: 'payment_id', razorpay_payment_link_id: 'payment_link_id', razorpay_payment_link_reference_id: 'payment_link_reference_id', razorpay_payment_link_status: 'payment_link_status', razorpay_signature: 'razorpay_signature' };
+  const q = new URLSearchParams();
+  for (const k of keep) q.set(map[k], params.get(k) ?? '');
+  return `/api/payments/kit?${q.toString()}`;
+}
 
 export function ThankYou() {
   const [params] = useSearchParams();
@@ -128,10 +145,18 @@ export function ThankYou() {
         <>
           <h1><CheckCircle2 size={26} className="svc-ok" /> Payment received. Thank you!</h1>
           <p className="svc-lede">Your order for <b>{state.data.description}</b> ({formatINR(state.data.amount)}) is confirmed.</p>
+          {state.data.kit_available && (
+            <div className="svc-kit">
+              <a className="btn primary svc-order-pay" href={kitUrl(params)} download><Download size={16} />Download your ready-made kit</a>
+              <p className="small">A ZIP file. Unzip it and open <b>00-START-HERE</b> first. A copy is also on its way to <b>{state.data.email || 'your email'}</b>.</p>
+            </div>
+          )}
           <ul className="svc-next">
             <li>A receipt from Razorpay is on its way to <b>{state.data.email || 'your email'}</b>.</li>
-            <li>I start work as soon as I have your files{state.data.delivery_days ? <> and deliver by email within <b>{state.data.delivery_days} day{state.data.delivery_days > 1 ? 's' : ''}</b></> : null}.</li>
-            <li>Need to send files or add details? Reply to <a href={`mailto:${CONTACT.email}?subject=${encodeURIComponent('Order ' + state.data.payment_id)}`}>{CONTACT.email}</a> with reference <b>{state.data.payment_id}</b>.</li>
+            {state.data.custom
+              ? <li>Your <b>custom work</b> starts as soon as I have your details, and is emailed within <b>{state.data.delivery_days} day{state.data.delivery_days !== 1 ? 's' : ''}</b>.</li>
+              : <li>The Basic package is the kit only, so you have everything already.</li>}
+            <li>Questions, or files to send? Reply to <a href={`mailto:${CONTACT.email}?subject=${encodeURIComponent('Order ' + state.data.payment_id)}`}>{CONTACT.email}</a> with reference <b>{state.data.payment_id}</b>.</li>
           </ul>
         </>
       ) : (

@@ -803,3 +803,5 @@ table.data.fixed-cols td:first-child { min-width: 0; }
   .svc-order-sum { flex-direction: column; }
   .svc-order-price { text-align: left; }
 }
+.svc-kit { margin: 18px 0 6px; padding: 16px; border: 1px solid color-mix(in srgb, var(--positive) 35%, transparent); background: var(--positive-soft); border-radius: 12px; display: grid; gap: 8px; }
+.svc-kit .small { margin: 0; color: var(--text-muted); }

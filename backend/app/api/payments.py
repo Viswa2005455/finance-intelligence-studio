@@ -6,7 +6,8 @@ import logging
 import os
 import re
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Request
+from fastapi.responses import FileResponse
 from pydantic import Field, field_validator
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -16,7 +17,8 @@ from ..config import get_settings
 from ..db.models import ServiceOrder
 from ..db.session import get_db, session_factory
 from ..payments import mail
-from ..payments import TIERS, PaymentError, catalog, create_payment_link, fetch_payment_link, find_package, signature_valid
+from ..payments import (TIERS, PaymentError, catalog, create_payment_link, fetch_payment_link, find_package, kit_path, signature_valid,
+                        slug_for_title)
 from .auth import client_ip
 from .base import BaseModel
 
@@ -40,7 +42,7 @@ class CheckoutIn(BaseModel):
     name: str = Field(min_length=2, max_length=80)
     email: str = Field(max_length=200)
     phone: str = Field(default="", max_length=20)
-    requirements: str = Field(min_length=10, max_length=2000)
+    requirements: str = Field(default="", max_length=2000)  # Basic is the instant kit only; Standard/Premium need it (checked in checkout)
     files_link: str = Field(default="", max_length=250)
 
     @field_validator("tier")
@@ -106,6 +108,8 @@ def checkout(body: CheckoutIn, request: Request):
     if found is None:
         raise HTTPException(404, "That service or package does not exist.")
     service, package = found
+    if body.tier != "Basic" and len(body.requirements.strip()) < 10:
+        raise HTTPException(422, "Describe what you need in at least a sentence so the custom work can start.")
     base = os.environ.get("RENDER_EXTERNAL_URL", "").rstrip("/") or str(request.base_url).rstrip("/")
     try:
         link = create_payment_link(key_id=keys[0], key_secret=keys[1], service=service, tier=body.tier, package=package,
@@ -139,7 +143,9 @@ def verify(body: VerifyIn, request: Request, background: BackgroundTasks, db: Se
             found = (slug, svc)
             break
     tier = notes.get("package", "")
-    days = found[1]["tiers"].get(tier, {}).get("days") if found else None
+    custom = tier in ("Standard", "Premium")  # Basic is the instant kit only
+    days = found[1]["tiers"].get(tier, {}).get("days") if found and custom else 0
+    kit = kit_path(found[0]) if found else None
     paid = link.get("status") == "paid"
     amount = (link.get("amount_paid") or link.get("amount") or 0) / 100
     if paid:
@@ -151,7 +157,8 @@ def verify(body: VerifyIn, request: Request, background: BackgroundTasks, db: Se
             customer_phone=notes.get("customer_phone", ""), files_link=notes.get("files_link", ""),
             requirements="".join(notes.get(f"requirements_{i}", "") for i in range(1, 9)),
             you_send=(found[1].get("you_send") if found else None) or "the details and files for your order",
-            delivery_days=days, revisions=(TIERS.index(tier) + 1) if tier in TIERS else None,
+            delivery_days=days, revisions=({"Standard": 2, "Premium": 3}.get(tier)), custom=custom,
+            kit_name=f"{found[0]}-kit.zip" if kit else "", kit_bytes=kit.read_bytes() if kit else b"",
         )
         if _record(db, order, body.payment_link_id) and order.customer_email:
             background.add_task(_email_order, order)
@@ -161,8 +168,33 @@ def verify(body: VerifyIn, request: Request, background: BackgroundTasks, db: Se
         "amount": amount,
         "email": notes.get("customer_email", ""),
         "delivery_days": days,
+        "custom": custom,
+        "kit_available": kit is not None,
         "payment_id": body.payment_id,
     }
+
+
+@router.get("/kit")
+def download_kit(request: Request, payment_link_id: str = Query(pattern=_ID.pattern), payment_link_reference_id: str = Query(pattern=_ID.pattern),
+                 payment_link_status: str = Query(max_length=20), payment_id: str = Query(pattern=_ID.pattern),
+                 razorpay_signature: str = Query(max_length=128), db: Session = Depends(get_db)):
+    """The ready-made kit for a paid order. Needs the same signed values Razorpay sent to the thank-you page,
+    and an order recorded for that payment, so only someone who actually paid can download it."""
+    keys = _keys()
+    if keys is None:
+        raise HTTPException(503, "Online payment is not switched on.")
+    if not limiter.hit(f"kit:{client_ip(request)}", 30, 3600):
+        raise HTTPException(429, "Too many downloads. Please try again later.")
+    ok = signature_valid(key_secret=keys[1], link_id=payment_link_id, reference_id=payment_link_reference_id,
+                         status=payment_link_status, payment_id=payment_id, signature=razorpay_signature)
+    row = db.get(ServiceOrder, payment_id) if ok and payment_link_status == "paid" else None
+    if row is None or row.payment_link_id != payment_link_id:
+        raise HTTPException(404, "No paid order found for this link. Use the download button on your confirmation page, or reply to your order email.")
+    slug = slug_for_title(row.service)
+    path = kit_path(slug) if slug else None
+    if path is None:
+        raise HTTPException(404, "The kit for this service is not available yet. Reply to your order email and it will be sent to you.")
+    return FileResponse(path, media_type="application/zip", filename=f"{slug}-kit.zip")
 
 
 def _record(db: Session, o: mail.Order, link_id: str) -> bool:

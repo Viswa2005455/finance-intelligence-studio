@@ -21,7 +21,9 @@ export const CATEGORIES: { id: CategoryId; label: string; blurb: string }[] = [
   { id: 'research', label: 'Research, decks & documents', blurb: 'Financial analysis, research reports and presentations.' },
 ];
 
-export interface Tier { name: 'Basic' | 'Standard' | 'Premium'; price: number; days: number; revisions: number; includes: string }
+/** Every package includes the instant ready-made kit. Basic is the kit only (days 0, no custom work);
+ *  Standard and Premium add custom work delivered by email within `days`. */
+export interface Tier { name: 'Basic' | 'Standard' | 'Premium'; price: number; days: number; revisions: number; includes: string; custom: boolean }
 
 export interface Service {
   id: number;
@@ -162,12 +164,19 @@ const ROWS: Row[] = [
 export const SERVICES: Service[] = ROWS.map((r, i) => {
   const [category, title, promise, forWho, prices, days, basic, standard, premium, youSend, sample] = r;
   const names = ['Basic', 'Standard', 'Premium'] as const;
-  const includes = [basic, standard, premium];
+  // Some rows describe a tier as "Plus ..." (on top of the one before). Spell the full scope out for each tier.
+  const scope: string[] = [];
+  [basic, standard, premium].forEach((txt, t) => {
+    scope[t] = /^plus\s/i.test(txt) ? `${scope[t - 1]}, plus ${txt.replace(/^plus\s+/i, '')}` : txt;
+  });
+  const includes = scope;
   return {
     id: i + 1,
     slug: slugify(title),
     category, title, promise, forWho, youSend, sample,
-    tiers: names.map((name, t) => ({ name, price: prices[t], days: days[t], revisions: t + 1, includes: includes[t] })),
+    tiers: names.map((name, t) => t === 0
+      ? { name, price: prices[t], days: 0, revisions: 0, custom: false, includes: 'The ready-made kit, delivered the moment you pay. Fill it in yourself with the how-to guide.' }
+      : { name, price: prices[t], days: days[t], revisions: t + 1, custom: true, includes: `The instant ready-made kit, plus custom work for you: ${includes[t].charAt(0).toLowerCase()}${includes[t].slice(1)}` }),
   };
 });
 

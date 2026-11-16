@@ -99,7 +99,7 @@ def test_verify_rejects_forged_signature_and_accepts_real_one(client, monkeypatc
     r = client.post("/api/payments/verify", json={**q, "signature": _sign("plink_1", "svc_ab", "paid", "pay_1")})
     assert r.status_code == 200
     out = r.json()
-    assert out["paid"] is True and out["amount"] == 499 and out["delivery_days"] == 3
+    assert out["paid"] is True and out["amount"] == 499 and out["delivery_days"] == 0 and out["custom"] is False and out["kit_available"] is True
 
 
 def test_keys_ignore_pasted_whitespace(monkeypatch):
@@ -150,8 +150,12 @@ def test_paid_order_is_recorded_and_emailed_once(client, monkeypatch):
     assert len(sent) == 1
     to_customer, to_owner = sent[0]
     assert to_customer["To"] == "asha@example.com" and to_customer["Reply-To"] == "owner@example.com"
-    body = to_customer.get_content()
-    assert "Rs 99" in body and "Your current resume and target role" in body and "within 1 day" in body
+    body = to_customer.get_body(("plain",)).get_content()
+    assert "Rs 99" in body and "Basic package is the kit only" in body and "YOUR CUSTOM WORK" not in body
+    assert to_customer["Subject"].startswith("Your kit is here")
+    kit = [part for part in to_customer.iter_attachments()]
+    assert len(kit) == 1 and kit[0].get_filename() == "resume-cv-for-finance-roles-kit.zip" and len(kit[0].get_content()) > 1000
+    assert "[kit only]" in to_owner["Subject"]
     assert to_owner["To"] == "owner@example.com" and to_owner["Reply-To"] == "asha@example.com"
     assert "Fresher, B.Com" in to_owner.get_content() and "+91 9999999999" in to_owner.get_content()
     with session_factory()() as db:
@@ -178,6 +182,67 @@ def test_customer_email_skips_asking_for_files_already_given():
     s = Settings(fis_smtp_host="h", fis_smtp_user="me@example.com", fis_smtp_password="p")
     o = mail.Order(payment_id="pay_1", service="Custom Excel dashboard", package="Standard", amount=899, customer_name="Ravi",
                    customer_email="r@example.com", customer_phone="", requirements="Monthly sales dashboard", files_link="https://drive.example/x",
-                   you_send="Your Excel data", delivery_days=4, revisions=2)
+                   you_send="Your Excel data", delivery_days=4, revisions=2, custom=True)
     body = mail.customer_message(o, s).get_content()
     assert "I have your details and files link" in body and "within 4 days" in body and "2 revisions" in body
+    assert "YOUR CUSTOM WORK (Standard package)" in body
+
+
+def _paid_standard_link(**kw):
+    link = _paid_link()
+    link["notes"] = {**link["notes"], "package": "Standard", "requirements_1": "Fresher B.Com looking for an accounts executive role in Madurai"}
+    link["amount"] = link["amount_paid"] = 24900
+    return link
+
+
+def test_standard_order_email_asks_for_custom_work_details(client, monkeypatch):
+    from app.payments import mail
+    monkeypatch.setattr(api, "_keys", lambda: ("key", SECRET))
+    monkeypatch.setattr(api, "fetch_payment_link", _paid_standard_link)
+    _mail_on(monkeypatch)
+    sent = []
+    monkeypatch.setattr(mail, "send", lambda messages, s: sent.append(messages))
+    out = client.post("/api/payments/verify", json=_verify_body("pay_11")).json()
+    assert out["custom"] is True and out["delivery_days"] == 2 and out["kit_available"] is True
+    to_customer, to_owner = sent[0]
+    assert "YOUR CUSTOM WORK (Standard package)" in to_customer.get_body(("plain",)).get_content() and len(list(to_customer.iter_attachments())) == 1
+    assert "[CUSTOM WORK DUE]" in to_owner["Subject"]
+
+
+def test_basic_checkout_needs_no_requirements_but_standard_does(client, monkeypatch):
+    monkeypatch.setattr(api, "_keys", lambda: ("key", SECRET))
+    monkeypatch.setattr(api, "create_payment_link", lambda **kw: {"url": "https://rzp.io/i/x", "id": "plink_x"})
+    base = {"slug": "custom-excel-dashboard", "name": "Asha", "email": "asha@example.com"}
+    assert client.post("/api/payments/checkout", json={**base, "tier": "Basic"}).status_code == 200
+    assert client.post("/api/payments/checkout", json={**base, "tier": "Standard"}).status_code == 422
+
+
+def _kit_query(pay_id="pay_12", link="plink_9", ref="svc_cd", status="paid", sig=None):
+    sig = sig or _sign(link, ref, status, pay_id)
+    return (f"/api/payments/kit?payment_link_id={link}&payment_link_reference_id={ref}&payment_link_status={status}"
+            f"&payment_id={pay_id}&razorpay_signature={sig}")
+
+
+def test_kit_download_needs_a_verified_paid_order(client, monkeypatch):
+    monkeypatch.setattr(api, "_keys", lambda: ("key", SECRET))
+    monkeypatch.setattr(api, "fetch_payment_link", _paid_link)
+    # no order recorded yet: not downloadable even with a valid signature
+    assert client.get(_kit_query()).status_code == 404
+    assert client.post("/api/payments/verify", json=_verify_body("pay_12")).json()["paid"] is True
+    r = client.get(_kit_query())
+    assert r.status_code == 200 and r.headers["content-type"] == "application/zip" and r.content[:2] == b"PK"
+    assert "resume-cv-for-finance-roles-kit.zip" in r.headers["content-disposition"]
+    assert client.get(_kit_query(sig="0" * 64)).status_code == 404                        # forged signature
+    assert client.get(_kit_query(status="created", sig=_sign("plink_9", "svc_cd", "created", "pay_12"))).status_code == 404  # not paid
+    assert client.get(_kit_query(link="plink_other", sig=_sign("plink_other", "svc_cd", "paid", "pay_12"))).status_code == 404  # other link
+
+
+def test_every_service_has_a_kit_with_a_how_to_guide():
+    import zipfile
+    from app.payments import catalog, kit_path
+    for slug in catalog():
+        path = kit_path(slug)
+        assert path is not None, f"missing kit for {slug}"
+        names = zipfile.ZipFile(path).namelist()
+        assert any(n.endswith("00-START-HERE-How-to-use.docx") for n in names) and len(names) >= 2, slug
+    assert kit_path("../../etc/passwd") is None

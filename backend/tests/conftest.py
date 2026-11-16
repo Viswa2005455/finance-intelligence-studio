@@ -20,7 +20,8 @@ PASSWORD = "correct-horse-battery-9"
 
 def _postgres_available(url: str) -> bool:
     try:
-        with create_engine(url).connect() as c:
+        # A short connect timeout: if PostgreSQL is not running, fall back to SQLite quickly instead of hanging.
+        with create_engine(url, connect_args={"connect_timeout": 3}).connect() as c:
             c.execute(text("select 1"))
         return True
     except Exception:

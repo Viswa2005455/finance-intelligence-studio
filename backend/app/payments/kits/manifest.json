@@ -1,0 +1,495 @@
+[
+ {
+  "slug": "custom-excel-dashboard",
+  "zip": "custom-excel-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Custom-Excel-Dashboard.xlsx"
+  ],
+  "bytes": 48998
+ },
+ {
+  "slug": "personal-budget-tracker-customised",
+  "zip": "personal-budget-tracker-customised.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Personal-Budget-Tracker.xlsx"
+  ],
+  "bytes": 51541
+ },
+ {
+  "slug": "small-business-profit-and-loss-dashboard-customised",
+  "zip": "small-business-profit-and-loss-dashboard-customised.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Profit-and-Loss-Dashboard.xlsx"
+  ],
+  "bytes": 44298
+ },
+ {
+  "slug": "budget-vs-actual-variance-report",
+  "zip": "budget-vs-actual-variance-report.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Budget-vs-Actual-Variance.xlsx"
+  ],
+  "bytes": 45350
+ },
+ {
+  "slug": "cash-flow-forecast-model-12-months",
+  "zip": "cash-flow-forecast-model-12-months.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Cash-Flow-Forecast-12-Months.xlsx"
+  ],
+  "bytes": 44112
+ },
+ {
+  "slug": "sales-tracking-dashboard",
+  "zip": "sales-tracking-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Sales-Tracking-Dashboard.xlsx"
+  ],
+  "bytes": 52631
+ },
+ {
+  "slug": "inventory-stock-tracker",
+  "zip": "inventory-stock-tracker.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Inventory-Stock-Tracker.xlsx"
+  ],
+  "bytes": 59230
+ },
+ {
+  "slug": "expense-tracker-for-shops",
+  "zip": "expense-tracker-for-shops.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Shop-Expense-Tracker.xlsx"
+  ],
+  "bytes": 48923
+ },
+ {
+  "slug": "gst-invoice-and-register-template",
+  "zip": "gst-invoice-and-register-template.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "GST-Invoice-and-Register.xlsx"
+  ],
+  "bytes": 50487
+ },
+ {
+  "slug": "financial-ratio-analysis-workbook",
+  "zip": "financial-ratio-analysis-workbook.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Financial-Ratio-Analysis.xlsx"
+  ],
+  "bytes": 43375
+ },
+ {
+  "slug": "excel-data-cleaning-and-formatting",
+  "zip": "excel-data-cleaning-and-formatting.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Data-Cleaning-Toolkit.xlsx"
+  ],
+  "bytes": 48723
+ },
+ {
+  "slug": "pivottable-reports-from-your-data",
+  "zip": "pivottable-reports-from-your-data.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "PivotTable-Guide.docx",
+   "PivotTable-Reports.xlsx"
+  ],
+  "bytes": 82803
+ },
+ {
+  "slug": "power-bi-sales-dashboard",
+  "zip": "power-bi-sales-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "PowerBI-Sales-Build-Guide.docx",
+   "PowerBI-Sales-Data.xlsx"
+  ],
+  "bytes": 95082
+ },
+ {
+  "slug": "power-bi-financial-kpi-dashboard",
+  "zip": "power-bi-financial-kpi-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "PowerBI-Financial-Data.xlsx",
+   "PowerBI-Financial-KPI-Guide.docx"
+  ],
+  "bytes": 79617
+ },
+ {
+  "slug": "excel-to-power-bi-conversion",
+  "zip": "excel-to-power-bi-conversion.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Clean-Table-Template.xlsx",
+   "Excel-to-PowerBI-Guide.docx"
+  ],
+  "bytes": 77003
+ },
+ {
+  "slug": "monthly-management-report-mis",
+  "zip": "monthly-management-report-mis.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Monthly-MIS-Report.xlsx"
+  ],
+  "bytes": 43164
+ },
+ {
+  "slug": "coaching-centre-fee-and-admission-dashboard",
+  "zip": "coaching-centre-fee-and-admission-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Coaching-Fee-and-Admission-Dashboard.xlsx"
+  ],
+  "bytes": 56548
+ },
+ {
+  "slug": "restaurant-revenue-and-expense-dashboard",
+  "zip": "restaurant-revenue-and-expense-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Restaurant-Revenue-and-Expense-Dashboard.xlsx"
+  ],
+  "bytes": 52761
+ },
+ {
+  "slug": "retail-shop-profit-dashboard",
+  "zip": "retail-shop-profit-dashboard.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Retail-Shop-Profit-Dashboard.xlsx"
+  ],
+  "bytes": 53567
+ },
+ {
+  "slug": "budget-planning-model-for-startups",
+  "zip": "budget-planning-model-for-startups.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Startup-Budget-Model.xlsx"
+  ],
+  "bytes": 44031
+ },
+ {
+  "slug": "break-even-and-pricing-analysis",
+  "zip": "break-even-and-pricing-analysis.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Break-Even-and-Pricing.xlsx"
+  ],
+  "bytes": 44157
+ },
+ {
+  "slug": "monthly-dashboard-update-recurring",
+  "zip": "monthly-dashboard-update-recurring.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Monthly-Figures-Log.xlsx",
+   "Monthly-Update-Checklist.docx"
+  ],
+  "bytes": 83875
+ },
+ {
+  "slug": "one-page-landing-page",
+  "zip": "one-page-landing-page.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "website/index.html",
+   "website/script.js",
+   "website/style.css"
+  ],
+  "bytes": 38520
+ },
+ {
+  "slug": "small-business-website-up-to-5-pages",
+  "zip": "small-business-website-up-to-5-pages.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "website/about.html",
+   "website/contact.html",
+   "website/gallery.html",
+   "website/index.html",
+   "website/script.js",
+   "website/services.html",
+   "website/style.css"
+  ],
+  "bytes": 42208
+ },
+ {
+  "slug": "personal-portfolio-website",
+  "zip": "personal-portfolio-website.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "website/index.html",
+   "website/script.js",
+   "website/style.css"
+  ],
+  "bytes": 38744
+ },
+ {
+  "slug": "coaching-centre-website-with-enquiry-form",
+  "zip": "coaching-centre-website-with-enquiry-form.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "website/courses.html",
+   "website/enquiry.html",
+   "website/fees.html",
+   "website/index.html",
+   "website/script.js",
+   "website/style.css"
+  ],
+  "bytes": 41407
+ },
+ {
+  "slug": "restaurant-website-with-menu",
+  "zip": "restaurant-website-with-menu.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "website/contact.html",
+   "website/index.html",
+   "website/menu.html",
+   "website/script.js",
+   "website/style.css"
+  ],
+  "bytes": 40144
+ },
+ {
+  "slug": "website-redesign-refresh",
+  "zip": "website-redesign-refresh.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Redesign-Checklist.docx",
+   "refresh.css"
+  ],
+  "bytes": 70796
+ },
+ {
+  "slug": "mobile-responsiveness-fix",
+  "zip": "mobile-responsiveness-fix.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Mobile-Test-Checklist.docx",
+   "responsive-fixes.css",
+   "viewport-snippet.html"
+  ],
+  "bytes": 71090
+ },
+ {
+  "slug": "google-business-profile-setup",
+  "zip": "google-business-profile-setup.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Google-Business-Profile-Kit.docx"
+  ],
+  "bytes": 70749
+ },
+ {
+  "slug": "website-maintenance-monthly",
+  "zip": "website-maintenance-monthly.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Maintenance-Checklist.docx",
+   "Maintenance-Log.xlsx"
+  ],
+  "bytes": 83608
+ },
+ {
+  "slug": "basic-on-page-seo-setup",
+  "zip": "basic-on-page-seo-setup.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "SEO-Checklist.docx",
+   "SEO-Keyword-and-Page-Plan.xlsx",
+   "seo/head-snippet.html",
+   "seo/robots.txt",
+   "seo/sitemap.xml"
+  ],
+  "bytes": 78993
+ },
+ {
+  "slug": "automated-weekly-sales-report",
+  "zip": "automated-weekly-sales-report.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Weekly-Sales-Report.xlsx",
+   "weekly-sales-email.gs"
+  ],
+  "bytes": 55958
+ },
+ {
+  "slug": "google-sheets-lead-enquiry-tracker",
+  "zip": "google-sheets-lead-enquiry-tracker.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Lead-Enquiry-Tracker.xlsx"
+  ],
+  "bytes": 49368
+ },
+ {
+  "slug": "google-form-to-sheet-to-email-automation",
+  "zip": "google-form-to-sheet-to-email-automation.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Form-Responses-Tracker.xlsx",
+   "Form-to-Email-Guide.docx",
+   "form-to-email.gs"
+  ],
+  "bytes": 84170
+ },
+ {
+  "slug": "invoice-generator-in-sheets-excel",
+  "zip": "invoice-generator-in-sheets-excel.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Invoice-Generator.xlsx"
+  ],
+  "bytes": 46748
+ },
+ {
+  "slug": "student-attendance-and-fee-tracker",
+  "zip": "student-attendance-and-fee-tracker.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Student-Attendance-and-Fee-Tracker.xlsx"
+  ],
+  "bytes": 48162
+ },
+ {
+  "slug": "appointment-booking-tracker",
+  "zip": "appointment-booking-tracker.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Appointment-Booking-Tracker.xlsx"
+  ],
+  "bytes": 49114
+ },
+ {
+  "slug": "n8n-make-workflow-setup-simple",
+  "zip": "n8n-make-workflow-setup-simple.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "n8n-Make-Workflow-Guide.docx",
+   "starter-form-webhook.json"
+  ],
+  "bytes": 71544
+ },
+ {
+  "slug": "excel-automation-with-formulas-no-macros",
+  "zip": "excel-automation-with-formulas-no-macros.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Excel-Formula-Automation.xlsx"
+  ],
+  "bytes": 43542
+ },
+ {
+  "slug": "data-entry-system-with-dropdowns-and-validation",
+  "zip": "data-entry-system-with-dropdowns-and-validation.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Data-Entry-System.xlsx"
+  ],
+  "bytes": 59263
+ },
+ {
+  "slug": "company-financial-analysis-report",
+  "zip": "company-financial-analysis-report.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Company-Ratio-Workbook.xlsx",
+   "Financial-Analysis-Report-Template.docx"
+  ],
+  "bytes": 78919
+ },
+ {
+  "slug": "industry-market-research-report",
+  "zip": "industry-market-research-report.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Market-Research-Report-Template.docx",
+   "Market-Size-Calculator.xlsx"
+  ],
+  "bytes": 76680
+ },
+ {
+  "slug": "competitor-analysis",
+  "zip": "competitor-analysis.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Competitor-Analysis.xlsx",
+   "SWOT-and-Action-Plan.docx"
+  ],
+  "bytes": 78650
+ },
+ {
+  "slug": "business-plan-financial-projections",
+  "zip": "business-plan-financial-projections.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Business-Plan-Financial-Projections.xlsx"
+  ],
+  "bytes": 43845
+ },
+ {
+  "slug": "pitch-deck-financial-slides",
+  "zip": "pitch-deck-financial-slides.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Financial-Projections.xlsx",
+   "Pitch-Deck-Financial-Slides.pptx",
+   "Pitch-Deck-Speaker-Notes.docx"
+  ],
+  "bytes": 120229
+ },
+ {
+  "slug": "professional-powerpoint-presentation",
+  "zip": "professional-powerpoint-presentation.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Presentation-Design-Tips.docx",
+   "Presentation-Template.pptx"
+  ],
+  "bytes": 105906
+ },
+ {
+  "slug": "linkedin-profile-optimisation",
+  "zip": "linkedin-profile-optimisation.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "LinkedIn-Profile-Kit.docx"
+  ],
+  "bytes": 70759
+ },
+ {
+  "slug": "resume-cv-for-finance-roles",
+  "zip": "resume-cv-for-finance-roles.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Cover-Letter-Template.docx",
+   "Resume-Template.docx"
+  ],
+  "bytes": 105357
+ },
+ {
+  "slug": "social-media-content-calendar-1-month",
+  "zip": "social-media-content-calendar-1-month.zip",
+  "files": [
+   "00-START-HERE-How-to-use.docx",
+   "Content-Calendar-30-Days.xlsx"
+  ],
+  "bytes": 44901
+ }
+]

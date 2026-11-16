@@ -18,6 +18,7 @@ from pathlib import Path
 
 import httpx
 
+KIT_DIR = Path(__file__).with_name("kits")
 RAZORPAY_API = "https://api.razorpay.com/v1"
 TIERS = ("Basic", "Standard", "Premium")
 NOTE_CHUNK = 250  # Razorpay notes: at most 15 keys, values up to 256 characters
@@ -30,6 +31,18 @@ class PaymentError(Exception):
 @lru_cache
 def catalog() -> dict[str, dict]:
     return json.loads((Path(__file__).with_name("service_catalog.json")).read_text(encoding="utf-8"))
+
+
+def kit_path(slug: str) -> Path | None:
+    """The ready-made kit ZIP for a service, or None if it is missing. Only catalogue slugs are accepted."""
+    if slug not in catalog():
+        return None
+    p = KIT_DIR / f"{slug}.zip"
+    return p if p.is_file() else None
+
+
+def slug_for_title(title: str) -> str | None:
+    return next((slug for slug, svc in catalog().items() if svc["title"] == title), None)
 
 
 def find_package(slug: str, tier: str) -> tuple[dict, dict] | None:
