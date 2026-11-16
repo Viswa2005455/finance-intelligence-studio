@@ -150,7 +150,7 @@ export function ServiceDetail() {
 
         <div className="svc-send mt-sm">
           <LockKeyhole size={17} />
-          <div><b>Pay online, get it by email.</b> Secure payment by Razorpay (UPI, cards, netbanking). After paying you get a receipt, and the finished work arrives at your email. Questions first? <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div>
+          <div><b>Pay online, get it by email.</b> Secure payment by Razorpay (UPI, cards, netbanking). After paying you get a receipt and your ready-made kit instantly (a download button and an email). Standard and Premium also include custom work, emailed to you. Questions first? <a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div>
         </div>
       </div>
 

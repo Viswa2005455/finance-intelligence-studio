@@ -917,7 +917,7 @@
   "you_send": "Your current resume and target role",
   "tiers": {
    "Basic": {
-    "price": 99,
+    "price": 1,
     "days": 0
    },
    "Standard": {
