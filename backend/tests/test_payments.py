@@ -114,3 +114,70 @@ def test_keys_ignore_pasted_whitespace(monkeypatch):
         assert api._keys() is None
     finally:
         get_settings.cache_clear()
+
+
+def _paid_link(**kw):
+    return {"status": "paid", "description": "Resume / CV for finance roles (Basic package)", "amount": 9900, "amount_paid": 9900,
+            "notes": {"service": "#49 Resume / CV for finance roles", "package": "Basic", "customer_name": "Asha Rao",
+                      "customer_email": "asha@example.com", "customer_phone": "+91 9999999999", "requirements_1": "Fresher, B.Com"}}
+
+
+def _verify_body(pay_id="pay_9"):
+    q = {"payment_link_id": "plink_9", "payment_link_reference_id": "svc_cd", "payment_link_status": "paid", "payment_id": pay_id}
+    return {**q, "signature": _sign("plink_9", "svc_cd", "paid", pay_id)}
+
+
+def _mail_on(monkeypatch):
+    from app.config import get_settings
+    for k, v in {"FIS_SMTP_HOST": "smtp.example.com", "FIS_SMTP_USER": "me@example.com", "FIS_SMTP_PASSWORD": "abcd efgh",
+                 "FIS_ORDER_EMAIL": "owner@example.com"}.items():
+        monkeypatch.setenv(k, v)
+    get_settings.cache_clear()
+
+
+def test_paid_order_is_recorded_and_emailed_once(client, monkeypatch):
+    from app.db.models import ServiceOrder
+    from app.db.session import session_factory
+    from app.payments import mail
+    monkeypatch.setattr(api, "_keys", lambda: ("key", SECRET))
+    monkeypatch.setattr(api, "fetch_payment_link", _paid_link)
+    _mail_on(monkeypatch)
+    sent = []
+    monkeypatch.setattr(mail, "send", lambda messages, s: sent.append(messages))
+
+    assert client.post("/api/payments/verify", json=_verify_body()).json()["paid"] is True
+    assert client.post("/api/payments/verify", json=_verify_body()).status_code == 200  # page reloaded
+    assert len(sent) == 1
+    to_customer, to_owner = sent[0]
+    assert to_customer["To"] == "asha@example.com" and to_customer["Reply-To"] == "owner@example.com"
+    body = to_customer.get_content()
+    assert "Rs 99" in body and "Your current resume and target role" in body and "within 1 day" in body
+    assert to_owner["To"] == "owner@example.com" and to_owner["Reply-To"] == "asha@example.com"
+    assert "Fresher, B.Com" in to_owner.get_content() and "+91 9999999999" in to_owner.get_content()
+    with session_factory()() as db:
+        row = db.get(ServiceOrder, "pay_9")
+        assert row.amount == 99 and row.customer_emailed and row.owner_emailed
+
+
+def test_paid_order_without_mail_setup_is_still_recorded(client, monkeypatch):
+    from app.db.models import ServiceOrder
+    from app.db.session import session_factory
+    from app.payments import mail
+    monkeypatch.setattr(api, "_keys", lambda: ("key", SECRET))
+    monkeypatch.setattr(api, "fetch_payment_link", _paid_link)
+    monkeypatch.setattr(mail, "send", lambda *a: (_ for _ in ()).throw(AssertionError("must not send")))
+    assert client.post("/api/payments/verify", json=_verify_body("pay_10")).json()["paid"] is True
+    with session_factory()() as db:
+        row = db.get(ServiceOrder, "pay_10")
+        assert row is not None and not row.customer_emailed
+
+
+def test_customer_email_skips_asking_for_files_already_given():
+    from app.config import Settings
+    from app.payments import mail
+    s = Settings(fis_smtp_host="h", fis_smtp_user="me@example.com", fis_smtp_password="p")
+    o = mail.Order(payment_id="pay_1", service="Custom Excel dashboard", package="Standard", amount=899, customer_name="Ravi",
+                   customer_email="r@example.com", customer_phone="", requirements="Monthly sales dashboard", files_link="https://drive.example/x",
+                   you_send="Your Excel data", delivery_days=4, revisions=2)
+    body = mail.customer_message(o, s).get_content()
+    assert "I have your details and files link" in body and "within 4 days" in body and "2 revisions" in body

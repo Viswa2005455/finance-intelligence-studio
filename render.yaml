@@ -33,6 +33,15 @@ services:
         sync: false
       - key: RAZORPAY_KEY_SECRET
         sync: false
+      # Order emails (optional): sent the moment a service order is paid. Gmail works with an app password.
+      - key: FIS_SMTP_HOST
+        value: smtp.gmail.com
+      - key: FIS_SMTP_USER
+        sync: false
+      - key: FIS_SMTP_PASSWORD
+        sync: false
+      - key: FIS_ORDER_EMAIL
+        sync: false
       # Live share prices (optional): eodhd or twelvedata, plus that provider's key.
       - key: FIS_MARKET_PROVIDER
         value: none

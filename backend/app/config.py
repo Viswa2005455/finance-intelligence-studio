@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     razorpay_key_id: str | None = None
     razorpay_key_secret: SecretStr | None = None
 
+    # Order emails (optional). Any SMTP account works, e.g. Gmail: smtp.gmail.com, port 587, your
+    # address and a Google "app password". Leave unset and paid orders are still recorded, just not emailed.
+    fis_smtp_host: str | None = None
+    fis_smtp_port: int = 587
+    fis_smtp_user: str | None = None
+    fis_smtp_password: SecretStr | None = None
+    fis_order_email: str | None = None  # where new-order alerts go and customers' replies land; default fis_smtp_user
+
     fis_ai_provider: str = "none"
     anthropic_api_key: SecretStr | None = None
     fis_ai_model: str = "claude-opus-5-5"

@@ -2,19 +2,26 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import re
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import Field, field_validator
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
 
 from ..auth.security import EMAIL_RE, limiter
 from ..config import get_settings
+from ..db.models import ServiceOrder
+from ..db.session import get_db, session_factory
+from ..payments import mail
 from ..payments import TIERS, PaymentError, catalog, create_payment_link, fetch_payment_link, find_package, signature_valid
 from .auth import client_ip
 from .base import BaseModel
 
 router = APIRouter(prefix="/api/payments", tags=["payments"])
+log = logging.getLogger("fis.orders")
 _PHONE = re.compile(r"^\+?[0-9 ]{8,16}$")
 _ID = re.compile(r"^[A-Za-z0-9_]{1,64}$")
 
@@ -111,7 +118,7 @@ def checkout(body: CheckoutIn, request: Request):
 
 
 @router.post("/verify")
-def verify(body: VerifyIn, request: Request):
+def verify(body: VerifyIn, request: Request, background: BackgroundTasks, db: Session = Depends(get_db)):
     keys = _keys()
     if keys is None:
         raise HTTPException(503, "Online payment is not switched on.")
@@ -133,11 +140,56 @@ def verify(body: VerifyIn, request: Request):
             break
     tier = notes.get("package", "")
     days = found[1]["tiers"].get(tier, {}).get("days") if found else None
+    paid = link.get("status") == "paid"
+    amount = (link.get("amount_paid") or link.get("amount") or 0) / 100
+    if paid:
+        order = mail.Order(
+            payment_id=body.payment_id,
+            service=found[1]["title"] if found else notes.get("service", "Service"),
+            package=tier, amount=int(amount),
+            customer_name=notes.get("customer_name", ""), customer_email=notes.get("customer_email", ""),
+            customer_phone=notes.get("customer_phone", ""), files_link=notes.get("files_link", ""),
+            requirements="".join(notes.get(f"requirements_{i}", "") for i in range(1, 9)),
+            you_send=(found[1].get("you_send") if found else None) or "the details and files for your order",
+            delivery_days=days, revisions=(TIERS.index(tier) + 1) if tier in TIERS else None,
+        )
+        if _record(db, order, body.payment_link_id) and order.customer_email:
+            background.add_task(_email_order, order)
     return {
-        "paid": link.get("status") == "paid",
+        "paid": paid,
         "description": link.get("description", ""),
-        "amount": (link.get("amount_paid") or link.get("amount") or 0) / 100,
+        "amount": amount,
         "email": notes.get("customer_email", ""),
         "delivery_days": days,
         "payment_id": body.payment_id,
     }
+
+
+def _record(db: Session, o: mail.Order, link_id: str) -> bool:
+    """Saves the paid order; False when it was already recorded (thank-you page reloaded)."""
+    db.add(ServiceOrder(payment_id=o.payment_id, payment_link_id=link_id, service=o.service[:160], package=o.package[:16],
+                        amount=o.amount, customer_name=o.customer_name[:120], customer_email=o.customer_email[:254]))
+    try:
+        db.commit()
+        return True
+    except IntegrityError:
+        db.rollback()
+        return False
+
+
+def _email_order(o: mail.Order) -> None:
+    """Runs after the thank-you page has its answer, so a slow mail server never delays the customer."""
+    s = get_settings()
+    if not mail.mail_configured(s):
+        log.warning("Paid order %s recorded but not emailed: order email (FIS_SMTP_*) is not set up.", o.payment_id)
+        return
+    try:
+        mail.send([mail.customer_message(o, s), mail.owner_message(o, s)], s)
+    except Exception:
+        log.exception("Could not send the order emails for %s", o.payment_id)
+        return
+    with session_factory()() as db:
+        row = db.get(ServiceOrder, o.payment_id)
+        if row:
+            row.customer_emailed = row.owner_emailed = True
+            db.commit()

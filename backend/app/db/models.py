@@ -138,3 +138,21 @@ class Activity(Base):
     entity_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
     detail: Mapped[dict] = mapped_column(JsonType, default=dict)
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class ServiceOrder(Base):
+    """A paid order from the public /services pages, recorded once per Razorpay payment.
+
+    Not user-owned: customers pay without an account. The unique payment_id makes sure the order
+    emails go out once, however often the thank-you page is reloaded."""
+    __tablename__ = "service_orders"
+    payment_id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    payment_link_id: Mapped[str] = mapped_column(String(64))
+    service: Mapped[str] = mapped_column(String(160))
+    package: Mapped[str] = mapped_column(String(16))
+    amount: Mapped[int] = mapped_column(Integer)  # rupees
+    customer_name: Mapped[str] = mapped_column(String(120))
+    customer_email: Mapped[str] = mapped_column(String(254))
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    customer_emailed: Mapped[bool] = mapped_column(Boolean, default=False)
+    owner_emailed: Mapped[bool] = mapped_column(Boolean, default=False)
