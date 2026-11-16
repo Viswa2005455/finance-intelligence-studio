@@ -156,7 +156,7 @@ const ROWS: Row[] = [
   ['research', 'LinkedIn profile optimisation', 'Your LinkedIn headline, about section and experience rewritten to attract recruiters and clients.', 'Students, job seekers and freelancers',
     [99, 199, 299], [1, 2, 3], 'Headline and about section', 'Plus experience section and skills', 'Plus banner image and a content plan', 'Your current profile link or resume'],
   ['research', 'Resume / CV for finance roles', 'A clear, ATS-friendly resume tailored for finance, accounting and analyst roles.', 'Finance and commerce students and job seekers',
-    [1, 199, 299], [1, 2, 3], 'Resume rewritten in a clean format', 'Plus cover letter', 'Plus LinkedIn summary and two tailored versions', 'Your current resume and target role'],
+    [99, 199, 299], [1, 2, 3], 'Resume rewritten in a clean format', 'Plus cover letter', 'Plus LinkedIn summary and two tailored versions', 'Your current resume and target role'],
   ['research', 'Social media content calendar (1 month)', 'A month of social media post ideas, captions and a posting schedule.', 'Small businesses and personal brands',
     [99, 249, 349], [2, 3, 5], '12 post ideas with captions', '20 posts with captions and hashtags', '30 posts plus simple designs in Canva', 'Your business, audience and goals'],
 ];

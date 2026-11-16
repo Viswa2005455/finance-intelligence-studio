@@ -24,7 +24,7 @@ def money_cols(ws, cells: str, fmt: str = MONEY) -> None:
 
 
 # ======================================================================== tracker / dashboard engine
-def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps=None, note="", sheet="Data", first_month=D(2026, 1, 1), share=True):
+def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps=None, note="", sheet="Data", first_month=D(2026, 1, 1), share=True, value_fmt=MONEY):
     """cols: dicts with n(name), k(kind: date|text|num|money|list|formula), w(width), o(options), f(formula, {r}=row), s(samples), fmt.
     Builds a Start sheet, a Data sheet (1000 formatted rows, dropdowns, formulas) and a Summary sheet with charts."""
     wb = new_wb()
@@ -70,8 +70,8 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
     sm = wb.create_sheet("Summary")
     sm.sheet_view.showGridLines = False
     title(sm, f"{heading}: summary", "Updates automatically from the Data sheet. Nothing to type here except the peach start month.")
-    base = [("Total " + value.lower(), f"=SUM({R(value)})", MONEY), ("Number of entries", f"=COUNT({R(value)})", "0"),
-            ("Average per entry", f"=IFERROR(AVERAGE({R(value)}),0)", MONEY), ("Largest entry", f"=MAX({R(value)})", MONEY)]
+    base = [(("Total of all rows" if value.lower() == "total" else "Total " + value.lower()), f"=SUM({R(value)})", value_fmt), ("Number of entries", f"=COUNT({R(value)})", "0"),
+            ("Average per entry", f"=IFERROR(AVERAGE({R(value)}),0)", value_fmt), ("Largest entry", f"=MAX({R(value)})", value_fmt)]
     rows = list(base)
     for label, f, fmt in kpis:
         rows.append((label, re.sub(r"\[([^\]]+)\]", lambda m: R(m.group(1)), f), fmt))
@@ -105,13 +105,13 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
             r = top + 1 + i
             sm.cell(row=r, column=1, value=o).border = BORDER
             b = sm.cell(row=r, column=2, value=f"=SUMIFS({R(value)},{R(category)},A{r})")
-            calc(b, MONEY)
+            calc(b, value_fmt)
             if share:
                 c3 = sm.cell(row=r, column=3, value=f"=IFERROR(B{r}/$B${top + 1 + len(opts)},0)")
                 calc(c3, PCT)
         tr = top + 1 + len(opts)
         sm.cell(row=tr, column=1, value="Total").font = Font(bold=True)
-        calc(sm.cell(row=tr, column=2, value=f"=SUM(B{top + 1}:B{tr - 1})"), MONEY, True)
+        calc(sm.cell(row=tr, column=2, value=f"=SUM(B{top + 1}:B{tr - 1})"), value_fmt, True)
         bar(sm, f"H{top}", f"{value} by {category}", Reference(sm, min_col=1, min_row=top + 1, max_row=tr - 1),
             Reference(sm, min_col=2, min_row=top, max_row=tr - 1))
     if date:
@@ -127,7 +127,7 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
             a.border = BORDER
             b = sm.cell(row=r, column=mcol + 1,
                         value=f'=SUMIFS({R(value)},{R(date)},">="&{col(mcol)}{r},{R(date)},"<"&EDATE({col(mcol)}{r},1))')
-            calc(b, MONEY)
+            calc(b, value_fmt)
         bar(sm, f"H{top + 17}" if category else f"H{top}", f"{value} by month", Reference(sm, min_col=mcol, min_row=top + 1, max_row=top + 12),
             Reference(sm, min_col=mcol + 1, min_row=top, max_row=top + 12), line=True)
     start_sheet(wb, "Start here", heading, steps or [
@@ -234,7 +234,7 @@ def budget_tracker():
         "Month view: change the month to see budget vs actual and your savings rate. Red = over budget.",
         "Savings goals and EMI tracker: optional extras for goals and loans.",
     ])
-    wb.move_sheet("Month view", offset=-3)
+    wb.move_sheet("Month view", offset=-2)
     return wb
 
 

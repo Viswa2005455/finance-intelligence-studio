@@ -13,6 +13,7 @@ from lib import BORDER, FIRST, GREEN, LAST, MONEY, PCT, add_dashboard, bar, calc
 from xlsx_core import MONTHS, tracker
 
 D = dt.date
+MONTHS_SHORT = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 rnd = random.Random(7)
 
 
@@ -159,14 +160,14 @@ def maintenance_log():
         F("Date", "date", 14, s=dates(8, step=7)), F("Task", "list", 24, o=tasks, s=tasks), F("Page / URL", "text", 24, s=["/", "/", "/contact", "/contact", "/", "/", "/about", "/"]),
         F("Done by", "text", 14, s=["Viswa"] * 8), F("Time spent (hrs)", "num", 14, s=[0.5, 1, 0.5, 0.25, 0.5, 0.5, 1, 0.5]), F("Status", "list", 12, o=["Done", "In progress", "Blocked"], s=["Done"] * 8),
         F("Notes", "text", 28)],
-        "Time spent (hrs)", "Task", "Date")
+        "Time spent (hrs)", "Task", "Date", value_fmt="0.00")
 
 
 def form_responses():
     return tracker("Form responses tracker", "Google Form answers land here. Add the Status and Follow-up columns to track each enquiry.", [
         F("Timestamp", "date", 18, s=dates(6, step=1)), F("Name", "text", 20, s=["Asha", "Ravi", "Meena", "Kumar", "Divya", "Hari"]), F("Email", "text", 28, s=[f"person{i}@example.com" for i in range(6)]),
         F("Phone", "text", 14), F("Message", "text", 36, s=["Need a quote", "Website enquiry", "Call me", "Price list please", "Demo request", "Need help"] ),
-        F("Status", "list", 14, o=["New", "Replied", "Closed"], s=["Replied", "New", "New", "Closed", "New", "Replied"]), F("Value", "money", 12)],
+        F("Status", "list", 14, o=["New", "Replied", "Closed"], s=["Replied", "New", "New", "Closed", "New", "Replied"]), F("Value", "money", 12, s=[5000, 12000, 8000, 0, 15000, 3000])],
         "Value", "Status", "Timestamp")
 
 
@@ -314,9 +315,14 @@ def invoice_generator():
     title(lg, "Invoice log", "Record each invoice you send and when it is paid.")
     head(lg, 4, ["Invoice no", "Date", "Customer", "Total", "Paid?", "Paid on"])
     widths(lg, [14, 14, 24, 14, 10, 14])
+    log_samples = [("INV-001", D(2026, 1, 15), "Ravi Stores", 8000, "Yes", D(2026, 1, 22)), ("INV-002", D(2026, 1, 28), "Meena Traders", 12500, "Yes", D(2026, 2, 3)),
+                   ("INV-003", D(2026, 2, 6), "Ravi Stores", 4500, "No", None), ("INV-004", D(2026, 2, 14), "Meena Traders", 9000, "No", None)]
     for r in range(5, 205):
         for c in range(1, 7):
-            inp(lg.cell(row=r, column=c), MONEY if c == 4 else ("dd-mmm-yyyy" if c in (2, 6) else None))
+            cell = lg.cell(row=r, column=c)
+            if r - 5 < len(log_samples):
+                cell.value = log_samples[r - 5][c - 1]
+            inp(cell, MONEY if c == 4 else ("dd-mmm-yyyy" if c in (2, 6) else None))
     dropdown(lg, "E5:E204", ["Yes", "No"])
     add_dashboard(wb, "Invoices: dashboard", [
         ("Invoices sent", "=COUNTA('Invoice log'!A5:A204)", "0"), ("Total invoiced", "=SUM('Invoice log'!D5:D204)", MONEY),
@@ -421,7 +427,7 @@ def content_calendar():
         inp(ws.cell(row=r, column=5, value=ideas[i % 7]))
         inp(ws.cell(row=r, column=6, value="Write your caption here. Start with a hook, give one useful point, end with a question."))
         inp(ws.cell(row=r, column=7, value="#smallbusiness #finance #tips"))
-        inp(ws.cell(row=r, column=8, value="Planned"))
+        inp(ws.cell(row=r, column=8, value="Posted" if i < 8 else ("Scheduled" if i < 13 else ("Designed" if i < 18 else "Planned"))))
     dropdown(ws, "C5:C34", ["LinkedIn", "Instagram", "Facebook", "YouTube", "X", "WhatsApp status"])
     dropdown(ws, "D5:D34", types + ["Video", "Reel"])
     dropdown(ws, "H5:H34", ["Planned", "Designed", "Scheduled", "Posted"])
@@ -640,6 +646,14 @@ def powerbi_sales_data():
         ca.cell(row=r, column=5, value=f'="Q"&ROUNDUP(C{r}/3,0)')
         ca.cell(row=r, column=6, value=f'=TEXT(A{r},"ddd")')
     widths(ca, [12, 8, 9, 8, 9, 12])
+    add_dashboard(wb, "Sales data model: dashboard", [
+        ("Total sales", "=SUM(Sales!H2:H241)", MONEY), ("Orders", "=COUNTA(Sales!A2:A241)", "0"), ("Units sold", "=SUM(Sales!E2:E241)", "#,##0"),
+        ("Average order", "=IFERROR(SUM(Sales!H2:H241)/COUNTA(Sales!A2:A241),0)", MONEY), ("Products", "=COUNTA(Products!A2:A9)", "0"), ("Customers", "=COUNTA(Customers!A2:A7)", "0"),
+        ("Discounted orders", '=COUNTIF(Sales!G2:G241,">0")', "0"), ("Average discount", "=AVERAGE(Sales!G2:G241)", PCT)],
+        [dict(kind="bar", title="Sales by product", cats=[f"=Products!B{2 + i}" for i in range(8)],
+              series=[("Sales", [f"=SUMIFS(Sales!$H$2:$H$241,Sales!$D$2:$D$241,Products!A{2 + i})" for i in range(8)])]),
+         dict(kind="bar", title="Sales by customer", cats=[f"=Customers!B{2 + i}" for i in range(6)],
+              series=[("Sales", [f"=SUMIFS(Sales!$H$2:$H$241,Sales!$C$2:$C$241,Customers!A{2 + i})" for i in range(6)])])])
     start_sheet(wb, "Start here", "Power BI sales starter data model", [
         "This workbook is a clean star-schema sample: one Sales table plus Products, Customers and Calendar tables.",
         "In Power BI Desktop: Get data > Excel workbook > select all four sheets > Load.",
@@ -667,6 +681,17 @@ def powerbi_fin_data():
                     fa.cell(row=r, column=c, value=v)
                 fa.cell(row=r, column=1).number_format = "yyyy-mm-dd"
                 r += 1
+    rng = "Financials!$E$2:$E$145"
+    def fsum(acc, scen, m=None):
+        base = f'SUMIFS({rng},Financials!$B$2:$B$145,"{acc}",Financials!$D$2:$D$145,"{scen}"'
+        return "=" + base + (f",Financials!$A$2:$A$145,DATE(2025,{m},1))" if m else ")")
+    add_dashboard(wb, "Financial KPIs data model: dashboard", [
+        ("Revenue (actual)", fsum("Revenue", "Actual"), MONEY), ("Revenue (budget)", fsum("Revenue", "Budget"), MONEY),
+        ("Cost of goods (actual)", fsum("Cost of goods sold", "Actual"), MONEY), ("Gross profit (actual)", fsum("Revenue", "Actual") + "-" + fsum("Cost of goods sold", "Actual")[1:], MONEY),
+        ("Salaries (actual)", fsum("Salaries", "Actual"), MONEY), ("Rent (actual)", fsum("Rent", "Actual"), MONEY),
+        ("Marketing (actual)", fsum("Marketing", "Actual"), MONEY), ("Accounts in the table", "=COUNTA(Financials!A2:A145)", "0")],
+        [dict(kind="bar", title="Revenue by month: actual vs budget", cats=MONTHS_SHORT,
+              series=[("Actual", [fsum("Revenue", "Actual", m) for m in range(1, 13)]), ("Budget", [fsum("Revenue", "Budget", m) for m in range(1, 13)])])])
     start_sheet(wb, "Start here", "Power BI financial KPI starter data", [
         "The Financials sheet is a tidy table: one row per Month, Account and Scenario (Actual or Budget). Amounts are positive; the group tells Power BI what is revenue, cost of goods or operating cost.",
         "In Power BI Desktop: Get data > Excel > Financials > Load. Add a Calendar table (the Word guide shows the one-line DAX).",

@@ -161,9 +161,13 @@ document.addEventListener('DOMContentLoaded', function () {
   if (b && u) b.addEventListener('click', function () { u.classList.toggle('open'); });
   var y = document.getElementById('yr'); if (y) y.textContent = new Date().getFullYear();
   var items = document.querySelectorAll('.reveal');
-  if (!('IntersectionObserver' in window)) { items.forEach(function (e) { e.classList.add('in'); }); return; }
-  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } }); }, { threshold: 0.12 });
-  items.forEach(function (e) { io.observe(e); });
+  function show(e) { e.classList.add('in'); }
+  var vh = window.innerHeight || 800;
+  items.forEach(function (e) { if (e.getBoundingClientRect().top < vh * 0.95) show(e); });  // already on screen: show now
+  if (!('IntersectionObserver' in window)) { items.forEach(show); return; }
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { show(e.target); io.unobserve(e.target); } }); }, { threshold: 0.12 });
+  items.forEach(function (e) { if (!e.classList.contains('in')) io.observe(e); });
+  setTimeout(function () { items.forEach(show); }, 6000);  // safety net: never leave content hidden
 });
 """
 
