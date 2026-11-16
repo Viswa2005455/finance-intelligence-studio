@@ -7,9 +7,9 @@ import re
 
 from openpyxl.chart import Reference
 from openpyxl.formatting.rule import CellIsRule, FormulaRule
-from openpyxl.styles import Alignment, Font, PatternFill
+from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 
-from lib import (BORDER, FIRST, GREEN, LAST, MONEY, MONEY2, PCT, SOFT, bar, calc, col, dropdown, head, inp, new_wb,
+from lib import (BORDER, FIRST, GREEN, LAST, MONEY, MONEY2, PCT, SOFT, TEAL, bar, calc, col, dropdown, head, inp, new_wb,
                  start_sheet, title, widths)
 
 EQUITY = "Shareholders' equity"
@@ -75,13 +75,29 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
     rows = list(base)
     for label, f, fmt in kpis:
         rows.append((label, re.sub(r"\[([^\]]+)\]", lambda m: R(m.group(1)), f), fmt))
-    widths(sm, [30, 18, 11, 4, 14, 16])
-    for i, (label, f, fmt) in enumerate(rows):
-        a = sm.cell(row=3 + i, column=1, value=label)
-        a.font = Font(bold=True)
-        b = sm.cell(row=3 + i, column=2, value=f)
-        calc(b, fmt, bold=True)
-    top = 5 + len(rows)
+    widths(sm, [30, 18, 11, 4, 14, 16, 4, 16, 16, 16])
+    tiles = [(1, 1), (2, 3), (5, 6), (8, 9)]  # column spans of the four KPI tiles in a row
+    for i, (label, f, fmt) in enumerate(rows[:8]):
+        rr = 4 + (i // 4) * 3
+        c1, c2 = tiles[i % 4]
+        for rowx in (rr, rr + 1):
+            for cc in range(c1, c2 + 1):
+                cell = sm.cell(row=rowx, column=cc)
+                cell.fill = PatternFill("solid", fgColor=SOFT)
+                if rowx == rr:
+                    cell.border = Border(top=Side(style="thick", color=TEAL))
+            if c2 > c1:
+                sm.merge_cells(start_row=rowx, start_column=c1, end_row=rowx, end_column=c2)
+        lab = sm.cell(row=rr, column=c1, value=label)
+        lab.font = Font(size=10, bold=True, color="5B6770")
+        lab.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        val = sm.cell(row=rr + 1, column=c1, value=f)
+        val.number_format = fmt
+        val.font = Font(size=20, bold=True, color=GREEN)
+        val.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        sm.row_dimensions[rr].height = 20
+        sm.row_dimensions[rr + 1].height = 36
+    top = 4 + ((min(len(rows), 8) - 1) // 4 + 1) * 3 + 2
     if category:
         head(sm, top, [category, "Total"] + (["Share"] if share else []))
         opts = next(c["o"] for c in cols if c["n"] == category)
@@ -96,7 +112,7 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
         tr = top + 1 + len(opts)
         sm.cell(row=tr, column=1, value="Total").font = Font(bold=True)
         calc(sm.cell(row=tr, column=2, value=f"=SUM(B{top + 1}:B{tr - 1})"), MONEY, True)
-        bar(sm, "G3", f"{value} by {category}", Reference(sm, min_col=1, min_row=top + 1, max_row=tr - 1),
+        bar(sm, f"H{top}", f"{value} by {category}", Reference(sm, min_col=1, min_row=top + 1, max_row=tr - 1),
             Reference(sm, min_col=2, min_row=top, max_row=tr - 1))
     if date:
         mcol = 5 if category else 1
@@ -112,7 +128,7 @@ def tracker(heading, hint, cols, value, category=None, date=None, kpis=(), steps
             b = sm.cell(row=r, column=mcol + 1,
                         value=f'=SUMIFS({R(value)},{R(date)},">="&{col(mcol)}{r},{R(date)},"<"&EDATE({col(mcol)}{r},1))')
             calc(b, MONEY)
-        bar(sm, "G20" if category else "G3", f"{value} by month", Reference(sm, min_col=mcol, min_row=top + 1, max_row=top + 12),
+        bar(sm, f"H{top + 17}" if category else f"H{top}", f"{value} by month", Reference(sm, min_col=mcol, min_row=top + 1, max_row=top + 12),
             Reference(sm, min_col=mcol + 1, min_row=top, max_row=top + 12), line=True)
     start_sheet(wb, "Start here", heading, steps or [
         f"Open the {sheet} sheet and type over the sample rows (they are examples). One row per entry.",
@@ -608,13 +624,13 @@ def startup_budget():
         ws[f"{c}19"] = f"=SUM({c}13:{c}17)+{c}18"
         ws[f"{c}20"] = f"={c}12-{c}19"
         ws[f"{c}21"] = f"=$B$6+{c}20" if m == 0 else f"={col(1 + m)}21+{c}20"
-        ws[f"{c}22"] = f'=IF({c}21<0,"OUT OF CASH",IF({c}20<0,"Burning cash","Profitable month"))'
+        ws[f"{c}22"] = f'=IF({c}21<0,"Out of cash",IF({c}20<0,"Burning","Profit"))'
         for r in (18, 19, 20, 21):
             calc(ws[f"{c}{r}"], MONEY, r == 21)
         calc(ws[f"{c}22"])
     for r in range(10, 13):
         calc(ws.cell(row=r, column=14, value=f"=SUM(B{r}:M{r})"), MONEY, True)
-    ws.conditional_formatting.add("B22:M22", FormulaRule(formula=['B22="OUT OF CASH"'], fill=PatternFill("solid", bgColor="FF9999", fgColor="FF9999")))
+    ws.conditional_formatting.add("B22:M22", FormulaRule(formula=['B22="Out of cash"'], fill=PatternFill("solid", bgColor="FF9999", fgColor="FF9999")))
     ws["A24"] = "Months of cash left at current burn"
     ws["A24"].font = Font(bold=True)
     ws["B24"] = '=IFERROR(IF(AVERAGE(B20:M20)>=0,"Not burning",ROUNDDOWN($B$6/-AVERAGE(B20:M20),0)),"")'
@@ -628,7 +644,7 @@ def startup_budget():
     start_sheet(wb, "Start here", "Startup budget planning model", [
         "Type starting revenue, monthly growth, cost of goods %, funding and one-time setup costs at the top.",
         "Edit the fixed-cost lines (salaries, rent, tools, marketing) by month.",
-        "Read cash at the end of each month and the status row. OUT OF CASH tells you the month you need more funding.",
+        "Read cash at the end of each month and the status row. Out of cash tells you the month you need more funding.",
         "Try a slower growth rate to see a cautious case. Investors and banks always ask for one.",
     ])
     return wb

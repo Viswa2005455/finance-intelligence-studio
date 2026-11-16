@@ -275,7 +275,7 @@ def invoice_generator():
     iv = wb.create_sheet("Invoice")
     iv.sheet_view.showGridLines = False
     title(iv, "INVOICE", "Pick the customer and items from the dropdowns. Rate and totals fill in by themselves.")
-    widths(iv, [6, 34, 8, 12, 14, 14])
+    widths(iv, [6, 34, 14, 12, 14, 14])
     for r, (l, v) in enumerate([("Invoice no", "INV-001"), ("Date", D(2026, 1, 15)), ("Customer", "Ravi Stores")], start=3):
         iv.cell(row=r, column=2, value=l).font = Font(bold=True)
         inp(iv.cell(row=r, column=3, value=v), "dd-mmm-yyyy" if isinstance(v, dt.date) else None)

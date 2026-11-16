@@ -22,8 +22,34 @@ OUT = Path(__file__).resolve().parent.parent / "app" / "payments" / "kits"
 CAT = json.loads((OUT.parent / "service_catalog.json").read_text(encoding="utf-8"))
 
 
+class XB:
+    """An Excel kit file: call it for the example version, or with blank=True for the empty version."""
+
+    def __init__(self, fn, *a, **k):
+        self.fn, self.a, self.k = fn, a, k
+
+    def __call__(self, blank: bool = False) -> bytes:
+        return wb_bytes(self.fn(*self.a, **self.k), blank=blank)
+
+
 def X(fn, *a, **k):
-    return lambda: wb_bytes(fn(*a, **k))
+    return XB(fn, *a, **k)
+
+
+# Kits that also get an empty copy of the workbook (checked for error cells in Excel).
+BLANK_FOR = {
+    "custom-excel-dashboard", "personal-budget-tracker-customised", "small-business-profit-and-loss-dashboard-customised", "budget-vs-actual-variance-report",
+    "cash-flow-forecast-model-12-months", "sales-tracking-dashboard", "inventory-stock-tracker", "expense-tracker-for-shops", "gst-invoice-and-register-template",
+    "excel-data-cleaning-and-formatting", "monthly-management-report-mis", "coaching-centre-fee-and-admission-dashboard", "restaurant-revenue-and-expense-dashboard",
+    "retail-shop-profit-dashboard", "budget-planning-model-for-startups", "monthly-dashboard-update-recurring", "website-maintenance-monthly", "basic-on-page-seo-setup",
+    "automated-weekly-sales-report", "google-sheets-lead-enquiry-tracker", "google-form-to-sheet-to-email-automation", "invoice-generator-in-sheets-excel",
+    "student-attendance-and-fee-tracker", "appointment-booking-tracker", "data-entry-system-with-dropdowns-and-validation", "competitor-analysis",
+    "social-media-content-calendar-1-month",
+}
+
+
+def blank_name(name: str) -> str:
+    return name.replace(".xlsx", "-BLANK.xlsx")
 
 
 def B(fn):
@@ -105,17 +131,48 @@ def build_one(slug: str, spec, out_dir: Path) -> dict:
         else:
             outputs[name] = res
             inside.append(f"{name}: {what}")
+            if slug in BLANK_FOR and isinstance(builder, XB):
+                outputs[blank_name(name)] = builder(blank=True)
+                inside.append(f"{blank_name(name)}: The same workbook, empty and ready for your own data")
     steps = ["Unzip this folder (right-click > Extract All) and open the main file.",
              "Read the Start here sheet or the comments at the top: they take two minutes.",
              "Replace the sample data/text with your own. Yellow cells (Excel) or lines marked EDIT are yours to change.",
              "Save a copy before big changes, then use it every day or week as described in the file."]
-    guide = howto(f"{svc['title']}: ready-made kit", promise, inside, steps, [tip, "Sample data is only an example: replace it before you rely on any number.",
+    has_blank = any("BLANK" in n for n in outputs)
+    extra = ["Open the file with example data first to see how it works, then use the BLANK file for your real data."] if has_blank else []
+    guide = howto(f"{svc['title']}: ready-made kit", promise, inside, steps, [tip, *extra, "Sample data is only an example: replace it before you rely on any number.",
                                                                                "Open Excel files in desktop Excel (or Excel online). Google Sheets works too (File > Import); a few formats may differ."])
     folder = f"{svc['id']:02d}-{slug}"
     files_out = {"00-START-HERE-How-to-use.docx": guide, **outputs}
     out = out_dir / f"{slug}.zip"
     pack(files_out, out, folder)
     return {"slug": slug, "zip": out.name, "files": sorted(files_out), "bytes": out.stat().st_size}
+
+
+KIND = {".xlsx": "Excel", ".docx": "Word", ".pptx": "PowerPoint", ".css": "Web", ".html": "Web", ".gs": "Script", ".json": "Workflow", ".txt": "Web", ".xml": "Web"}
+
+
+def export_contents(dest: Path) -> None:
+    """Writes frontend/src/lib/kitContents.ts: what is inside each kit, shown on the service pages."""
+    out: dict[str, dict] = {}
+    for slug, (promise, files, tip) in kits().items():
+        items = []
+        for name, builder, what in files:
+            if name == "website":
+                pages = sorted(n.split("/")[-1] for n in builder() if n.endswith(".html"))
+                items.append({"file": f"{len(pages)}-page website ({', '.join(pages)}) + style.css", "what": "Mobile-friendly HTML and CSS you can edit and upload; open index.html to preview", "kind": "Website"})
+            else:
+                suffix = Path(name).suffix.lower()
+                desc = what.split(": ", 1)[-1] if what.startswith(("Excel workbook:", "Word ", "PowerPoint:", "Google Apps Script", "Stylesheet", "Importable")) and ": " in what else what
+                items.append({"file": Path(name).name, "what": desc[:1].upper() + desc[1:], "kind": KIND.get(suffix, "File")})
+                if slug in BLANK_FOR and isinstance(builder, XB):
+                    items.append({"file": Path(blank_name(name)).name, "what": "The same workbook, empty and ready for your own data", "kind": "Excel"})
+        items.insert(0, {"file": "00-START-HERE how-to guide", "what": "A two-minute guide: what is in the kit and how to use it", "kind": "Word"})
+        out[slug] = {"tip": tip, "items": items}
+    body = json.dumps(out, indent=1, ensure_ascii=False)
+    dest.write_text("// Generated by backend/kits_src/build.py (export_contents). Do not edit by hand.\n"
+                    "export interface KitItem { file: string; what: string; kind: string }\n"
+                    f"export const KIT_CONTENTS: Record<string, {{ tip: string; items: KitItem[] }}> = {body};\n", encoding="utf-8")
 
 
 def main() -> None:
@@ -134,4 +191,8 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    if "--contents" in sys.argv:
+        export_contents(OUT.parent.parent.parent.parent / "frontend" / "src" / "lib" / "kitContents.ts")
+        print("kitContents.ts written")
+    else:
+        main()

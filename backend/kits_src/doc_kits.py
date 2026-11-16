@@ -340,6 +340,10 @@ def _deck(title, subtitle, slides):
     bg.fill.solid()
     bg.fill.fore_color.rgb = green
     bg.line.fill.background()
+    bar_ = s.shapes.add_shape(1, Inches(0.9), Inches(2.15), Inches(1.6), Inches(0.12))
+    bar_.fill.solid()
+    bar_.fill.fore_color.rgb = RGBColor(0xF5, 0xC4, 0x51)
+    bar_.line.fill.background()
     text(s, 0.9, 2.4, 11.5, 1.5, title, 44, True, RGBColor(255, 255, 255))
     text(s, 0.9, 4.1, 11.5, 1, subtitle, 22, False, RGBColor(0xBF, 0xE0, 0xD2))
     text(s, 0.9, 6.4, 11.5, 0.5, "EDIT: Presenter name · Date", 14, False, RGBColor(0xBF, 0xE0, 0xD2))
@@ -354,8 +358,8 @@ def _deck(title, subtitle, slides):
                 p = tf.paragraphs[0] if first else tf.add_paragraph()
                 first = False
                 p.text = "•  " + b
-                p.font.size = Pt(22)
-                p.space_after = Pt(12)
+                p.font.size = Pt(24)
+                p.space_after = Pt(14)
         elif kind == "chart":
             cd = CategoryChartData()
             cd.categories = sd["cats"]
@@ -363,6 +367,19 @@ def _deck(title, subtitle, slides):
                 cd.add_series(name, vals)
             gf = s.shapes.add_chart(sd.get("type", XL_CHART_TYPE.COLUMN_CLUSTERED), Inches(0.8), Inches(1.5), Inches(7.6), Inches(5.3), cd)
             ch = gf.chart
+            palette = [RGBColor(0x0F, 0x8A, 0x6E), RGBColor(0xF5, 0xC4, 0x51), RGBColor(0x14, 0x56, 0x4A), RGBColor(0xD9, 0x48, 0x0F)]
+            plot = ch.plots[0]
+            if sd.get("type") == XL_CHART_TYPE.PIE:
+                for i, pt in enumerate(plot.series[0].points):
+                    pt.format.fill.solid()
+                    pt.format.fill.fore_color.rgb = palette[i % 4]
+            else:
+                for i, ser in enumerate(plot.series):
+                    ser.format.fill.solid()
+                    ser.format.fill.fore_color.rgb = palette[i % 4]
+                plot.gap_width = 70
+                ch.value_axis.major_gridlines.format.line.color.rgb = RGBColor(0xE5, 0xE0, 0xD2)
+            ch.font.size = Pt(14)
             ch.has_legend = True
             ch.legend.position = XL_LEGEND_POSITION.BOTTOM
             ch.legend.include_in_layout = False
@@ -386,6 +403,8 @@ def _deck(title, subtitle, slides):
                 text(s, 0.8, 6.3, 11.7, 0.8, sd["note"], 14, False, grey)
         if sd.get("note") and kind != "table":
             text(s, 0.8, 6.7, 11.7, 0.6, sd["note"], 13, False, grey)
+        text(s, 12.3, 7.0, 0.8, 0.4, str(len(prs.slides)), 12, False, grey)
+        text(s, 0.8, 7.0, 6, 0.4, "Finance Intelligence Studio", 11, False, grey)
     buf = io.BytesIO()
     prs.save(buf)
     return buf.getvalue()

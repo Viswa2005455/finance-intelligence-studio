@@ -20,7 +20,7 @@ nav a:hover, nav a.active { color: var(--brand); }
 .btn { display: inline-block; background: var(--brand); color: #fff; padding: 12px 22px; border-radius: 10px; font-weight: 700; text-decoration: none; border: 0; cursor: pointer; font-size: 1rem; }
 .btn:hover { background: var(--brand-dark); }
 .btn.alt { background: #fff; color: var(--brand-dark); border: 2px solid var(--brand); }
-.hero { background: linear-gradient(135deg, var(--soft), #fff); padding: 72px 0; }
+.hero { background: radial-gradient(700px 300px at 90%% 0%%, var(--soft), transparent 70%%), linear-gradient(135deg, var(--soft), #fff); padding: 84px 0; }
 .hero h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.15; margin: 0 0 16px; color: var(--brand-dark); }
 .hero p { font-size: 1.15rem; color: var(--muted); max-width: 640px; }
 .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
@@ -29,7 +29,16 @@ section.alt { background: var(--soft); }
 h2 { font-size: 1.8rem; margin: 0 0 8px; color: var(--brand-dark); }
 .lead { color: var(--muted); margin: 0 0 28px; }
 .grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; }
+.card { background: #fff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 24px; box-shadow: 0 6px 18px -12px rgba(15, 61, 46, .35); transition: transform .15s ease, box-shadow .15s ease; }
+.card:hover { transform: translateY(-3px); box-shadow: 0 14px 28px -14px rgba(15, 61, 46, .45); }
+.card .ico { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 12px; background: var(--soft); font-size: 1.4rem; margin-bottom: 12px; }
+.band { background: linear-gradient(135deg, var(--brand-dark), var(--brand)); color: #fff; padding: 52px 0; text-align: center; }
+.band h2 { color: #fff; }
+.band p { color: rgba(255,255,255,.85); margin: 6px 0 20px; }
+.band .btn { background: #fff; color: var(--brand-dark); }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; text-align: center; }
+.stats b { display: block; font-size: 2.2rem; color: var(--brand-dark); }
+.stats span { color: var(--muted); }
 .card h3 { margin: 0 0 6px; }
 .price { font-size: 1.6rem; font-weight: 800; color: var(--brand-dark); }
 .ph { background: linear-gradient(135deg, var(--soft), #e2e8f0); border-radius: 14px; aspect-ratio: 4/3; display: grid; place-items: center; color: var(--muted); font-weight: 600; text-align: center; padding: 12px; }
@@ -101,6 +110,10 @@ def page(title: str, desc: str, body: str, nav: list[tuple[str, str]], active: s
 """.encode()
 
 
+def cta(heading="Ready to get started?", text="EDIT: one friendly sentence inviting the visitor to contact you.", href="contact.html", label="Contact us") -> str:
+    return f'<section class="band"><div class="wrap"><h2>{heading}</h2><p>{text}</p><a class="btn" href="{href}">{label}</a></div></section>'
+
+
 def contact_form(action_note=True) -> str:
     return f"""<form action="https://formspree.io/f/YOUR_FORM_ID" method="post">
   <label>Your name <input name="name" required></label>
@@ -126,11 +139,12 @@ def landing() -> dict[str, bytes]:
 <section id="benefits"><div class="wrap">
   <h2>Why choose us</h2><p class="lead">EDIT: three reasons customers pick you.</p>
   <div class="grid">
-    <div class="card"><h3>Fast</h3><p>EDIT: delivery time or response time.</p></div>
-    <div class="card"><h3>Fair prices</h3><p>EDIT: clear prices, no surprises.</p></div>
-    <div class="card"><h3>Trusted</h3><p>EDIT: years of experience, customers served, reviews.</p></div>
+    <div class="card"><div class="ico">&#9889;</div><h3>Fast</h3><p>EDIT: delivery time or response time.</p></div>
+    <div class="card"><div class="ico">&#128176;</div><h3>Fair prices</h3><p>EDIT: clear prices, no surprises.</p></div>
+    <div class="card"><div class="ico">&#11088;</div><h3>Trusted</h3><p>EDIT: years of experience, customers served, reviews.</p></div>
   </div>
 </div></section>
+<section><div class="wrap"><div class="stats"><div><b>500+</b><span>EDIT: customers served</span></div><div><b>4.8/5</b><span>EDIT: average rating (use real numbers only)</span></div><div><b>24h</b><span>EDIT: reply time</span></div></div></div></section>
 <section class="alt"><div class="wrap">
   <h2>What customers say</h2><p class="lead">EDIT: replace with real reviews (with permission).</p>
   <div class="grid">
@@ -163,7 +177,7 @@ def business5() -> dict[str, bytes]:
 <section><div class="wrap"><h2>What we do</h2><p class="lead">EDIT: three main services.</p>
   <div class="grid"><div class="card"><h3>Service one</h3><p>Short description.</p></div><div class="card"><h3>Service two</h3><p>Short description.</p></div><div class="card"><h3>Service three</h3><p>Short description.</p></div></div>
 </div></section>
-<section class="alt"><div class="wrap"><h2>Visit or call us</h2><p>EDIT: address, opening hours and phone number.</p><a class="btn" href="contact.html">Get directions and contact</a></div></section>"""
+<section class="alt"><div class="wrap"><h2>Visit or call us</h2><p>EDIT: address, opening hours and phone number.</p><a class="btn" href="contact.html">Get directions and contact</a></div></section>""" + cta()
     about = """
 <section class="hero"><div class="wrap"><h1>About us</h1><p>EDIT: Your story in 3 to 4 sentences: who you are, when you started, what you care about.</p></div></section>
 <section><div class="wrap"><div class="grid"><div class="card"><h3>Our mission</h3><p>EDIT</p></div><div class="card"><h3>Our values</h3><p>EDIT</p></div><div class="card"><h3>Our team</h3><p>EDIT: names and roles.</p></div></div></div></section>"""
