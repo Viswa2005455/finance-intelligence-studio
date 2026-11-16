@@ -36,7 +36,14 @@ foreach ($item in $spec) {
       foreach ($n in $order) { foreach ($w in $wb.Worksheets) { if ($w.Name -eq $n) { $name = $n; break } }; if ($name) { break } }
       if (-not $name) { $name = $wb.Worksheets.Item([Math]::Min(2, $wb.Worksheets.Count)).Name }
       $ws = $wb.Worksheets.Item($name); $ws.Activate()
-      if ($name -eq "Summary") { $rng = "A1:R36" }
+      $nCharts = $ws.ChartObjects().Count
+      if ($nCharts -gt 0) {
+        # include every chart in the picture (charts sit below the data rows), but leave out the chart-data block on the right
+        $bottom = 20; $right = 8
+        foreach ($co in $ws.ChartObjects()) { $br = $co.BottomRightCell; $bottom = [Math]::Max($bottom, $br.Row + 1); $right = [Math]::Max($right, $br.Column) }
+        $right = $right + 1
+        $rng = $ws.Range($ws.Cells(1, 1), $ws.Cells([Math]::Min($bottom, 70), $right)).Address($false, $false)
+      } elseif ($name -eq "Summary") { $rng = "A1:R36" }
       else {
         $ur = $ws.UsedRange; $rows = [Math]::Min($ur.Rows.Count + $ur.Row - 1, 34); $cols = [Math]::Min($ur.Columns.Count + $ur.Column - 1, 15)
         $rng = $ws.Range($ws.Cells(1, 1), $ws.Cells([Math]::Max($rows, 8), [Math]::Max($cols, 6))).Address($false, $false)
