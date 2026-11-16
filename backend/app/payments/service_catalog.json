@@ -5,15 +5,15 @@
   "you_send": "Your Excel data or a sample of it, and the numbers you want to see",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 899,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 6
    }
   }
@@ -24,15 +24,15 @@
   "you_send": "Your categories and monthly budget amounts",
   "tiers": {
    "Basic": {
-    "price": 349,
+    "price": 299,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 399,
     "days": 2
    },
    "Premium": {
-    "price": 799,
+    "price": 499,
     "days": 3
    }
   }
@@ -43,15 +43,15 @@
   "you_send": "Your sales and expense records (Excel, Tally export or notebook photos)",
   "tiers": {
    "Basic": {
-    "price": 599,
+    "price": 399,
     "days": 0
    },
    "Standard": {
-    "price": 899,
+    "price": 449,
     "days": 3
    },
    "Premium": {
-    "price": 1299,
+    "price": 499,
     "days": 5
    }
   }
@@ -62,15 +62,15 @@
   "you_send": "Your budget and your actual figures",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 1099,
+    "price": 349,
     "days": 5
    }
   }
@@ -81,15 +81,15 @@
   "you_send": "Opening cash balance, expected income and regular expenses",
   "tiers": {
    "Basic": {
-    "price": 599,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 999,
+    "price": 299,
     "days": 4
    },
    "Premium": {
-    "price": 1499,
+    "price": 399,
     "days": 6
    }
   }
@@ -100,15 +100,15 @@
   "you_send": "Your sales records in any format",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 1099,
+    "price": 349,
     "days": 5
    }
   }
@@ -119,15 +119,15 @@
   "you_send": "Your item list and current stock",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 4
    }
   }
@@ -138,15 +138,15 @@
   "you_send": "Your expense categories",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 749,
+    "price": 349,
     "days": 3
    }
   }
@@ -157,15 +157,15 @@
   "you_send": "Your business details and GST rates you use",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 749,
+    "price": 349,
     "days": 3
    }
   }
@@ -176,15 +176,15 @@
   "you_send": "Balance sheet and profit & loss statements",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 4
    }
   }
@@ -199,11 +199,11 @@
     "days": 0
    },
    "Standard": {
-    "price": 249,
+    "price": 199,
     "days": 1
    },
    "Premium": {
-    "price": 499,
+    "price": 299,
     "days": 2
    }
   }
@@ -214,15 +214,15 @@
   "you_send": "Your data file and the questions you want answered",
   "tiers": {
    "Basic": {
-    "price": 199,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 399,
+    "price": 199,
     "days": 2
    },
    "Premium": {
-    "price": 599,
+    "price": 299,
     "days": 3
    }
   }
@@ -233,15 +233,15 @@
   "you_send": "Your sales data (Excel or CSV)",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1199,
+    "price": 299,
     "days": 5
    },
    "Premium": {
-    "price": 1799,
+    "price": 399,
     "days": 7
    }
   }
@@ -252,15 +252,15 @@
   "you_send": "Your financial data",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1199,
+    "price": 299,
     "days": 5
    },
    "Premium": {
-    "price": 1799,
+    "price": 399,
     "days": 7
    }
   }
@@ -271,15 +271,15 @@
   "you_send": "Your current Excel reports",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 999,
+    "price": 299,
     "days": 5
    },
    "Premium": {
-    "price": 1499,
+    "price": 399,
     "days": 7
    }
   }
@@ -290,15 +290,15 @@
   "you_send": "Your monthly data and the figures management reviews",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 899,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 6
    }
   }
@@ -309,15 +309,15 @@
   "you_send": "Your student and fee records",
   "tiers": {
    "Basic": {
-    "price": 599,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 999,
+    "price": 299,
     "days": 5
    },
    "Premium": {
-    "price": 1499,
+    "price": 399,
     "days": 7
    }
   }
@@ -328,15 +328,15 @@
   "you_send": "Your sales and purchase records",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 899,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 6
    }
   }
@@ -347,15 +347,15 @@
   "you_send": "Your sales and purchase data",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 899,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 6
    }
   }
@@ -366,15 +366,15 @@
   "you_send": "Your plans, costs and revenue assumptions",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1199,
+    "price": 299,
     "days": 5
    },
    "Premium": {
-    "price": 1799,
+    "price": 399,
     "days": 7
    }
   }
@@ -385,15 +385,15 @@
   "you_send": "Your costs and current prices",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 4
    }
   }
@@ -404,15 +404,15 @@
   "you_send": "Your new data each month",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 399,
+    "price": 199,
     "days": 2
    },
    "Premium": {
-    "price": 599,
+    "price": 299,
     "days": 2
    }
   }
@@ -423,15 +423,15 @@
   "you_send": "Your text, logo and photos",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 999,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 5
    }
   }
@@ -442,15 +442,15 @@
   "you_send": "Your business details, text, logo and photos",
   "tiers": {
    "Basic": {
-    "price": 1499,
+    "price": 149,
     "days": 0
    },
    "Standard": {
-    "price": 2199,
+    "price": 399,
     "days": 7
    },
    "Premium": {
-    "price": 2999,
+    "price": 499,
     "days": 10
    }
   }
@@ -461,15 +461,15 @@
   "you_send": "Your resume, projects and photo",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1099,
+    "price": 299,
     "days": 4
    },
    "Premium": {
-    "price": 1499,
+    "price": 399,
     "days": 5
    }
   }
@@ -480,15 +480,15 @@
   "you_send": "Your course details, batches, logo and photos",
   "tiers": {
    "Basic": {
-    "price": 1199,
+    "price": 149,
     "days": 0
    },
    "Standard": {
-    "price": 1999,
+    "price": 399,
     "days": 7
    },
    "Premium": {
-    "price": 2999,
+    "price": 499,
     "days": 10
    }
   }
@@ -499,15 +499,15 @@
   "you_send": "Your menu, photos, timings and address",
   "tiers": {
    "Basic": {
-    "price": 999,
+    "price": 149,
     "days": 0
    },
    "Standard": {
-    "price": 1499,
+    "price": 349,
     "days": 5
    },
    "Premium": {
-    "price": 2199,
+    "price": 449,
     "days": 7
    }
   }
@@ -518,15 +518,15 @@
   "you_send": "Access to your current website",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1199,
+    "price": 299,
     "days": 6
    },
    "Premium": {
-    "price": 1999,
+    "price": 399,
     "days": 8
    }
   }
@@ -537,15 +537,15 @@
   "you_send": "Access to your website code or builder",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 749,
+    "price": 349,
     "days": 3
    }
   }
@@ -560,11 +560,11 @@
     "days": 0
    },
    "Standard": {
-    "price": 249,
+    "price": 199,
     "days": 2
    },
    "Premium": {
-    "price": 399,
+    "price": 299,
     "days": 2
    }
   }
@@ -575,15 +575,15 @@
   "you_send": "Access to your website",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 399,
+    "price": 199,
     "days": 30
    },
    "Premium": {
-    "price": 499,
+    "price": 299,
     "days": 30
    }
   }
@@ -594,15 +594,15 @@
   "you_send": "Access to your website and your main keywords",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 5
    }
   }
@@ -613,15 +613,15 @@
   "you_send": "Your current report and where the data comes from",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1199,
+    "price": 299,
     "days": 6
    },
    "Premium": {
-    "price": 1999,
+    "price": 399,
     "days": 8
    }
   }
@@ -632,15 +632,15 @@
   "you_send": "How you get leads today",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 749,
+    "price": 349,
     "days": 3
    }
   }
@@ -651,15 +651,15 @@
   "you_send": "The questions your form should ask",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 5
    }
   }
@@ -670,15 +670,15 @@
   "you_send": "Your business details and a sample invoice",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 749,
+    "price": 349,
     "days": 3
    }
   }
@@ -689,15 +689,15 @@
   "you_send": "Student list and fee structure",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 4
    }
   }
@@ -708,15 +708,15 @@
   "you_send": "Your working hours and services",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 4
    }
   }
@@ -727,15 +727,15 @@
   "you_send": "The task you want automated and access to the apps involved",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 149,
     "days": 0
    },
    "Standard": {
-    "price": 1499,
+    "price": 349,
     "days": 6
    },
    "Premium": {
-    "price": 2499,
+    "price": 449,
     "days": 10
    }
   }
@@ -746,15 +746,15 @@
   "you_send": "Your file and a description of the steps you repeat",
   "tiers": {
    "Basic": {
-    "price": 249,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 499,
+    "price": 249,
     "days": 2
    },
    "Premium": {
-    "price": 749,
+    "price": 349,
     "days": 3
    }
   }
@@ -765,15 +765,15 @@
   "you_send": "The fields you need to capture",
   "tiers": {
    "Basic": {
-    "price": 199,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 399,
+    "price": 199,
     "days": 2
    },
    "Premium": {
-    "price": 599,
+    "price": 299,
     "days": 3
    }
   }
@@ -784,15 +784,15 @@
   "you_send": "The company name",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 6
    }
   }
@@ -803,15 +803,15 @@
   "you_send": "The industry and what you need it for",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 6
    }
   }
@@ -822,15 +822,15 @@
   "you_send": "Your business and your main competitors",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 599,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 999,
+    "price": 349,
     "days": 5
    }
   }
@@ -841,15 +841,15 @@
   "you_send": "Your business idea, prices and expected costs",
   "tiers": {
    "Basic": {
-    "price": 749,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 1199,
+    "price": 299,
     "days": 5
    },
    "Premium": {
-    "price": 1999,
+    "price": 399,
     "days": 7
    }
   }
@@ -860,15 +860,15 @@
   "you_send": "Your existing deck or business details",
   "tiers": {
    "Basic": {
-    "price": 499,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 899,
+    "price": 249,
     "days": 4
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 5
    }
   }
@@ -879,15 +879,15 @@
   "you_send": "Your content or notes",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 5
    }
   }
@@ -898,15 +898,15 @@
   "you_send": "Your current profile link or resume",
   "tiers": {
    "Basic": {
-    "price": 199,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 399,
+    "price": 199,
     "days": 2
    },
    "Premium": {
-    "price": 599,
+    "price": 299,
     "days": 3
    }
   }
@@ -921,11 +921,11 @@
     "days": 0
    },
    "Standard": {
-    "price": 249,
+    "price": 199,
     "days": 2
    },
    "Premium": {
-    "price": 399,
+    "price": 299,
     "days": 3
    }
   }
@@ -936,15 +936,15 @@
   "you_send": "Your business, audience and goals",
   "tiers": {
    "Basic": {
-    "price": 399,
+    "price": 99,
     "days": 0
    },
    "Standard": {
-    "price": 749,
+    "price": 249,
     "days": 3
    },
    "Premium": {
-    "price": 1199,
+    "price": 349,
     "days": 5
    }
   }
