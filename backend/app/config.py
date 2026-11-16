@@ -53,6 +53,9 @@ class Settings(BaseSettings):
     fis_smtp_port: int = 587
     fis_smtp_user: str | None = None
     fis_smtp_password: SecretStr | None = None
+    # Email over HTTPS (Brevo), for hosts that block SMTP ports (Render free plans do). Needs a sender verified in Brevo.
+    fis_brevo_api_key: SecretStr | None = None
+    fis_brevo_sender: str | None = None
     fis_order_email: str | None = None  # where new-order alerts go and customers' replies land; default fis_smtp_user
 
     fis_ai_provider: str = "none"

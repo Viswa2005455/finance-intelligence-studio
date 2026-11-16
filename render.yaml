@@ -34,6 +34,11 @@ services:
       - key: RAZORPAY_KEY_SECRET
         sync: false
       # Order emails (optional): sent the moment a service order is paid. Gmail works with an app password.
+      # Email over HTTPS (works on the free plan, which blocks SMTP ports): a Brevo API key and your verified sender address.
+      - key: FIS_BREVO_API_KEY
+        sync: false
+      - key: FIS_BREVO_SENDER
+        sync: false
       - key: FIS_SMTP_HOST
         value: smtp.gmail.com
       - key: FIS_SMTP_USER

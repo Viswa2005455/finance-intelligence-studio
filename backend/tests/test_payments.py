@@ -246,3 +246,52 @@ def test_every_service_has_a_kit_with_a_how_to_guide():
         names = zipfile.ZipFile(path).namelist()
         assert any(n.endswith("00-START-HERE-How-to-use.docx") for n in names) and len(names) >= 2, slug
     assert kit_path("../../etc/passwd") is None
+
+
+def _brevo_order(**kw):
+    from app.payments import mail
+    base = dict(payment_id="pay_b1", service="Resume / CV for finance roles", package="Basic", amount=99, customer_name="Asha Rao", customer_email="asha@example.com",
+                customer_phone="", requirements="", files_link="", you_send="Your resume", delivery_days=0, revisions=None, custom=False, kit_name="kit.zip", kit_bytes=b"PKzipdata")
+    base.update(kw)
+    return mail.Order(**base)
+
+
+def test_email_goes_over_https_with_the_kit_attached():
+    from app.config import Settings
+    from app.payments import mail
+    s = Settings(fis_brevo_api_key="key123", fis_brevo_sender="me@example.com", fis_order_email="owner@example.com")
+    assert mail.brevo_configured(s) and mail.mail_configured(s)
+    seen = []
+
+    def handler(request: httpx.Request):
+        seen.append((request.url.host, request.headers["api-key"], json.loads(request.content)))
+        return httpx.Response(201, json={"messageId": "1"})
+
+    o = _brevo_order()
+    mail.send_brevo([mail.customer_message(o, s), mail.owner_message(o, s)], s, client=httpx.Client(transport=httpx.MockTransport(handler)))
+    assert len(seen) == 2 and all(h == "api.brevo.com" and k == "key123" for h, k, _ in seen)
+    customer, owner = seen[0][2], seen[1][2]
+    assert customer["sender"]["email"] == "me@example.com" and customer["to"][0]["email"] == "asha@example.com" and customer["replyTo"]["email"] == "owner@example.com"
+    import base64
+    assert base64.b64decode(customer["attachment"][0]["content"]) == b"PKzipdata" and customer["attachment"][0]["name"] == "kit.zip"
+    assert "kit" in customer["textContent"].lower() and owner["to"][0]["email"] == "owner@example.com" and "attachment" not in owner
+
+
+def test_email_service_refusal_is_reported_without_the_key():
+    import pytest
+    from app.config import Settings
+    from app.payments import mail
+    s = Settings(fis_brevo_api_key="key123", fis_brevo_sender="me@example.com")
+    client = httpx.Client(transport=httpx.MockTransport(lambda r: httpx.Response(400, json={"message": "Sender not valid"})))
+    with pytest.raises(RuntimeError) as err:
+        mail.send_brevo([mail.customer_message(_brevo_order(), s)], s, client=client)
+    assert "400" in str(err.value) and "Sender not valid" in str(err.value) and "key123" not in str(err.value)
+
+
+def test_smtp_alone_still_counts_as_configured_and_brevo_wins_when_both():
+    from app.config import Settings
+    from app.payments import mail
+    smtp = Settings(fis_smtp_host="h", fis_smtp_user="me@example.com", fis_smtp_password="p")
+    assert mail.mail_configured(smtp) and not mail.brevo_configured(smtp)
+    both = Settings(fis_smtp_host="h", fis_smtp_user="me@example.com", fis_smtp_password="p", fis_brevo_api_key="k")
+    assert mail.brevo_configured(both) and mail.sender_address(both) == "me@example.com"

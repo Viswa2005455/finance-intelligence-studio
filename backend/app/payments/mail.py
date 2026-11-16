@@ -4,11 +4,14 @@ alert with everything the customer wrote."""
 
 from __future__ import annotations
 
+import base64
 import logging
 import smtplib
 from dataclasses import dataclass
 from email.message import EmailMessage
-from email.utils import formataddr
+from email.utils import formataddr, parseaddr
+
+import httpx
 
 from ..config import Settings
 
@@ -36,8 +39,20 @@ class Order:
     kit_bytes: bytes = b""
 
 
+BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+
+
+def brevo_configured(s: Settings) -> bool:
+    return bool(s.fis_brevo_api_key and s.fis_brevo_api_key.get_secret_value().strip() and (s.fis_brevo_sender or s.fis_smtp_user or s.fis_order_email))
+
+
+def sender_address(s: Settings) -> str:
+    return (s.fis_brevo_sender or s.fis_smtp_user or s.fis_order_email or "").strip()
+
+
 def mail_configured(s: Settings) -> bool:
-    return bool(s.fis_smtp_host and s.fis_smtp_user and s.fis_smtp_password)
+    """Email is on when either the HTTPS email service (Brevo) or an SMTP account is set up."""
+    return brevo_configured(s) or bool(s.fis_smtp_host and s.fis_smtp_user and s.fis_smtp_password)
 
 
 def owner_address(s: Settings) -> str:
@@ -64,7 +79,7 @@ def customer_message(o: Order, s: Settings) -> EmailMessage:
         custom = "\n\nThe Basic package is the kit only, so there is nothing more to wait for. If you would like it customised for you, just reply to this email."
     m = EmailMessage()
     m["Subject"] = f"Your kit is here: {o.service}"
-    m["From"] = formataddr((OWNER_NAME, s.fis_smtp_user or ""))
+    m["From"] = formataddr((OWNER_NAME, sender_address(s)))
     m["To"] = o.customer_email
     m["Reply-To"] = owner_address(s)
     m.set_content(
@@ -82,7 +97,7 @@ def customer_message(o: Order, s: Settings) -> EmailMessage:
 def owner_message(o: Order, s: Settings) -> EmailMessage:
     m = EmailMessage()
     m["Subject"] = f"New paid order: {o.service} ({o.package}) - Rs {o.amount}" + (" [CUSTOM WORK DUE]" if o.custom else " [kit only]")
-    m["From"] = formataddr(("Finance Intelligence Studio", s.fis_smtp_user or ""))
+    m["From"] = formataddr(("Finance Intelligence Studio", sender_address(s)))
     m["To"] = owner_address(s)
     m["Reply-To"] = o.customer_email
     owed = (f"Instant kit sent. CUSTOM WORK DUE within {o.delivery_days or '?'} day(s) after you have their details."
@@ -98,7 +113,41 @@ def owner_message(o: Order, s: Settings) -> EmailMessage:
     return m
 
 
+def _brevo_payload(m: EmailMessage, s: Settings) -> dict:
+    """One EmailMessage as a Brevo transactional-email request. The sender must be a sender verified in Brevo."""
+    name, _ = parseaddr(m["From"] or "")
+    to_name, to_addr = parseaddr(m["To"] or "")
+    body = m.get_body(("plain",))
+    payload: dict = {"sender": {"name": name or OWNER_NAME, "email": sender_address(s)}, "to": [{"email": to_addr, **({"name": to_name} if to_name else {})}],
+                     "subject": str(m["Subject"] or ""), "textContent": body.get_content() if body else ""}
+    _, reply = parseaddr(m["Reply-To"] or "")
+    if reply:
+        payload["replyTo"] = {"email": reply}
+    files = [{"name": a.get_filename() or "attachment.bin", "content": base64.b64encode(a.get_payload(decode=True) or b"").decode()} for a in m.iter_attachments()]
+    if files:
+        payload["attachment"] = files
+    return payload
+
+
+def send_brevo(messages: list[EmailMessage], s: Settings, client: httpx.Client | None = None) -> None:
+    """Sends over HTTPS (port 443), which hosting plans that block SMTP ports still allow."""
+    key = s.fis_brevo_api_key.get_secret_value().strip() if s.fis_brevo_api_key else ""
+    own = client is None
+    client = client or httpx.Client(timeout=20)
+    try:
+        for m in messages:
+            r = client.post(BREVO_URL, json=_brevo_payload(m, s), headers={"api-key": key, "accept": "application/json", "content-type": "application/json"})
+            if r.status_code >= 300:
+                # Brevo explains problems in the response (for example: sender not verified); never log the key.
+                raise RuntimeError(f"Brevo refused the email ({r.status_code}): {r.text[:300]}")
+    finally:
+        if own:
+            client.close()
+
+
 def send(messages: list[EmailMessage], s: Settings) -> None:
+    if brevo_configured(s):
+        return send_brevo(messages, s)
     password = s.fis_smtp_password.get_secret_value().replace(" ", "") if s.fis_smtp_password else ""
     host, port, user = (s.fis_smtp_host or "").strip(), s.fis_smtp_port, (s.fis_smtp_user or "").strip()
     if port == 465:
