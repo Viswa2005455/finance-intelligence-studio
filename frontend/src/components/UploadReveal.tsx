@@ -46,7 +46,7 @@ const unitOf = (sheet: SheetData, refs: string[]) => {
   const fmt = sheet.columns.find((c) => letters.has(c.letter) && c.number_format)?.number_format ?? '';
   return fmt.includes('%') ? '%' : fmt.match(SYMBOL)?.[0].replace('[$', '') ?? '—';
 };
-const val = (v: number | null | undefined) => (isNum(v) ? fmtNum(v, Math.abs(v) >= 1000 || Number.isInteger(v) ? 0 : 2) : '—');
+const val = (v: number | null | undefined) => (isNum(v) ? fmtNum(v, Number.isInteger(v) ? 0 : 2) : '—');
 
 /** Everything the parser extracted from one upload, then the calculations the engines ran on it. */
 export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNode }) {
@@ -96,7 +96,9 @@ export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNo
         {!tabular ? (
           <div className="mt stack">
             {preview}
-            <Callout tone="info">No financial statement or number series was recognised in this file, so no calculations were run.</Callout>
+            <Callout tone="info">{series.length > 0
+              ? 'Numbers were found in this file (listed above, each with its source), but they are not laid out period by period, so no statement calculations were run. Put them in a table with one column per year to run ratios and growth.'
+              : 'No financial statement or number series was recognised in this file, so no calculations were run.'}</Callout>
           </div>
         ) : (
           <>
@@ -240,7 +242,9 @@ function Calculations({ u, tabular, rowsReady, sc, screenerPending, mapping, dec
   return (
     <Card title={<span className="row"><Calculator size={17} className="pos" />Calculations done</span>}
       subtitle="Calculated by the app's tested engines from the data above. Each row shows the formula, the numbers used, the result and the source cells. Nothing is estimated or filled in.">
-      {!tabular ? <p className="muted" style={{ margin: 0 }}>No statement series recognised — calculations not run.</p>
+      {!tabular ? <p className="muted" style={{ margin: 0 }}>{(u.analysis.sheets ?? []).some((s) => (s.series ?? []).length > 0)
+        ? 'No period-by-period statement layout recognised, so calculations were not run. The numbers that were found are listed above.'
+        : 'No statement series recognised — calculations not run.'}</p>
         : error ? <ErrorBox error={error} />
           : !blocks ? <Skeleton h={160} />
             : !blocks.length ? <p className="muted" style={{ margin: 0 }}>No calculation could be run: no line in this file matched a standard statement item, and no analysis was recommended.</p>
