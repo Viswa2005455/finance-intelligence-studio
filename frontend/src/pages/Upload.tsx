@@ -98,7 +98,7 @@ export function UploadPage() {
           </Hint>
           <div
             className={`dropzone ${over ? 'over' : ''}`}
-            role="button" tabIndex={0} aria-label="Upload files: drop here or press Enter to browse"
+            role="button" tabIndex={0}
             onClick={() => inputRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); } }}
             onDragOver={(e) => { e.preventDefault(); setOver(true); }}

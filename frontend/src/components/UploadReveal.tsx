@@ -11,7 +11,7 @@ import {
 import { loadRaw, save } from '../lib/storage';
 import { useAsync } from '../lib/useApi';
 import { SheetPreview, type Sheet } from './SheetPreview';
-import { Badge, Callout, Card, ErrorBox, Skeleton, Warnings } from './ui';
+import { Badge, Callout, Card, Disclosure, ErrorBox, Skeleton, Warnings } from './ui';
 
 export interface RevealUpload {
   id: string; name: string; label: string; extension: string; size: number; status: string; project_id?: string | null;
@@ -50,7 +50,8 @@ const val = (v: number | null | undefined) => (isNum(v) ? fmtNum(v, Number.isInt
 
 /** Everything the parser extracted from one upload, then the calculations the engines ran on it. */
 export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNode }) {
-  const tabular = u.status === 'processed' && u.analysis.kind === 'tabular' && !!u.analysis.sheets?.length;
+  // Spreadsheets, CSV, and any other file whose tables or numbers were extracted (Word, Markdown, HTML, text, JSON, YAML, XML) share one view.
+  const tabular = u.status === 'processed' && ['tabular', 'document', 'data'].includes(u.analysis.kind) && !!u.analysis.sheets?.length;
   const isScreenerBook = tabular && !!u.analysis.sheets?.some((s) => s.name.toLowerCase() === 'data sheet');
   // A two-sided (To / By) Trading and Profit & Loss account is read by its own endpoint into the same company-import shape.
   const isTAccount = tabular && !isScreenerBook && !!u.analysis.sheets?.some((s) => s.layout === 't_account');
@@ -115,6 +116,8 @@ export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNo
             ) : rows.length ? (
               <MappingTable rows={rows} decisions={state.decisions} setDecision={(k, d) => update({ ...state, decisions: { ...state.decisions, [k]: d } })} />
             ) : <p className="faint">No line matched a standard statement item (for example Revenue, Net income, Total assets). Ratios need these.</p>}
+
+            {u.analysis.kind !== 'tabular' && <div className="mt"><Disclosure title="Original text of the file">{preview}</Disclosure></div>}
           </>
         )}
       </Card>

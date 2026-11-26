@@ -193,8 +193,11 @@ def test_unquoted_thousands_commas_are_flagged_not_trusted_silently(client):
 
 def test_numbers_in_sentences_keep_their_line(client):
     s = series_of(upload(client, "notes_txt"))
-    assert s["Revenue"]["values"] == [12480, 11000] and set(s["Revenue"]["refs"]) == {"line 2"}
-    assert s["Net profit"]["values"] == [1380, 1150]
+    # The clause "Revenue for FY25 was Rs 12,480 lakh" and "up from 11,000 lakh in FY24" each name their period,
+    # so the values are placed by period and come out oldest first, with the line they came from.
+    assert s["Revenue"]["values"] == [11000, 12480] and s["Revenue"]["period_labels"] == ["FY24", "FY25"]
+    assert set(s["Revenue"]["refs"]) == {"line 2"}
+    assert s["Net profit"]["values"] == [1380, 1150]  # no period named: listed in the order written, and said so
     assert not any("nvoice" in k or "Need" in k for k in s), "an unnamed 45,000 must not be invented into a line item"
 
 
@@ -234,3 +237,12 @@ def test_hidden_rows_text_numbers_and_formulas_in_workbooks(client):
     s = series_of(upload(client, "xlsx_messy"))
     assert s["Revenue"]["values"] == [11000, 12480]       # numbers stored as text
     assert s["Margin"]["values"] == pytest.approx([1150 / 11000, 1380 / 12480])  # formulas without saved results are calculated
+
+
+def test_sentences_that_name_their_periods_feed_the_statement_engines(client):
+    text = "Revenue in FY24 was 11,000 and in FY25 it was 12,480.\nNet profit in FY24 was 1,150 and in FY25 it was 1,380.\n"
+    res = client.post("/api/uploads", files=[("files", ("summary.txt", text.encode()))]).json()["results"][0]
+    st = res["upload"]["statements"][0]
+    assert st["periods"] == ["FY24", "FY25"]
+    by_key = {l["key"]: l["values"] for l in st["lines"]}
+    assert by_key["revenue"] == [11000, 12480] and by_key["net_income"] == [1150, 1380]

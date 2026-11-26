@@ -1,7 +1,7 @@
 name: CI
 
-# Runs on every push and pull request: backend tests (against real PostgreSQL),
-# frontend typecheck + tests + build, and dependency audits.
+# Runs on every push and pull request: backend tests (against real PostgreSQL), frontend typecheck, tests, build
+# and bundle-size budget, browser tests (real Chrome, including accessibility and phone layout), and dependency audits.
 on:
   push:
   pull_request:
@@ -41,8 +41,8 @@ jobs:
       run:
         working-directory: backend
     steps:
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.4.0
         with:
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
@@ -67,8 +67,8 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
@@ -77,20 +77,56 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+      - name: Bundle size budget
+        run: npm run check:bundle
+
+  e2e:
+    name: Browser tests (Chrome)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: astral-sh/setup-uv@v10.4.0
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install backend
+        working-directory: backend
+        run: uv sync --frozen
+      - name: Install frontend
+        working-directory: frontend
+        run: npm ci
+      - name: Run browser tests
+        working-directory: frontend
+        run: npx playwright test
+      - name: Keep the report when something fails
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+          retention-days: 7
 
   audit:
     name: Dependency audit
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
       - name: npm audit (high and above)
         working-directory: frontend
         run: npm audit --audit-level=high
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v10.4.0
       - name: pip-audit
         working-directory: backend
         run: |

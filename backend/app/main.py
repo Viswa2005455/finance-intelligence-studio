@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 
 from .ai.provider import get_provider
-from .api import accounting, ai, analysis, auth, costing, dashboard, finance, investments, market, payments, planning, projects, reports, tax, uploads
+from .api import accounting, ai, analysis, auth, costing, dashboard, demo, finance, investments, market, payments, planning, projects, reports, tax, uploads
 from .auth.deps import current_user
 from .config import get_settings
 from .db.session import session_factory
@@ -203,6 +203,7 @@ def ai_status():
 # Public: sign-up and sign-in. Everything else requires a valid session.
 app.include_router(auth.router)
 app.include_router(auth.account)
+app.include_router(demo.router)  # public: a rate-limited demo calculator for visitors
 app.include_router(payments.router)  # public: customers pay for a service without an account
 app.include_router(projects.router)
 app.include_router(uploads.router)

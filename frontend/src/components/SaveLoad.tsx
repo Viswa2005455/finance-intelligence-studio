@@ -32,13 +32,28 @@ export function SaveLoad<T extends object>({ kind, label, getData, onLoad }: { k
   const [expanded, setExpanded] = useState<Full | null>(null);
   const [scope, setScope] = useState<'project' | 'all'>('project');
 
+  // Unsaved changes: compared with what was last opened or saved, so a person is warned before leaving or replacing them.
+  const [baseline, setBaseline] = useState<string | null>(null);
+  const [capture, setCapture] = useState(false);
+  // After opening a model the page may fill in defaults, so the baseline is read from the page once it has re-rendered.
+  useEffect(() => { if (capture) { setBaseline(JSON.stringify(getData())); setCapture(false); } });
+  const dirty = !!linked && baseline !== null && JSON.stringify(getData()) !== baseline;
+  useEffect(() => {
+    if (!dirty) return;
+    const warn = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', warn);
+    return () => window.removeEventListener('beforeunload', warn);
+  }, [dirty]);
+
   const load = async (id: string, version?: number) => {
+    if (dirty && !window.confirm(`You have unsaved changes to "${linked?.name}". Open another version and discard them?`)) return;
     try {
       const r = version
         ? await api.get<Full & { version: number }>(`/api/saved/${id}/versions/${version}`)
         : await api.get<Full>(`/api/saved/${id}`);
       if (r.kind !== kind) { toast(`That saved item is a ${r.kind} model, not ${label}.`, 'error'); return; }
       onLoad(r.data as T);
+      setCapture(true);
       const v = version ?? r.latest_version;
       setLinked({ id: r.id, name: r.name, version: v, project_id: r.project_id });
       toast(`Opened "${r.name}" (version ${v})`);
@@ -77,6 +92,7 @@ export function SaveLoad<T extends object>({ kind, label, getData, onLoad }: { k
         setLinked({ id: r.id, name: r.name, version: 1, project_id: r.project_id });
         toast(`Saved "${r.name}"${active ? ` to ${active.name}` : ''}`);
       }
+      setBaseline(JSON.stringify(data));
       setMode(null);
       setNote('');
     } catch (e) {
@@ -91,6 +107,7 @@ export function SaveLoad<T extends object>({ kind, label, getData, onLoad }: { k
   return (
     <>
       {linked && <Badge tone="info"><History size={12} />{linked.name} · v{linked.version}</Badge>}
+      {dirty && <Badge tone="warn">Unsaved changes</Badge>}
       <button className="btn" onClick={() => { setMode('open'); setScope(active ? 'project' : 'all'); }}><FolderOpen size={15} />Open</button>
       <button className="btn" onClick={() => { setAsNew(!linked); setName(linked?.name ?? `${label} ${new Date().toLocaleDateString()}`); setMode('save'); }}><Save size={15} />Save</button>
 

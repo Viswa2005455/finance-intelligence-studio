@@ -4,19 +4,25 @@ from __future__ import annotations
 
 import datetime as dt
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, Response
 from pydantic import Field
 from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from ..auth.deps import SESSION_COOKIE, current_session, current_user, log_activity
+from ..auth.durable import durable_limiter
+from ..auth.reset import create_reset, find_valid, reset_link, reset_message
 from ..auth.security import DUMMY_HASH, EMAIL_RE, hash_password, limiter, new_session_token, normalise_email, password_problems, token_hash, verify_password
 from ..config import Settings, get_settings
-from ..db.models import Activity, AuthSession, Project, SavedItem, Upload, User, utcnow
+from ..db.models import Activity, AuthSession, PasswordReset, Project, SavedItem, Upload, User, utcnow
+from ..payments.mail import mail_configured, send as send_mail
 from ..db.session import get_db
 from .base import BaseModel
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
+log = logging.getLogger("fis.auth")
 account = APIRouter(prefix="/api/account", tags=["account"])
 
 
@@ -61,7 +67,7 @@ def register(body: RegisterIn, request: Request, response: Response, db: Session
              settings: Settings = Depends(get_settings)):
     if not settings.fis_allow_registration:
         raise HTTPException(403, "Registration is closed on this server.")
-    if not limiter.hit(f"register:{client_ip(request)}", 10, 3600):
+    if not durable_limiter.hit(f"register:{client_ip(request)}", 10, 3600):
         raise HTTPException(429, "Too many sign-up attempts. Try again later.")
     email = normalise_email(body.email)
     if not EMAIL_RE.match(email):
@@ -84,7 +90,7 @@ def register(body: RegisterIn, request: Request, response: Response, db: Session
 def login(body: LoginIn, request: Request, response: Response, db: Session = Depends(get_db),
           settings: Settings = Depends(get_settings)):
     email = normalise_email(body.email)
-    if not (limiter.hit(f"login-ip:{client_ip(request)}", 30, 900) and limiter.hit(f"login-email:{email}", 10, 900)):
+    if not (durable_limiter.hit(f"login-ip:{client_ip(request)}", 30, 900) and durable_limiter.hit(f"login-email:{email}", 10, 900)):
         raise HTTPException(429, "Too many sign-in attempts. Wait 15 minutes and try again.")
     user = db.scalar(select(User).where(User.email == email))
     ok = verify_password(body.password, user.password_hash if user else DUMMY_HASH)
@@ -192,3 +198,66 @@ def delete_account(body: ConfirmIn, response: Response, user: User = Depends(cur
     db.commit()
     response.delete_cookie(SESSION_COOKIE, path="/")
     return {"deleted": True}
+
+
+# ---------------------------------------------------------------- Password reset
+class ForgotIn(BaseModel):
+    email: str = Field(max_length=254)
+
+
+class ResetIn(BaseModel):
+    token: str = Field(max_length=200)
+    new_password: str = Field(max_length=200)
+
+
+NEUTRAL = {"sent": True, "message": "If an account exists for that email, a reset link is on its way. It works once and expires in 30 minutes."}
+
+
+def _deliver(user_email: str, user_name: str, token: str, settings: Settings) -> None:
+    """Send (or, on a computer with no email set up, log) the reset link. Runs after the response so timing never reveals whether the account exists."""
+    from types import SimpleNamespace
+    link = reset_link(settings, token)
+    if mail_configured(settings):
+        try:
+            send_mail([reset_message(SimpleNamespace(email=user_email, display_name=user_name), link, settings)], settings)  # type: ignore[arg-type]
+        except Exception:  # noqa: BLE001
+            log.exception("Could not send the password reset email")
+    elif not settings.is_production:
+        log.warning("Email is not set up, so the password reset link for %s is shown here instead: %s", user_email, link)
+    else:
+        log.error("A password reset was requested but email is not configured on this server")
+
+
+@router.post("/forgot-password")
+def forgot_password(body: ForgotIn, request: Request, tasks: BackgroundTasks, db: Session = Depends(get_db),
+                    settings: Settings = Depends(get_settings)):
+    """Always answers the same way, whether or not the email has an account (no account enumeration). Limited per address and per client."""
+    email = normalise_email(body.email)
+    allowed = durable_limiter.hit(f"forgot-ip:{client_ip(request)}", 10, 3600) and durable_limiter.hit(f"forgot-email:{email}", 3, 3600)
+    user = db.scalar(select(User).where(User.email == email)) if allowed and EMAIL_RE.match(email) else None
+    if user:
+        token = create_reset(db, user)
+        log_activity(db, user.id, "account.password_reset_requested")
+        db.commit()
+        tasks.add_task(_deliver, user.email, user.display_name, token, settings)
+    return NEUTRAL
+
+
+@router.post("/reset-password")
+def reset_password(body: ResetIn, request: Request, db: Session = Depends(get_db)):
+    if not durable_limiter.hit(f"reset-ip:{client_ip(request)}", 20, 3600):
+        raise HTTPException(429, "Too many attempts. Try again later.")
+    row = find_valid(db, body.token)
+    if row is None:
+        raise HTTPException(400, "This reset link is invalid or has expired. Ask for a new one.")
+    user = db.get(User, row.user_id)
+    problems = password_problems(body.new_password, user.email)
+    if problems:
+        raise HTTPException(422, " ".join(problems))  # the link stays usable so the person can try another password
+    user.password_hash = hash_password(body.new_password)
+    row.used_at = utcnow()
+    db.execute(delete(PasswordReset).where(PasswordReset.user_id == user.id, PasswordReset.id != row.id))
+    db.execute(delete(AuthSession).where(AuthSession.user_id == user.id))  # signs out every device, including any thief's
+    log_activity(db, user.id, "account.password_reset")
+    db.commit()
+    return {"reset": True}

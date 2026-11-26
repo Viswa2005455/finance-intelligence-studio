@@ -208,9 +208,7 @@ def parse_text(data: bytes, label: str) -> dict:
     if text.lstrip().startswith("{\\rtf"):
         text = U.strip_rtf(text)
     sheets = U.sheets_from_grids(U.markdown_tables(text), "Table")
-    mentions = U.number_mentions(text)
-    if mentions:
-        sheets.append(mentions)
+    sheets.extend(U.number_mentions(text))
     out = {"kind": "document", "text": text[:MAX_TEXT_PREVIEW], "line_count": text.count("\n") + 1,
            "context": detect_financial_context(text), "warnings": [warn] if warn else [],
            "truncated": len(text) > MAX_TEXT_PREVIEW, "format": label}

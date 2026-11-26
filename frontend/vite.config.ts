@@ -16,5 +16,6 @@ export default defineConfig({
     port: 4173,
     proxy: { '/api': 'http://127.0.0.1:8000' },
   },
-  test: { environment: 'node' },
+  // Unit tests live next to the code; browser tests in e2e/ are run by Playwright, not Vitest.
+  test: { environment: 'node', include: ['src/**/*.test.{ts,tsx}'] },
 });

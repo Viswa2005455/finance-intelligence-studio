@@ -2,6 +2,7 @@ import { AlertTriangle, ChevronDown, Copy, GraduationCap, Info, CheckCircle2, XC
 import { cloneElement, isValidElement, memo, useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { problemLog } from '../lib/api';
+import { LEVEL_LABEL, type Reading } from '../lib/readings';
 import { isNum, parseInputNumber } from '../lib/format';
 import { useSettings } from '../lib/settings';
 
@@ -242,6 +243,23 @@ export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => vo
       </div>
       {details && <details className="faint" style={{ fontSize: 12, marginTop: 6 }}><summary>Technical details</summary><pre style={{ whiteSpace: 'pre-wrap', margin: '4px 0 0' }}>{details}</pre></details>}
     </Callout>
+  );
+}
+
+const READING_TONE = { strong: 'pos', good: 'accent', watch: 'warn', concern: 'neg', info: 'info' } as const;
+
+/** "In plain English": what a page's result means, wording only: the numbers come from the engines. */
+export function ReadingCard({ reading, title = 'In plain English' }: { reading: Reading | null | undefined; title?: string }) {
+  if (!reading) return null;
+  return (
+    <Card title={title} subtitle="A reading of the figures below, using stated rules of thumb"
+      actions={<Badge tone={READING_TONE[reading.level]}>{LEVEL_LABEL[reading.level]}</Badge>}>
+      <div className={`insight ${reading.level}`} style={{ marginTop: 0 }}>
+        <b style={{ fontSize: 14 }}>{reading.headline}</b>
+        <ul className="summary-list">{reading.points.map((p) => <li key={p}>{p}</li>)}</ul>
+        {reading.caution && <p className="faint" style={{ fontSize: 12 }}><b>Watch out:</b> {reading.caution}</p>}
+      </div>
+    </Card>
   );
 }
 

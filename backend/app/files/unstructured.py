@@ -14,7 +14,7 @@ import re
 from html.parser import HTMLParser
 from typing import Any
 
-from .routing import match_item
+from .routing import _PERIODISH, _period_year, match_item
 from .tabular import MAX_COLS, MAX_ROWS, analyse_grid, parse_number
 
 # ----------------------------------------------------------------------------------------------- text numbers
@@ -22,12 +22,16 @@ _CONNECT = {
     "was", "is", "were", "are", "be", "of", "to", "at", "for", "in", "on", "by", "from", "rose", "fell", "grew", "stood", "reached", "up", "down",
     "about", "around", "approximately", "approx", "increased", "decreased", "totalled", "totaled", "amounted", "and", "the", "a", "an", "with",
     "rs", "inr", "usd", "eur", "gbp", "lakh", "lakhs", "lac", "lacs", "crore", "crores", "cr", "million", "millions", "mn", "billion", "bn",
-    "thousand", "k", "fy", "q", "h", "year", "quarter",
+    "thousand", "k", "fy", "q", "h", "year", "quarter", "it", "its", "this", "that", "which", "has", "had", "have", "reported", "recorded",
+    "came", "closed", "ended", "totalling", "totaling",
 }
 _DATES = re.compile(r"\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?|\d{1,2}:\d{2}(?::\d{2})?|\d{1,2}[/.]\d{1,2}[/.]\d{2,4}|\bFY\s?\d{2,4}(?:-\d{2,4})?\b|\bQ[1-4]\b")
 _MENTION = re.compile(r"(?<![\w.,])(?:[₹$€£]\s?|Rs\.?\s?|INR\s?|USD\s?)?\(?-?\d[\d,]*(?:\.\d+)?\)?%?(?![\w])")
 _KEY_EQ = re.compile(r"([A-Za-z_][\w\-]*)\s*=\s*$")  # amount=1500.50: the single word before "="
 _KEY_COLON = re.compile(r"((?:[A-Za-z_][\w\-]*\s){0,2}[A-Za-z_][\w\-]*)\s*:\s*$")  # Total sales: 1,200: up to three words before ":"
+
+
+_DATES_ONLY = re.compile(r"\d{4}-\d{2}-\d{2}(?:[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?)?|\d{1,2}:\d{2}(?::\d{2})?|\d{1,2}[/.]\d{1,2}[/.]\d{2,4}")
 
 
 def _mask(line: str) -> str:
@@ -42,12 +46,27 @@ def _clean_token(tok: str) -> str:
     return t
 
 
-def number_mentions(text: str) -> dict | None:
+def _period_for(raw: str, start: int, end: int) -> str | None:
+    """The reporting period named in the same clause as a number: the nearest FY25 / Q1 FY25 / 2025 / Mar 2025
+    between the commas or semicolons around it. None when the clause names no period (it is never guessed)."""
+    left = max((i for i in (raw.rfind(",", 0, start), raw.rfind(";", 0, start)) if i >= 0), default=-1) + 1
+    cands = [i for i in (raw.find(",", end), raw.find(";", end)) if i >= 0]
+    right = min(cands) if cands else len(raw)
+    best, gap = None, 10**9
+    for pm in _PERIODISH.finditer(raw, left, right):
+        d = 0 if pm.start() <= start < pm.end() else min(abs(pm.start() - end), abs(start - pm.end()))
+        if d < gap:
+            best, gap = pm, d
+    return re.sub(r"\s+", " ", best.group(0)).strip() if best else None
+
+
+def number_mentions(text: str) -> list[dict]:
     """Numbers named in running text ("Revenue was Rs 12,480 lakh") and in key=value pairs (amount=1500.50).
 
     A number is kept only when something names it: a known statement item (revenue, net profit, ...) just before
-    it, or "name=" / "name:" in front of it. The same name seen on several lines becomes a series, and each value
-    keeps the line it came from."""
+    it, or "name=" / "name:" in front of it. Each value keeps the line it came from. Values whose own clause
+    names a period (FY25, Q1 FY25, 2025) go into a period-by-period sheet that the statement and ratio engines can
+    use; the rest are listed in order of appearance."""
     rows: dict[str, dict] = {}
     for ln, raw in enumerate(text.splitlines()[:MAX_ROWS], 1):
         if len(raw) > 2000 or raw.count("|") >= 2:
@@ -73,24 +92,55 @@ def number_mentions(text: str) -> dict | None:
                 continue
             row = rows.setdefault(label.lower(), {"label": label[:1].upper() + label[1:], "values": []})
             if len(row["values"]) < MAX_COLS - 1:
-                row["values"].append((value, ln))
+                row["values"].append((value, ln, _period_for(_DATES_ONLY.sub(lambda d: " " * len(d.group(0)), raw), m.start(), m.end())))
     if not rows:
-        return None
-    width = max(len(r["values"]) for r in rows.values())
-    grid: list[list[Any]] = [["Item"] + [f"Mention {i}" for i in range(1, width + 1)]]
-    where: dict[tuple[int, int], int] = {}
-    for r_i, row in enumerate(rows.values(), start=1):
-        grid.append([row["label"]] + [v for v, _ in row["values"]])
-        for c_i, (_, ln) in enumerate(row["values"], start=1):
-            where[(r_i, c_i)] = ln
-    sheet = analyse_grid("Numbers found in text", grid, excel=False)
-    for s in sheet["series"]:
-        s["refs"] = [_line_ref(ref, where) for ref in s["refs"]]
-    sheet["source"] = {"kind": "text numbers"}
-    sheet["warnings"].append("These numbers were picked out of sentences and lines of text. Each shows the line it came from; "
-                             "when one name appears twice in a sentence (for example a current and a previous figure) the order is the order written, "
-                             "not necessarily oldest first. Check them against the text.")
-    return sheet
+        return []
+
+    sheets: list[dict] = []
+    placed: dict[str, dict[str, tuple[float, int]]] = {}
+    loose: dict[str, dict] = {}
+    for key, row in rows.items():
+        for value, ln, period in row["values"]:
+            if period and period not in placed.setdefault(key, {}):
+                placed[key][period] = (value, ln)
+            else:
+                loose.setdefault(key, {"label": row["label"], "values": []})["values"].append((value, ln))
+    placed = {k: v for k, v in placed.items() if v}
+
+    if placed:
+        periods = sorted({p for v in placed.values() for p in v}, key=lambda p: (_period_year(p) or 0, p))
+        grid: list[list[Any]] = [["Item"] + periods]
+        where: dict[tuple[int, int], int] = {}
+        for r_i, (key, by_p) in enumerate(placed.items(), start=1):
+            grid.append([rows[key]["label"]] + [by_p[p][0] if p in by_p else None for p in periods])
+            for c_i, p in enumerate(periods, start=1):
+                if p in by_p:
+                    where[(r_i, c_i)] = by_p[p][1]
+        sheet = analyse_grid("Numbers found in text (by period)", grid, excel=False)
+        for s in sheet["series"]:
+            s["refs"] = [_line_ref(ref, where) for ref in s["refs"]]
+        sheet["source"] = {"kind": "text numbers"}
+        sheet["warnings"].append("These numbers were picked out of sentences. Each was assigned to the period named in the same part of the sentence "
+                                 "(between commas), and shows the line it came from. Check each one against the text.")
+        sheets.append(sheet)
+
+    if loose:
+        width = max(len(r["values"]) for r in loose.values())
+        grid = [["Item"] + [f"Mention {i}" for i in range(1, width + 1)]]
+        where = {}
+        for r_i, row in enumerate(loose.values(), start=1):
+            grid.append([row["label"]] + [v for v, _ in row["values"]])
+            for c_i, (_, ln) in enumerate(row["values"], start=1):
+                where[(r_i, c_i)] = ln
+        sheet = analyse_grid("Numbers found in text", grid, excel=False)
+        for s in sheet["series"]:
+            s["refs"] = [_line_ref(ref, where) for ref in s["refs"]]
+        sheet["source"] = {"kind": "text numbers"}
+        sheet["warnings"].append("These numbers were picked out of sentences and lines of text, and no period was named next to them. Each shows the line it "
+                                 "came from; when one name appears twice in a sentence (for example a current and a previous figure) the order is the order "
+                                 "written, not necessarily oldest first. Check them against the text.")
+        sheets.append(sheet)
+    return sheets
 
 
 def _line_ref(ref: str, where: dict[tuple[int, int], int]) -> str:

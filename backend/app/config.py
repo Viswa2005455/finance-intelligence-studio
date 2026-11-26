@@ -56,6 +56,9 @@ class Settings(BaseSettings):
     # Email over HTTPS (Brevo), for hosts that block SMTP ports (Render free plans do). Needs a sender verified in Brevo.
     fis_brevo_api_key: SecretStr | None = None
     fis_brevo_sender: str | None = None
+    # The public address of this site, used in password reset emails (for example https://finance.example.com). Never taken from
+    # the request, so a forged Host header cannot point a reset link at another site. Defaults to Render's address, else localhost.
+    fis_public_url: str | None = None
     fis_order_email: str | None = None  # where new-order alerts go and customers' replies land; default fis_smtp_user
 
     fis_ai_provider: str = "none"
@@ -98,6 +101,10 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.fis_env.lower() == "production"
+
+    @property
+    def public_url(self) -> str:
+        return (self.fis_public_url or os.environ.get("RENDER_EXTERNAL_URL", "") or "http://localhost:5173").rstrip("/")
 
     @property
     def cookie_secure(self) -> bool:

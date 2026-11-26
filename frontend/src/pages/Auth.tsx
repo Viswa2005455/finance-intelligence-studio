@@ -5,9 +5,22 @@ import { Callout } from '../components/ui';
 import { api } from '../lib/api';
 import { useAuth } from '../lib/auth';
 
-export function AuthScreen() {
+type Mode = 'login' | 'register' | 'forgot' | 'reset';
+const TITLES: Record<Mode, string> = { login: 'Sign in', register: 'Create your account', forgot: 'Reset your password', reset: 'Choose a new password' };
+const SUBTITLES: Record<Mode, string> = {
+  login: 'Your projects, files and models are private to your account.',
+  register: "Accounts keep each person's files and models separate.",
+  forgot: 'Enter your email and we will send a link that lets you choose a new password.',
+  reset: 'This link works once. After you change it, every device is signed out.',
+};
+const SUBMIT: Record<Mode, string> = { login: 'Sign in', register: 'Create account', forgot: 'Send reset link', reset: 'Change password' };
+
+export function AuthScreen({ initialMode = 'login', onBack }: { initialMode?: Mode; onBack?: () => void }) {
   const { login, register, expired } = useAuth();
-  const [mode, setMode] = useState<'login' | 'register'>('login');
+  const [mode, setMode] = useState<Mode>(initialMode);
+  const [confirm, setConfirm] = useState('');
+  const [done, setDone] = useState<string | null>(null);
+  const go = (m: Mode) => { setMode(m); setError(null); setDone(null); setPassword(''); setConfirm(''); };
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
@@ -27,7 +40,10 @@ export function AuthScreen() {
     check();
     return () => { alive = false; clearTimeout(timer); };
   }, []);
-  useEffect(() => { document.title = `${mode === 'login' ? 'Sign in' : 'Create account'} · Finance Intelligence Studio`; }, [mode]);
+  useEffect(() => { document.title = `${TITLES[mode]} · Finance Intelligence Studio`; }, [mode]);
+
+  const canSubmit = mode === 'forgot' ? !!email : mode === 'reset' ? !!password && !!confirm
+    : !!email && !!password && (mode !== 'register' || !!name.trim());
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -35,7 +51,18 @@ export function AuthScreen() {
     setBusy(true);
     try {
       if (mode === 'login') await login(email, password);
-      else await register(email, password, name);
+      else if (mode === 'register') await register(email, password, name);
+      else if (mode === 'forgot') {
+        const r = await api.post<{ message: string }>('/api/auth/forgot-password', { email });
+        setDone(r.message);
+      } else {
+        if (password !== confirm) throw new Error('The two passwords do not match.');
+        const token = new URLSearchParams(window.location.search).get('reset') ?? '';
+        await api.post('/api/auth/reset-password', { token, new_password: password });
+        window.history.replaceState({}, '', window.location.pathname);  // the link is spent: take it out of the address bar
+        setMode('login'); setPassword(''); setConfirm('');
+        setDone('Your password has been changed and every device was signed out. Sign in with the new password.');
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -71,6 +98,7 @@ export function AuthScreen() {
         </svg>
       </aside>
       <div className="auth-wrap">
+        {onBack && <div style={{ marginBottom: 10 }}><button type="button" className="link-btn" onClick={onBack}>&larr; Back to the overview</button></div>}
         <div className="auth-brand">
           <div className="brand-mark" style={{ width: 44, height: 44, borderRadius: 13 }}><Activity size={24} strokeWidth={2.5} /></div>
           <div>
@@ -79,9 +107,10 @@ export function AuthScreen() {
           </div>
         </div>
         <form className="card auth-card" onSubmit={submit} noValidate>
-          <h1 style={{ fontSize: 24 }}>{mode === 'login' ? 'Sign in' : 'Create your account'}</h1>
-          <p className="muted" style={{ marginTop: 4 }}>{mode === 'login' ? 'Your projects, files and models are private to your account.' : 'Accounts keep each person\'s files and models separate.'}</p>
+          <h1 style={{ fontSize: 24 }}>{TITLES[mode]}</h1>
+          <p className="muted" style={{ marginTop: 4 }}>{SUBTITLES[mode]}</p>
           {expired && mode === 'login' && <div className="mt"><Callout tone="info">Your session ended. Please sign in again.</Callout></div>}
+          {done && <div className="mt"><Callout tone="success">{done}</Callout></div>}
           {apiDown && (
             <div className="mt">
               <Callout tone="warn" title="Waiting for the app's backend…">
@@ -96,20 +125,32 @@ export function AuthScreen() {
               <div className="field"><label className="field-label" htmlFor="auth-name">Your name</label>
                 <input id="auth-name" className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} required maxLength={80} /></div>
             )}
-            <div className="field"><label className="field-label" htmlFor="auth-email">Email</label>
-              <input id="auth-email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
-            <div className="field"><label className="field-label" htmlFor="auth-password">Password</label>
-              <input id="auth-password" className="input" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={(e) => setPassword(e.target.value)} required />
-              {mode === 'register' && <div className="field-hint">At least 10 characters, not a common password, and not containing your email name.</div>}
-            </div>
+            {mode !== 'reset' && !(mode === 'forgot' && done) && (
+              <div className="field"><label className="field-label" htmlFor="auth-email">Email</label>
+                <input id="auth-email" className="input" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required /></div>
+            )}
+            {(mode === 'login' || mode === 'register' || mode === 'reset') && (
+              <div className="field"><label className="field-label" htmlFor="auth-password">{mode === 'reset' ? 'New password' : 'Password'}</label>
+                <input id="auth-password" className="input" type="password" autoComplete={mode === 'login' ? 'current-password' : 'new-password'} value={password} onChange={(e) => setPassword(e.target.value)} required />
+                {mode !== 'login' && <div className="field-hint">At least 10 characters, not a common password, and not containing your email name.</div>}
+                {mode === 'login' && <div className="field-hint"><button type="button" className="link-btn" onClick={() => go('forgot')}>Forgot your password?</button></div>}
+              </div>
+            )}
+            {mode === 'reset' && (
+              <div className="field"><label className="field-label" htmlFor="auth-confirm">Type it again</label>
+                <input id="auth-confirm" className="input" type="password" autoComplete="new-password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required /></div>
+            )}
             {error && <Callout tone="error">{error}</Callout>}
-            <button className="btn primary" type="submit" disabled={busy || apiDown || !email || !password || (mode === 'register' && !name.trim())} style={{ height: 40 }}>
-              <LockKeyhole size={16} />{busy ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
-            </button>
+            {!(mode === 'forgot' && done) && (
+              <button className="btn primary" type="submit" disabled={busy || apiDown || !canSubmit} style={{ height: 40 }}>
+                <LockKeyhole size={16} />{busy ? 'Please wait…' : SUBMIT[mode]}
+              </button>
+            )}
           </div>
           <div className="mt" style={{ textAlign: 'center', fontSize: 13 }}>
-            {mode === 'login' ? (registrationOpen ? <>New here? <button type="button" className="link-btn" onClick={() => { setMode('register'); setError(null); }}>Create an account</button></> : <span className="faint">Registration is closed on this server.</span>)
-              : <>Already have an account? <button type="button" className="link-btn" onClick={() => { setMode('login'); setError(null); }}>Sign in</button></>}
+            {mode === 'login' && (registrationOpen ? <>New here? <button type="button" className="link-btn" onClick={() => go('register')}>Create an account</button></> : <span className="faint">Registration is closed on this server.</span>)}
+            {mode === 'register' && <>Already have an account? <button type="button" className="link-btn" onClick={() => go('login')}>Sign in</button></>}
+            {(mode === 'forgot' || mode === 'reset') && <button type="button" className="link-btn" onClick={() => go('login')}>Back to sign in</button>}
           </div>
         </form>
         <div className="mt" style={{ textAlign: 'center', fontSize: 13.5 }}>Looking to hire? <a className="link-btn" href="/services">See my 50 services →</a></div>

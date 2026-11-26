@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { BrowserRouter, Route, Routes, Link } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { DCFModelProvider } from './lib/dcfModel';
@@ -8,6 +8,7 @@ import { CodeLab } from './pages/Planned';
 import { AuthProvider, useAuth } from './lib/auth';
 import { ProjectProvider } from './lib/project';
 import { AuthScreen } from './pages/Auth';
+import { Landing } from './pages/Landing';
 import { Activity } from 'lucide-react';
 import { EmptyState } from './components/ui';
 import { Compass } from 'lucide-react';
@@ -69,11 +70,20 @@ export function App() {
   );
 }
 
+/** Signed-out visitors see the overview and a working demo first; sign-in and sign-up are one click away. */
+function Entry() {
+  const { expired } = useAuth();
+  const resetLink = new URLSearchParams(window.location.search).has('reset');
+  const [view, setView] = useState<'home' | 'login' | 'register' | 'reset'>(resetLink ? 'reset' : expired ? 'login' : 'home');
+  if (view === 'home') return <Landing onSignIn={() => setView('login')} onRegister={() => setView('register')} />;
+  return <AuthScreen key={view} initialMode={view} onBack={() => setView('home')} />;
+}
+
 /** Everything except the sign-in screen requires an account. */
 function Gate() {
   const { user, loading } = useAuth();
   if (loading) return <div className="splash"><div className="brand-mark" style={{ width: 44, height: 44 }}><Activity size={22} /></div></div>;
-  if (!user) return <AuthScreen />;
+  if (!user) return <Entry />;
   return (
     <ProjectProvider key={user.id}>
         <DCFModelProvider>

@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { C, axisProps, gridProps } from '../components/charts';
+import { ChartActions } from '../components/ChartActions';
 import { SaveLoad } from '../components/SaveLoad';
-import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, ReadingCard } from '../components/ui';
+import { readVariance } from '../lib/readings';
 import { api } from '../lib/api';
 import { downloadFile, fmtCompact, fmtMoney, fmtPctPoints, isNum, toCSV } from '../lib/format';
 import { useSettings } from '../lib/settings';
@@ -122,6 +124,8 @@ export function Variance() {
         </Card>
       </div>
 
+      {r && <div style={{ marginBottom: 16 }}><ReadingCard reading={readVariance(r, cur)} /></div>}
+
       {r && (
         <div className="grid cols-4" style={{ marginBottom: 16 }}>
           {(['revenue', 'expense', 'profit'] as const).filter((k) => r.totals[k]).map((k) => {
@@ -187,7 +191,7 @@ export function Variance() {
 
       {r && waterfall.length > 0 && (
         <div className="grid cols-3 mt">
-          <Card className="span-2" title="Profit bridge: budget to actual" subtitle="Each bar is a line's effect on profit (green helps, orange hurts)">
+          <Card className="span-2" title="Profit bridge: budget to actual" subtitle="Each bar is a line's effect on profit (green helps, orange hurts)" actions={<ChartActions name="Profit bridge" />}>
             <div className="chart tall">
               <ResponsiveContainer>
                 <BarChart data={waterfall} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>

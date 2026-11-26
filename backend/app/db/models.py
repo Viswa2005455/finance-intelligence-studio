@@ -156,3 +156,24 @@ class ServiceOrder(Base):
     created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
     customer_emailed: Mapped[bool] = mapped_column(Boolean, default=False)
     owner_emailed: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class PasswordReset(Base):
+    """A one-time password reset link. Only a SHA-256 hash of the token is stored, so a copy of the
+    database cannot be used to take over an account; a used or expired row is never accepted."""
+    __tablename__ = "password_resets"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"), index=True)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    expires_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), index=True)
+    used_at: Mapped[dt.datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+
+class RateHit(Base):
+    """One counted attempt for the database-backed rate limiter (sign-in, sign-up, password reset), so limits
+    survive a restart and are shared by every server process."""
+    __tablename__ = "rate_hits"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    key: Mapped[str] = mapped_column(String(200), index=True)
+    hit_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)

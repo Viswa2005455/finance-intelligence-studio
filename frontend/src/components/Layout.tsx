@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, Activity, LogOut } from 'lucide-react';
+import { Menu, Moon, Sun, Activity, LogOut, Search } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { NAV } from '../nav';
@@ -7,6 +7,7 @@ import { useSettings } from '../lib/settings';
 import { api } from '../lib/api';
 import { SkeletonCards } from './ui';
 import { Backdrop } from './Backdrop';
+import { CommandPalette } from './CommandPalette';
 import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
 import { useGuide } from '../lib/guide';
@@ -22,6 +23,12 @@ export function Layout() {
   const { projects, activeId, setActive } = useProjects();
   const navigate = useNavigate();
   const guide = useGuide();
+  const [palette, setPalette] = useState(false);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette((p) => !p); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [loc.pathname]);
   useEffect(() => { if (loc.pathname === '/upload') guide.dismiss('nav-upload'); }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -41,6 +48,7 @@ export function Layout() {
   return (
     <div className={`shell ${open ? 'nav-open' : ''}`}>
       <Backdrop />
+      <CommandPalette open={palette} onClose={() => setPalette(false)} />
       <aside className="sidebar" aria-label="Main navigation">
         <div className="brand">
           <div className="brand-mark"><Activity size={19} strokeWidth={2.5} /></div>
@@ -90,6 +98,7 @@ export function Layout() {
             <span className="here">{current?.label ?? 'Not found'}</span>
           </div>
           <div className="topbar-spacer" />
+          <button className="btn sm search-btn" aria-keyshortcuts="Control+K" title="Search pages (Ctrl+K)" onClick={() => setPalette(true)}><Search size={15} aria-hidden="true" /><span>Search</span><kbd className="hide-md" aria-hidden="true">Ctrl K</kbd></button>
           <div className="topbar-controls">
             <select className="input compact project-select" aria-label="Active project" value={activeId ?? ''}
               onChange={(e) => { if (e.target.value === '__manage') navigate('/projects'); else setActive(e.target.value || null); }}>

@@ -2,11 +2,13 @@ import { ArrowRight, Bot, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { ChartActions } from '../components/ChartActions';
 import { DCFAssumptions } from '../components/DCFInputs';
 import { SaveLoad } from '../components/SaveLoad';
 import { MonteCarlo, ReverseDCF, useMarketPrice } from '../components/ValuationRange';
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
-import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, Stable, Warnings } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, ReadingCard, Stable, Warnings } from '../components/ui';
+import { readDCF } from '../lib/readings';
 import { api } from '../lib/api';
 import { useDCFModel } from '../lib/dcfModel';
 import { fmtCompact, fmtMoney, fmtNum, fmtPct, isNum } from '../lib/format';
@@ -70,6 +72,7 @@ export function DCF() {
 
         <div className="span-2 stack">
           {res.error && <ErrorBox error={res.error} />}
+          {stale && <ReadingCard reading={readDCF(stale, req, cur, isNum(marketPrice) ? marketPrice : null)} />}
           <div className="grid cols-4">
             <Kpi label="Enterprise value" value={stale ? fmtMoney(stale.enterprise_value, cur) : '—'} />
             <Kpi label="Equity value" value={stale ? fmtMoney(stale.equity_value, cur) : '—'} deltaTone="muted" delta={stale ? `Net debt ${fmtMoney(stale.net_debt, cur)}` : undefined} />
@@ -81,7 +84,7 @@ export function DCF() {
 
           <Stable deps={[stale, cur, req]} render={() => stale && (<>
             <div className="grid cols-2">
-              <Card title="Free cash flow to the firm" subtitle="FCFF and its present value by year">
+              <Card title="Free cash flow to the firm" subtitle="FCFF and its present value by year" actions={<ChartActions name="FCFF by year" rows={stale.years.map((y) => ({ year: y.year, fcff: y.fcff, pv_fcff: y.pv_fcff }))} />}>
                 <div className="chart">
                   <ResponsiveContainer>
                     <ComposedChart data={stale.years} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -96,7 +99,7 @@ export function DCF() {
                 </div>
                 <Legend items={[{ label: 'FCFF', color: 'var(--chart-1)' }, { label: 'Present value', color: 'var(--chart-2)' }]} />
               </Card>
-              <Card title="Valuation bridge" subtitle="From discounted cash flows to equity value">
+              <Card title="Valuation bridge" subtitle="From discounted cash flows to equity value" actions={<ChartActions name="Valuation bridge" rows={bridge.map((b) => ({ item: b.name, value: b.value }))} />}>
                 <div className="chart">
                   <ResponsiveContainer>
                     <BarChart data={bridge} layout="vertical" margin={{ top: 4, right: 16, left: 8, bottom: 0 }}>

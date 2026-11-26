@@ -2,7 +2,10 @@ import { Download, Plus, RotateCcw, Trash2 } from 'lucide-react';
 import { memo, useMemo, useState } from 'react';
 import { Bar, CartesianGrid, ComposedChart, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis, Cell } from 'recharts';
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
-import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader } from '../components/ui';
+import { ChartActions } from '../components/ChartActions';
+import { SaveLoad } from '../components/SaveLoad';
+import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, ReadingCard } from '../components/ui';
+import { readAppraisal } from '../lib/readings';
 import { api } from '../lib/api';
 import { downloadFile, fmtCompact, fmtMoney, fmtNum, fmtPct, isNum, toCSV, type Currency } from '../lib/format';
 import { useSettings } from '../lib/settings';
@@ -57,6 +60,10 @@ export function Investment() {
       <PageHeader title="Investment Appraisal" badge={isExample ? <Badge tone="sample">Example inputs</Badge> : undefined}
         subtitle="NPV, IRR, MIRR, payback, discounted payback, profitability index and equivalent annual annuity, recalculated as you type."
         actions={<>
+          <SaveLoad kind="investment" label="appraisal" getData={() => ({ initial, flows, rate, finRate, reRate })}
+            onLoad={(d: { initial: number | null; flows: (number | null)[]; rate: number | null; finRate: number | null; reRate: number | null }) => {
+              setInitial(d.initial); setFlows(d.flows); setRate(d.rate); setFinRate(d.finRate); setReRate(d.reRate); setIsExample(false);
+            }} />
           <button className="btn" onClick={() => { setInitial(EXAMPLE.initial); setFlows(EXAMPLE.flows); setRate(EXAMPLE.rate); setFinRate(null); setReRate(null); setIsExample(true); }}><RotateCcw size={15} />Example</button>
           <button className="btn" onClick={exportCsv} disabled={!r}><Download size={15} />Export CSV</button>
         </>} />
@@ -92,6 +99,7 @@ export function Investment() {
 
         <div className="span-2 stack">
           {res.error && <ErrorBox error={res.error} />}
+          {r && req && <ReadingCard reading={readAppraisal(r, req.discount_rate, cur)} />}
           <div className="grid cols-4">
             <Kpi label="Net present value" value={r ? fmtMoney(r.npv, cur) : '—'} deltaTone={r && r.npv >= 0 ? 'pos' : 'neg'}
               delta={r ? (r.npv > 0 ? 'Accept' : r.npv < 0 ? 'Reject' : 'Indifferent') : undefined} />
@@ -131,7 +139,7 @@ const AppraisalResults = memo(function AppraisalResults({ r, cur, rate }: { r: A
                 {r.irr.message} {r.payback.message !== 'Assumes cash flows arrive evenly within each period.' ? r.payback.message : ''}
               </Callout>
               <div className="grid cols-2">
-                <Card title="Cash flow timeline" subtitle="Bars: cash flow · Line: cumulative discounted cash flow">
+                <Card title="Cash flow timeline" subtitle="Bars: cash flow · Line: cumulative discounted cash flow" actions={<ChartActions name="Cash flow timeline" rows={r.timeline} />}>
                   <div className="chart">
                     <ResponsiveContainer>
                       <ComposedChart data={r.timeline} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
@@ -148,7 +156,7 @@ const AppraisalResults = memo(function AppraisalResults({ r, cur, rate }: { r: A
                     </ResponsiveContainer>
                   </div>
                 </Card>
-                <Card title="NPV profile" subtitle="NPV at different discount rates; it crosses zero at the IRR">
+                <Card title="NPV profile" subtitle="NPV at different discount rates; it crosses zero at the IRR" actions={<ChartActions name="NPV profile" rows={r.npv_profile} />}>
                   <div className="chart">
                     <ResponsiveContainer>
                       <LineChart data={r.npv_profile} margin={{ top: 8, right: 12, left: 0, bottom: 0 }}>

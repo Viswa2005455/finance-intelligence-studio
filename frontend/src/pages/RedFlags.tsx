@@ -1,7 +1,8 @@
 import { AlertTriangle, Bot, ShieldAlert } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Badge, Callout, Card, EmptyState, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, Skeleton } from '../components/ui';
+import { Badge, Callout, Card, EmptyState, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, ReadingCard, Skeleton } from '../components/ui';
+import { readRedFlags } from '../lib/readings';
 import { api } from '../lib/api';
 import { toCompany, useCompanySources, type CompanyData } from '../lib/company';
 import { fmtNum, isNum } from '../lib/format';
@@ -124,6 +125,7 @@ export function RedFlags() {
           {!r && !res.error && !tooFew && <Skeleton h={120} />}
           {r && (
             <>
+              <ReadingCard reading={readRedFlags(r)} />
               <div className="grid cols-4">
                 <ScoreKpi s={r.beneish} digits={2} />
                 {r.altman.map((s) => <ScoreKpi key={s.key} s={s} digits={2} />)}

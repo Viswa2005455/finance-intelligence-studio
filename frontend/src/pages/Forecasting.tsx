@@ -3,7 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Area, CartesianGrid, ComposedChart, Line, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
-import { Badge, Callout, Card, ErrorBox, Field, Kpi, LearnBox, NumberField, PageHeader, Tabs, Warnings } from '../components/ui';
+import { ChartActions } from '../components/ChartActions';
+import { SaveLoad } from '../components/SaveLoad';
+import { Badge, Callout, Card, ErrorBox, Field, Kpi, LearnBox, NumberField, PageHeader, ReadingCard, Tabs, Warnings } from '../components/ui';
+import { readForecast } from '../lib/readings';
 import { api } from '../lib/api';
 import { downloadFile, fmtCompact, fmtNum, fmtPct, fmtPctPoints, isNum, parseInputNumber, toCSV } from '../lib/format';
 import type { Series } from '../lib/types';
@@ -78,7 +81,14 @@ export function Forecasting() {
     <div className="page">
       <PageHeader title="Forecasting" badge={isExample ? <Badge tone="sample">Example data</Badge> : undefined}
         subtitle="Project a revenue, expense or cash series. Accuracy is measured on a time-aware holdout (the model never sees the periods it is scored on)."
-        actions={<button className="btn" onClick={exportCsv} disabled={!r}><Download size={15} />Export CSV</button>} />
+        actions={<>
+          <SaveLoad kind="forecast" label="forecast"
+            getData={() => ({ text: values.join(', '), method, horizon, conf, window, alpha, holdout })}
+            onLoad={(d: { text: string; method: Method; horizon: number | null; conf: number | null; window: number | null; alpha: number | null; holdout: number | null }) => {
+              setSource('manual'); setText(d.text); setMethod(d.method); setHorizon(d.horizon); setConf(d.conf); setWindow(d.window); setAlpha(d.alpha); setHoldout(d.holdout);
+            }} />
+          <button className="btn" onClick={exportCsv} disabled={!r}><Download size={15} />Export CSV</button>
+        </>} />
       <div className="grid cols-3">
         <div className="stack">
           <Card title="Data">
@@ -121,13 +131,14 @@ export function Forecasting() {
 
         <div className="span-2 stack">
           {res.error && <ErrorBox error={res.error} />}
+          {r && <ReadingCard reading={readForecast(r)} />}
           <div className="grid cols-4">
             <Kpi label={`Backtest MAE (${r?.backtest.holdout ?? '—'} periods)`} value={r ? fmtNum(r.backtest.mae, 2) : '—'} />
             <Kpi label="Backtest RMSE" value={r ? fmtNum(r.backtest.rmse, 2) : '—'} />
             <Kpi label="Backtest MAPE" value={r ? (isNum(r.backtest.mape) ? fmtPctPoints(r.backtest.mape, 1) : 'n/a') : '—'} />
             <Kpi label={`Forecast F+${r?.forecast.length ?? ''}`} value={r ? fmtNum(r.forecast[r.forecast.length - 1], 1) : '—'} />
           </div>
-          <Card title="History and forecast" subtitle="Forecast values are estimates, not guarantees.">
+          <Card title="History and forecast" subtitle="Forecast values are estimates, not guarantees." actions={<ChartActions name="Forecast" rows={chart} />}>
             <div className="chart tall">
               <ResponsiveContainer>
                 <ComposedChart data={chart} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
