@@ -4,7 +4,7 @@
 # The start command applies database migrations first. Production needs PostgreSQL (see render.yaml).
 
 # ---- 1. build the website
-FROM node:22.22.0-slim AS web
+FROM node:26.13.0-slim AS web
 WORKDIR /src/frontend
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
