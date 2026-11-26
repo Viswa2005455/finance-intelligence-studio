@@ -177,3 +177,16 @@ class RateHit(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     key: Mapped[str] = mapped_column(String(200), index=True)
     hit_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+
+
+class Feedback(Base):
+    """A note sent from the app's feedback button. Kept even if the account is later deleted (the link is cleared)."""
+    __tablename__ = "feedback"
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True)
+    created_at: Mapped[dt.datetime] = mapped_column(DateTime(timezone=True), default=utcnow, index=True)
+    kind: Mapped[str] = mapped_column(String(16), default="idea")  # idea | problem | question
+    page: Mapped[str] = mapped_column(String(200), default="")
+    message: Mapped[str] = mapped_column(Text)
+    details: Mapped[str] = mapped_column(Text, default="")  # optional technical details the person chose to include
+    user_agent: Mapped[str | None] = mapped_column(String(300), nullable=True)

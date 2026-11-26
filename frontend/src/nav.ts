@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, FolderKanban, Wallet, TrendingUp, GitCompareArrows, FileSpreadsheet, Percent, Layers, SlidersHorizontal,
-  Calculator, Landmark, Droplets, UploadCloud, Code2, Bot, FileText, GraduationCap, Settings as SettingsIcon, ShieldAlert, Users, FileSearch, Factory, BookOpenCheck, LineChart, ChartCandlestick, Receipt, ReceiptIndianRupee, Activity,
+  Calculator, Landmark, Droplets, UploadCloud, Code2, Bot, FileText, GraduationCap, Settings as SettingsIcon, ShieldAlert, Users, FileSearch, Factory, BookOpenCheck, LineChart, ChartCandlestick, Receipt, ReceiptIndianRupee, Activity, ListChecks,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -15,6 +15,7 @@ export const NAV: NavItem[] = [
   { to: '/forecasting', label: 'Forecasting', icon: TrendingUp, ready: true, group: 'Planning' },
   { to: '/variance', label: 'Variance Analysis', icon: GitCompareArrows, ready: true, group: 'Planning' },
   { to: '/costing', label: 'Cost & Management Accounting', icon: Factory, ready: true, group: 'Planning' },
+  { to: '/close', label: 'Month-end Close', icon: ListChecks, ready: true, group: 'Planning' },
   { to: '/statements', label: 'Financial Statements', icon: FileSpreadsheet, ready: true, group: 'Analysis' },
   { to: '/ratios', label: 'Ratio Analysis', icon: Percent, ready: true, group: 'Analysis' },
   { to: '/cash-flow', label: 'Cash Flow & Working Capital', icon: Droplets, ready: true, group: 'Analysis' },

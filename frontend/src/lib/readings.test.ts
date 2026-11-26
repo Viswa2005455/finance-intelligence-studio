@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { readAppraisal, readDCF, readForecast, readRedFlags, readVariance, type DcfLike } from './readings';
+import { readAppraisal, readCashBudget, readDCF, readForecast, readPeers, readRedFlags, readScenarios, readTornado, readVariance, type DcfLike } from './readings';
 
 const dcf = (o: Partial<DcfLike> = {}): DcfLike => ({
   enterprise_value: 1000, equity_value: 900, value_per_share: 90, terminal_value_share_of_ev: 0.6, implied_exit_multiple: 9,
@@ -91,5 +91,89 @@ describe('readRedFlags', () => {
   it('does not claim a clean bill of health without data', () => {
     const r = readRedFlags({ beneish: { status: 'missing', verdict: null, value: null }, altman: [], piotroski: { status: 'missing', score: 0, tested: 0 }, flags: [] });
     expect(r.headline).not.toContain('No major red flags in the screens that could run');
+  });
+});
+
+
+describe('readDCF assumption checks', () => {
+  const base = { wacc: 0.11, terminal_growth: 0.03, terminal_method: 'gordon' };
+  it('flags terminal growth above what economies sustain', () => {
+    const r = readDCF(dcf(), { ...base, terminal_growth: 0.08 }, 'INR');
+    expect(r.level).toBe('concern');
+    expect(r.points.join(' ')).toContain('above what most economies sustain');
+  });
+  it('flags capex below depreciation, odd tax rates, large margin gains and a growth cliff', () => {
+    const r = readDCF(dcf(), { ...base, capex_pct_revenue: 0.03, da_pct_revenue: 0.05, tax_rate: 0.05, ebit_margin: [0.1, 0.12, 0.25], revenue_growth: [0.3, 0.25, 0.2] }, 'INR');
+    const text = r.points.join(' ');
+    expect(text).toContain('below depreciation');
+    expect(text).toContain('outside the usual 10-45%');
+    expect(text).toContain('rises by 15 points');
+    expect(text).toContain('drops to 3.0% immediately');
+  });
+  it('says nothing about assumptions that look reasonable', () => {
+    const r = readDCF(dcf(), { ...base, capex_pct_revenue: 0.06, da_pct_revenue: 0.05, tax_rate: 0.25, ebit_margin: [0.15, 0.16, 0.17], revenue_growth: [0.1, 0.08, 0.06] }, 'INR');
+    expect(r.points.join(' ')).not.toContain('depreciation');
+    expect(r.level).toBe('good');
+  });
+  it('offers next steps', () => {
+    expect(readDCF(dcf(), base, 'INR').next?.map((n) => n.to)).toEqual(['/sensitivity', '/scenarios']);
+  });
+});
+
+
+describe('readScenarios', () => {
+  const sc = (name: string, eq: number, share = 0.6) => ({ name, enterprise_value: eq, equity_value: eq, terminal_share: share });
+  it('summarises the range and calls a wide spread out', () => {
+    const r = readScenarios([sc('Base', 1000), sc('Bear', 400), sc('Bull', 2200)], 'INR')!;
+    expect(r.level).toBe('concern');
+    expect(r.points[0]).toContain('Bear');
+    expect(r.points[0]).toContain('Bull');
+    expect(r.points.join(' ')).toContain('more than doubles');
+  });
+  it('is calm when the scenarios agree and warns on negative equity', () => {
+    expect(readScenarios([sc('Base', 1000), sc('Low', 900), sc('High', 1100)], 'INR')!.level).toBe('good');
+    expect(readScenarios([sc('Base', 1000), sc('Crash', -50)], 'INR')!.points.join(' ')).toContain('negative equity value');
+  });
+  it('needs two working scenarios', () => {
+    expect(readScenarios([sc('Base', 1000)], 'INR')).toBeNull();
+    expect(readScenarios([sc('Base', 1000), { ...sc('Bad', 1), error: 'x' }], 'INR')).toBeNull();
+  });
+});
+
+describe('readCashBudget', () => {
+  const periods = [{ closing: 250000 }, { closing: 220000 }, { closing: 90000 }];
+  it('warns before a shortfall and names the month', () => {
+    const r = readCashBudget({ total_financing: 60000, first_negative_period: 'Jun-26', lowest_closing_without_financing: -20000, lowest_period: 'Jun-26', runway: { months: 4.2 }, periods }, 100000, 'INR');
+    expect(r.level).toBe('concern');
+    expect(r.points.join(' ')).toContain('goes negative from Jun-26');
+    expect(r.points.join(' ')).toContain('4.2 months');
+  });
+  it('is calm when cash stays above the minimum', () => {
+    const r = readCashBudget({ total_financing: 0, first_negative_period: null, lowest_closing_without_financing: 180000, lowest_period: 'Aug-26', runway: null, periods: [{ closing: 250000 }, { closing: 240000 }] }, 100000, 'INR');
+    expect(r.level).toBe('good');
+    expect(r.headline).toBe('Cash covers the plan');
+  });
+});
+
+describe('readTornado', () => {
+  const label = (v: string) => ({ wacc: 'WACC', tg: 'Terminal growth', tax: 'Tax rate' }[v] ?? v);
+  it('names the input that matters most and when it dominates', () => {
+    const r = readTornado({ base_output: 1000, bars: [{ variable: 'wacc', low_output: 800, high_output: 1300, swing: 500, error: null }, { variable: 'tg', low_output: 950, high_output: 1060, swing: 110, error: null }, { variable: 'tax', low_output: 990, high_output: 1010, swing: 20, error: null }] }, label, 'INR')!;
+    expect(r.headline).toBe('The valuation hinges on WACC');
+    expect(r.points.join(' ')).toContain('79%');
+  });
+  it('says no input dominates when the swings are similar', () => {
+    const r = readTornado({ base_output: 1000, bars: [{ variable: 'wacc', low_output: 0, high_output: 0, swing: 100, error: null }, { variable: 'tg', low_output: 0, high_output: 0, swing: 90, error: null }, { variable: 'tax', low_output: 0, high_output: 0, swing: 80, error: null }] }, label, 'INR')!;
+    expect(r.headline).toBe('No single input dominates the valuation');
+  });
+});
+
+describe('readPeers', () => {
+  it('names the leader and the laggard', () => {
+    const r = readPeers({ companies: ['A', 'B', 'C'], average_rank: [2.4, 1.3, 2.9], ranked_on: [20, 20, 18], warnings: [] })!;
+    expect(r.headline).toBe('B leads the group, C trails');
+  });
+  it('needs at least two ranked companies', () => {
+    expect(readPeers({ companies: ['A'], average_rank: [1], ranked_on: [10], warnings: [] })).toBeNull();
   });
 });

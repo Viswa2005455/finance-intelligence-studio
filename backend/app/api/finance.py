@@ -12,6 +12,7 @@ from pydantic import Field, model_validator
 from ..finance import FinanceInputError, forecasting, ratio_insights, ratios, sensitivity, tvm, valuation_range, variance
 from ..finance.cost_of_capital import capm, wacc
 from ..finance.dcf import OUTPUTS, SENSITIVITY_VARIABLES, DCFInputs, run_dcf
+from ..finance.dcf_templates import TEMPLATES as DCF_TEMPLATES
 from .base import BaseModel
 
 router = APIRouter(prefix="/api/finance", tags=["finance"])
@@ -38,6 +39,12 @@ class AppraisalRequest(BaseModel):
     discount_rate: float = Rate
     finance_rate: float | None = Field(default=None, ge=-0.99, le=1)
     reinvest_rate: float | None = Field(default=None, ge=-0.99, le=1)
+
+
+@router.get("/dcf/templates")
+def dcf_templates():
+    """Illustrative starting assumptions for different kinds of business (examples, not forecasts)."""
+    return {"templates": DCF_TEMPLATES}
 
 
 @router.post("/appraisal")
@@ -296,7 +303,8 @@ def ratios_endpoint(req: RatioRequest):
         raise FinanceInputError(f"Unknown statement items: {', '.join(unknown)}")
     results = [asdict(r) for r in ratios.compute_ratios(req.data, req.period_days)]
     summary = ratio_insights.attach(results)
-    return clean({"ratios": results, "summary": summary})
+    values = {r["key"]: r["value"] for r in results if r.get("status") == "ok" and r.get("value") is not None}
+    return clean({"ratios": results, "summary": summary, "dupont": ratio_insights.dupont(values)})
 
 
 # ---------------------------------------------------------------- Forecasting

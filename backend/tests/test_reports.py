@@ -97,3 +97,15 @@ def test_report_endpoints(client):
 
 def test_reports_require_sign_in(anon_client):
     assert anon_client.post("/api/reports/excel", json={}).status_code == 401
+
+
+def test_word_report_reads_the_ratios_in_plain_english():
+    d = docx.Document(io.BytesIO(build_word(report_input())))
+    text = "\n".join(p.text for p in d.paragraphs)
+    assert "Reading the ratios (" in text
+    assert "Overall" in text  # the verdict sentence from the ratio insights
+    # Leaving the ratios section out leaves the reading out too.
+    inp = report_input()
+    inp.sections = ["statements"]
+    text2 = "\n".join(p.text for p in docx.Document(io.BytesIO(build_word(inp))).paragraphs)
+    assert "Reading the ratios" not in text2

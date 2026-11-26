@@ -102,7 +102,7 @@ export function ItrDocuments({ profile, defaults, onApply }: { profile: Profile;
       subtitle="Upload Form 16, Form 26AS, AIS/TIS, capital-gains statements, a P&L or a tax audit report. The app reads them on this server (nothing is sent elsewhere), fills the questions below and shows where each answer came from.">
       <div className="grid cols-2" style={{ alignItems: 'start' }}>
         <div className="stack">
-          <div className="dropzone" role="button" tabIndex={0} aria-label="Upload tax documents: drop here or press Enter to browse"
+          <div className="dropzone" role="button" tabIndex={0}
             onClick={() => inputRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); } }}
             onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); send(Array.from(e.dataTransfer.files)); }}>

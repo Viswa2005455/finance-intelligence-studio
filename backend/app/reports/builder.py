@@ -18,7 +18,9 @@ from openpyxl import Workbook
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
 from openpyxl.utils import get_column_letter
 
-from ..finance import forensic, profile
+from dataclasses import asdict
+
+from ..finance import forensic, profile, ratio_insights, ratios
 from ..finance.dcf import DCFInputs, run_dcf
 
 NAVY = "0B1B33"
@@ -336,6 +338,51 @@ def _fmt(v, kind="num"):
     return f"{v:,.0f}" if abs(v) >= 100 else f"{v:,.2f}"
 
 
+def _ratio_values(inp: ReportInput, items: dict[str, list[float | None]]) -> dict[str, float]:
+    """The latest period's statement lines in the ratio engine's terms, with the previous period as the opening balance."""
+    last = len(inp.periods) - 1
+    data: dict[str, float] = {}
+    for k in ratios.ITEMS:
+        vs = items.get(k)
+        if vs and vs[last] is not None:
+            data[k] = float(vs[last])
+            if k in ratios.AVERAGEABLE and last >= 1 and vs[last - 1] is not None:
+                data[f"{k}_prior"] = float(vs[last - 1])
+    return data
+
+
+def _add_ratio_reading(doc, inp: ReportInput, items: dict[str, list[float | None]]) -> None:
+    """A plain-English reading of the latest ratios: the overall verdict, each area, what to look at, and the DuPont story."""
+    data = _ratio_values(inp, items)
+    if len(data) < 4:
+        return
+    try:
+        results = [asdict(r) for r in ratios.compute_ratios(data)]
+    except Exception:  # noqa: BLE001 - a reading must never break the report
+        return
+    summary = ratio_insights.attach(results)
+    if not any(r["status"] == "ok" for r in results):
+        return
+    doc.add_heading(f"Reading the ratios ({inp.periods[-1]})", level=1)
+    doc.add_paragraph(summary["headline"])
+    for c in summary["categories"]:
+        doc.add_paragraph(c["sentence"], style="List Bullet")
+    if summary["concerns"]:
+        doc.add_heading("Look closer at", level=2)
+        by_key = {r["key"]: r for r in results}
+        for c in summary["concerns"]:
+            ins = by_key[c["key"]]["insight"]
+            doc.add_paragraph(f"{c['name']}: {c['headline']}. {ins['next_step']}", style="List Bullet")
+    values = {r["key"]: r["value"] for r in results if r["status"] == "ok" and r["value"] is not None}
+    dp = ratio_insights.dupont(values)
+    if dp:
+        doc.add_heading("What drives return on equity", level=2)
+        doc.add_paragraph(dp["story"])
+    note = doc.add_paragraph(summary["note"])
+    note.runs[0].font.size = Pt(9)
+    note.runs[0].font.color.rgb = RGBColor(0x64, 0x74, 0x8B)
+
+
 def build_word(inp: ReportInput) -> bytes:
     doc = Document()
     style = doc.styles["Normal"]
@@ -372,6 +419,9 @@ def build_word(inp: ReportInput) -> bytes:
         doc.add_heading("Highlights", level=2)
         for h in prof.highlights:
             doc.add_paragraph(h, style="List Bullet")
+
+    if "ratios" in inp.sections:
+        _add_ratio_reading(doc, inp, items)
 
     if "red_flags" in inp.sections and len(inp.periods) >= 2:
         rep = forensic.analyse(inp.periods, items)

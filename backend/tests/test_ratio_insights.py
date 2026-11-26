@@ -3,6 +3,8 @@ and every calculated ratio gets a reading while uncalculated ones get none."""
 
 from dataclasses import asdict
 
+import pytest
+
 from app.finance import ratio_insights as ri
 from app.finance import ratios
 
@@ -85,3 +87,37 @@ def test_endpoint_returns_summary(client):
     assert r.status_code == 200
     body = r.json()
     assert body["summary"]["headline"] and body["ratios"][0]["insight"]["headline"]
+
+
+def test_dupont_multiplies_back_to_roe_for_the_example():
+    by_key, _ = _run(EXAMPLE)
+    values = {k: r["value"] for k, r in by_key.items() if r["status"] == "ok"}
+    d = ri.dupont(values)
+    assert d is not None
+    # Hand calculation on the example: margin 390/5000 = 7.8%; turnover 5000/4200 = 1.190x; multiplier 4200/1900 = 2.211x.
+    margin, turnover, mult = (p["value"] for p in d["parts"])
+    assert margin == pytest.approx(7.8) and turnover == pytest.approx(5000 / 4200) and mult == pytest.approx(4200 / 1900)
+    assert d["product"] == pytest.approx(7.8 * (5000 / 4200) * (4200 / 1900))  # 20.526%
+    assert d["story"].startswith("The return on equity of")
+
+
+def test_dupont_names_gearing_when_it_drives_the_return():
+    d = ri.dupont({"net_margin": 4.0, "asset_turnover": 1.0, "equity_multiplier": 6.0, "roe": 24.0})
+    assert "leans on gearing" in d["story"] and "4.0%" in d["story"]
+    assert d["consistent"] is True
+
+
+def test_dupont_is_absent_without_all_parts():
+    assert ri.dupont({"net_margin": 4.0, "roe": 10.0}) is None
+
+
+def test_equity_multiplier_levels():
+    assert ri.insight_for("equity_multiplier", 1.2, {})["level"] == "strong"
+    assert ri.insight_for("equity_multiplier", 2.2, {})["level"] == "good"
+    assert ri.insight_for("equity_multiplier", 4.0, {})["level"] == "watch"
+    assert ri.insight_for("equity_multiplier", 9.0, {})["level"] == "concern"
+
+
+def test_endpoint_returns_dupont(client):
+    body = client.post("/api/finance/ratios", json={"data": EXAMPLE}).json()
+    assert body["dupont"]["parts"][2]["name"] == "equity multiplier"

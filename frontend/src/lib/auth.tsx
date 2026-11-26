@@ -3,7 +3,7 @@ import { api, UNAUTHORIZED_EVENT } from './api';
 
 /** Working drafts kept in this browser. They are cleared on sign-out and when a different
  *  user signs in, so people sharing a computer never see each other's unsaved models. */
-const DRAFT_KEYS = ['fis.dcf', 'fis.scenarios', 'fis.budgets', 'fis.statements', 'fis.cashbudget', 'fis.variance.import'];
+const DRAFT_KEYS = ['fis.dcf', 'fis.scenarios', 'fis.budgets', 'fis.statements', 'fis.cashbudget', 'fis.variance.import', 'fis.close'];
 function clearDrafts() {
   try { DRAFT_KEYS.forEach((k) => localStorage.removeItem(k)); } catch { /* storage unavailable */ }
 }

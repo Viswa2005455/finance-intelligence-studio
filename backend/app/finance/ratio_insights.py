@@ -252,6 +252,16 @@ def _de(v: float, a: dict) -> Reading:
     return ("concern", f"Heavy borrowing ({_x(v)})", "Debt is more than twice equity, which leaves little room for a bad year.", "Review debt repayments, covenants, and whether earnings can support the load.")
 
 
+def _equity_multiplier(v: float, a: dict) -> Reading:
+    if v < 1.5:
+        return ("strong", f"Mostly funded by owners ({_x(v)})", "Little of the asset base is financed by borrowing or other liabilities, which keeps risk low but can hold returns back.", "Check whether a little more leverage would lift ROE without adding real risk.")
+    if v < 3:
+        return ("good", f"Moderate use of other people's money ({_x(v)})", "Liabilities fund a sensible share of the assets.", "Check interest cover to be sure the debt is comfortable.")
+    if v < 5:
+        return ("watch", f"Heavily geared ({_x(v)})", "A large part of the assets is funded by liabilities. That magnifies returns in good years and losses in bad ones.", "Look at interest cover, debt maturities and how stable earnings are.")
+    return ("concern", f"Very high gearing ({_x(v)})", "Equity is a thin slice of the balance sheet, so a small fall in asset values could wipe it out. Banks and finance companies run like this by design; other businesses should not.", "Compare with peers in the same industry and review refinancing risk.")
+
+
 def _debt_assets(v: float, a: dict) -> Reading:
     if v < 0.3:
         return ("strong", f"Only {v:.0%} of assets funded by debt", "A strong asset base relative to borrowing.", "Keep an eye on future borrowing plans.")
@@ -327,7 +337,7 @@ RULES: dict[str, Callable[[float, dict], Reading]] = {
     "roic_wacc_spread": _roic_spread, "economic_profit": _economic_profit, "invested_capital_turnover": _ic_turnover,
     "inventory_turnover": _inv_turnover, "dio": _dio, "receivables_turnover": _rec_turnover, "dso": _dso,
     "payables_turnover": _pay_turnover, "dpo": _dpo, "asset_turnover": _asset_turnover, "ccc": _ccc,
-    "debt_to_equity": _de, "debt_to_assets": _debt_assets, "interest_coverage": _interest_cover, "dscr": _dscr, "net_debt_ebitda": _nd_ebitda,
+    "debt_to_equity": _de, "equity_multiplier": _equity_multiplier, "debt_to_assets": _debt_assets, "interest_coverage": _interest_cover, "dscr": _dscr, "net_debt_ebitda": _nd_ebitda,
     "eps": _eps, "pe": _pe, "pb": _pb, "ev_ebitda": _ev_ebitda, "earnings_yield": _earn_yield,
 }
 
@@ -360,6 +370,7 @@ TYPICAL: dict[str, str] = {
     "ccc": "Under 45 days is short; negative is excellent; over 90 is long.",
     "debt_to_equity": "Under 1.0 is comfortable for most businesses; utilities and banks run higher.",
     "debt_to_assets": "Under 0.4 is conservative; over 0.6 is heavy.",
+    "equity_multiplier": "1.5-3x for most non-financial companies; banks run at 10x or more.",
     "interest_coverage": "3x or higher is comfortable; under 1.5x is risky.",
     "dscr": "Lenders usually want 1.25x or more.",
     "net_debt_ebitda": "Under 2x is comfortable; over 4x is heavy for most industries.",
@@ -385,6 +396,7 @@ CAUTION: dict[str, str] = {
     "dso": "Seasonal sales can distort year-end receivables.",
     "dpo": "Year-end payables can be managed.",
     "ccc": "Sensitive to year-end balances; look at averages over time.",
+    "equity_multiplier": "Uses book equity, which buybacks and accumulated losses can shrink, exaggerating the multiple.",
     "debt_to_equity": "Book equity can be small after buybacks or losses, which exaggerates the ratio.",
     "interest_coverage": "Uses one year's profit; look at a downturn case too.",
     "net_debt_ebitda": "EBITDA ignores capital spending and leases.",
@@ -396,7 +408,7 @@ CAUTION: dict[str, str] = {
 RELATED: dict[str, list[str]] = {
     "current_ratio": ["quick_ratio", "cash_ratio", "ccc"], "quick_ratio": ["current_ratio", "dso"], "cash_ratio": ["ocf_ratio"],
     "ocf_ratio": ["current_ratio", "dscr"], "gross_margin": ["operating_margin"], "operating_margin": ["gross_margin", "net_margin"],
-    "net_margin": ["operating_margin", "interest_coverage"], "roa": ["net_margin", "asset_turnover"], "roe": ["roa", "debt_to_equity"],
+    "net_margin": ["operating_margin", "interest_coverage"], "roa": ["net_margin", "asset_turnover"], "roe": ["roa", "debt_to_equity", "equity_multiplier"],
     "roic": ["roic_wacc_spread", "invested_capital_turnover"], "dso": ["receivables_turnover", "ccc"], "dio": ["inventory_turnover", "ccc"],
     "dpo": ["ccc"], "ccc": ["dio", "dso", "dpo"], "debt_to_equity": ["interest_coverage", "net_debt_ebitda"],
     "interest_coverage": ["debt_to_equity", "dscr"], "dscr": ["interest_coverage", "net_debt_ebitda"], "net_debt_ebitda": ["interest_coverage", "debt_to_equity"],
@@ -492,3 +504,34 @@ def attach(results: list[dict]) -> dict:
     for r in results:
         r["insight"] = insight_for(r["key"], r["value"], values) if r.get("status") == "ok" and r.get("value") is not None else None
     return summarise(results)
+
+
+def dupont(values: dict) -> dict | None:
+    """ROE split into its three drivers: profit margin x asset turnover x equity multiplier.
+
+    Uses the already-calculated ratios, so it needs net margin, asset turnover and the equity multiplier. The product is checked
+    against the calculated ROE; the check can differ slightly when ROE and the other parts use different balance bases."""
+    need = ("net_margin", "asset_turnover", "equity_multiplier", "roe")
+    if any(values.get(k) is None for k in need):
+        return None
+    margin, turnover, mult, roe = (values[k] for k in need)
+    product = margin * turnover * mult  # margin is already in percent
+    gap = abs(product - roe)
+    parts = [("profit margin", margin, "Pricing and cost control: how much of each sale is kept as profit."),
+             ("asset turnover", turnover, "Efficiency: how much revenue each unit of assets produces."),
+             ("equity multiplier", mult, "Gearing: how many units of assets each unit of owners' money controls.")]
+    weak = []
+    if margin < 5:
+        weak.append("a thin profit margin")
+    if turnover < 0.5:
+        weak.append("slow asset turnover")
+    boosted = mult > 3
+    if boosted and roe >= 12:
+        story = f"The return on equity of {roe:.1f}% leans on gearing ({mult:.2f}x). Without it, return on assets would be about {margin * turnover:.1f}%."
+    elif weak:
+        story = f"The return on equity of {roe:.1f}% is held back by {' and '.join(weak)}."
+    else:
+        story = f"The return on equity of {roe:.1f}% comes from a mix of margin ({margin:.1f}%), turnover ({turnover:.2f}x) and gearing ({mult:.2f}x), with no single factor out of line."
+    return {"roe": roe, "product": product, "check_gap": gap, "consistent": gap <= max(0.5, abs(roe) * 0.02),
+            "parts": [{"name": n, "value": v, "meaning": m} for n, v, m in parts], "story": story,
+            "note": "ROE = net margin x asset turnover x equity multiplier. A small difference from the calculated ROE can come from using average and closing balances together."}

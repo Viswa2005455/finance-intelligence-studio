@@ -13,6 +13,7 @@ import { useProjects } from '../lib/project';
 import { useState } from 'react';
 import { CompanyDashboard } from '../components/CompanyDashboard';
 import { GetStarted } from '../components/Guide';
+import { RecentPages } from '../components/RecentPages';
 import { useCompanySources } from '../lib/company';
 import { loadRaw } from '../lib/storage';
 
@@ -62,6 +63,7 @@ function SampleOverview({ hasCompanies, onBack }: { hasCompanies: boolean; onBac
       />
 
       {!hasCompanies && <GetStarted />}
+      <div style={{ marginBottom: 16 }}><RecentPages /></div>
 
       {dash.error && <ErrorBox error={dash.error} onRetry={dash.reload} />}
       {dash.loading && !d && <SkeletonCards n={5} />}
@@ -213,6 +215,7 @@ export function Overview() {
           <button className="btn" onClick={() => setSample(true)}>View sample dashboard</button>
           <Link to="/statements" className="btn primary"><FileUp size={16} />Import a company</Link>
         </>} />
+      <div style={{ marginBottom: 16 }}><RecentPages /></div>
       <CompanyDashboard sources={real} initialId={real.some((s) => s.id === initial) ? initial : real[0].id} />
     </div>
   );

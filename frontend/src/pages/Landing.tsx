@@ -84,7 +84,7 @@ export function Landing({ onSignIn, onRegister }: { onSignIn: () => void; onRegi
                   <Kpi label="Project's own return (IRR)" value={r.irr.status === 'unique' ? fmtPct(r.irr.values[0]) : r.irr.status === 'multiple' ? 'Several' : 'None'} />
                   <Kpi label="Earned back (with interest)" value={isNum(r.discounted_payback.period) ? `${r.discounted_payback.period.toFixed(1)} yrs` : 'Not within the years given'} />
                 </div>
-                <ReadingCard reading={readAppraisal(r, rate as number, 'INR')} />
+                <ReadingCard reading={readAppraisal(r, rate as number, 'INR')} showNext={false} />
               </div>
             )}
             <p className="faint mt-sm" style={{ fontSize: 12.5 }}>This is one of 24 tools. The same engine runs inside the app, where you can also save, compare and export. Illustration only, not investment advice.</p>
@@ -117,7 +117,7 @@ export function Landing({ onSignIn, onRegister }: { onSignIn: () => void; onRegi
 
       <footer className="landing-foot faint">
         <span>Educational and analytical tool, not investment advice. Passwords are hashed and sessions use secure, HttpOnly cookies.</span>
-        <span><a href="/services">Need a custom model or report? See my 50 services</a></span>
+        <span><a href="/methodology">How we calculate</a> · <a href="/whats-new">What's new</a> · <a href="/services">Need a custom model or report? See my 50 services</a></span>
       </footer>
     </div>
   );

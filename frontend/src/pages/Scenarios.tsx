@@ -5,7 +5,8 @@ import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Too
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
 import { SaveLoad } from '../components/SaveLoad';
 import type { DCFModel } from '../lib/types';
-import { Badge, Callout, Card, ErrorBox, LearnBox, NumberField, PageHeader } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, LearnBox, NumberField, PageHeader, ReadingCard } from '../components/ui';
+import { readScenarios } from '../lib/readings';
 import { api } from '../lib/api';
 import { useDCFModel } from '../lib/dcfModel';
 import { downloadFile, fmtCompact, fmtMoney, fmtNum, fmtPct, isNum, toCSV } from '../lib/format';
@@ -64,6 +65,7 @@ export function Scenarios() {
   const byId = new Map<string, ScenarioRes>();
   res.data?.scenarios.forEach((r) => byId.set(r.name, r));
   const base = byId.get(scenarios[0]?.id);
+  const scenarioReading = readScenarios(scenarios.flatMap((s) => { const r = byId.get(s.id); return r ? [{ name: s.name, error: r.error, enterprise_value: r.enterprise_value, equity_value: r.equity_value, terminal_share: r.terminal_share }] : []; }), settings.currency);
 
   const metrics: [string, (r: ScenarioRes) => number | null, 'money' | 'money2' | 'num' | 'pct'][] = [
     ['Enterprise value', (r) => r.enterprise_value, 'money'],
@@ -114,6 +116,7 @@ export function Scenarios() {
           <button className="btn" onClick={exportCsv} disabled={!res.data}><Download size={15} />Export CSV</button>
         </>} />
       {res.error && <ErrorBox error={res.error} />}
+      {scenarioReading && <div style={{ marginBottom: 16 }}><ReadingCard reading={scenarioReading} /></div>}
 
       <Card title="Assumptions by scenario" subtitle="Highlighted values differ from the base case. Blank override = use the DCF model's value." flush>
         <div className="table-wrap" tabIndex={0} style={{ border: 0, borderRadius: 0 }}>

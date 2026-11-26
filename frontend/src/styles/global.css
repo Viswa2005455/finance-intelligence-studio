@@ -1209,3 +1209,30 @@ dialog.palette::backdrop { background: rgba(2, 6, 15, .45); }
   .search-btn span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 }
 @media (max-width: 980px) { .search-btn kbd { display: none; } }
+
+/* DuPont breakdown: three factors multiplied into return on equity */
+.dupont { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.dupont-part { display: flex; align-items: center; gap: 8px; }
+.dupont-op { font-size: 20px; color: var(--text-muted); }
+.dupont-box { padding: 8px 14px; border-radius: var(--radius); background: var(--bg-sunken); border: 1px solid var(--border); text-align: center; min-width: 96px; }
+.dupont-box b { font-size: 18px; }
+.dupont-roe { background: var(--accent-soft); border-color: var(--accent); }
+
+/* Background choice (Settings): a still picture keeps the colours and shapes but stops all movement; Off removes the scene. */
+:root[data-backdrop='still'] .app-bg *, :root[data-backdrop='still'] .app-bg *::before { animation: none !important; }
+:root[data-backdrop='still'] .bg-stage { transform: none; transition: none; }
+:root[data-backdrop='off'] .app-bg > :not(.bg-curve) { display: none; }
+:root[data-backdrop='off'] .app-bg .bg-curve { opacity: .5; }
+
+/* Keyboard shortcut sheet, and the full-screen hint while a file is dragged over the app */
+.shortcut-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 18px; }
+.shortcut-row { display: flex; justify-content: space-between; gap: 12px; }
+.shortcut-row kbd, .shortcut-grid kbd, .modal kbd { font: 600 11px var(--font-sans); padding: 1px 6px; border-radius: 5px; border: 1px solid var(--border-strong); background: var(--bg-sunken); color: var(--text-muted); }
+@media (max-width: 560px) { .shortcut-grid { grid-template-columns: 1fr; } }
+.global-drop { position: fixed; inset: 0; z-index: 90; display: grid; place-items: center; background: rgba(8, 127, 104, .18); backdrop-filter: blur(2px); pointer-events: none; }
+.global-drop > div { display: grid; justify-items: center; gap: 6px; padding: 28px 36px; border: 2px dashed var(--accent); border-radius: var(--radius-lg); background: var(--bg-elev); box-shadow: var(--shadow-lg); text-align: center; }
+.global-drop b { font-size: 18px; }
+.global-drop span { color: var(--text-muted); font-size: 13px; }
+
+.feedback-btn { width: 100%; justify-content: flex-start; color: var(--sb-muted); margin-bottom: 8px; }
+.feedback-btn:hover { color: var(--sb-text); background: var(--sb-hover); }

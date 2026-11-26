@@ -18,6 +18,7 @@ import { useAuth } from '../lib/auth';
 
 interface Analysis {
   kind: string; warnings?: string[]; sheets?: Sheet[]; text?: string; page_count?: number;
+  oddities?: { severity: 'high' | 'medium' | 'info'; title: string; detail: string; where: string | null }[];
   pages?: { page: number; chars: number; text: string; tables: number[] }[];
   context?: { currencies: Record<string, number>; units: Record<string, number>; periods: string[] };
   language?: string; extension?: string; line_count?: number; note?: string;

@@ -8,10 +8,14 @@ import { api } from '../lib/api';
 import { SkeletonCards } from './ui';
 import { Backdrop } from './Backdrop';
 import { CommandPalette } from './CommandPalette';
+import { FeedbackButton } from './FeedbackButton';
+import { GlobalDrop } from './GlobalDrop';
+import { ShortcutHelp } from './ShortcutHelp';
+import { interpretKey, isTyping } from '../lib/shortcuts';
 import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
 import { useGuide } from '../lib/guide';
-import { markVisited } from '../lib/progress';
+import { markRecent, markVisited } from '../lib/progress';
 
 export function Layout() {
   const [open, setOpen] = useState(false);
@@ -24,15 +28,27 @@ export function Layout() {
   const navigate = useNavigate();
   const guide = useGuide();
   const [palette, setPalette] = useState(false);
+  const [help, setHelp] = useState(false);
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette((p) => !p); } };
+    let g = 0;  // when "g" was pressed: the next key (within a second) picks the page
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPalette((p) => !p); return; }
+      if (isTyping(e.target) || e.defaultPrevented || document.querySelector('dialog[open]')) return;
+      const act = interpretKey(e.key, Date.now() - g < 1000, { ctrl: e.ctrlKey, meta: e.metaKey, alt: e.altKey });
+      g = 0;
+      if (!act) return;
+      if (act.type === 'wait-g') g = Date.now();
+      else if (act.type === 'go') navigate(act.to);
+      else if (act.type === 'help') setHelp(true);
+      else if (act.type === 'search') { e.preventDefault(); setPalette(true); }
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [navigate]);
 
   useEffect(() => { setOpen(false); window.scrollTo(0, 0); }, [loc.pathname]);
   useEffect(() => { if (loc.pathname === '/upload') guide.dismiss('nav-upload'); }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { markVisited(loc.pathname); }, [loc.pathname]);
+  useEffect(() => { markVisited(loc.pathname); markRecent(loc.pathname); }, [loc.pathname]);
   useEffect(() => {
     document.title = `${current?.label ?? 'Not found'} · Finance Intelligence Studio`;
   }, [current]);
@@ -48,7 +64,9 @@ export function Layout() {
   return (
     <div className={`shell ${open ? 'nav-open' : ''}`}>
       <Backdrop />
-      <CommandPalette open={palette} onClose={() => setPalette(false)} />
+      <CommandPalette open={palette} onClose={() => setPalette(false)} onHelp={() => setHelp(true)} />
+      <ShortcutHelp open={help} onClose={() => setHelp(false)} />
+      <GlobalDrop />
       <aside className="sidebar" aria-label="Main navigation">
         <div className="brand">
           <div className="brand-mark"><Activity size={19} strokeWidth={2.5} /></div>
@@ -73,6 +91,7 @@ export function Layout() {
           })}
         </nav>
         <div className="sidebar-foot">
+          <FeedbackButton />
           <div className="api-pill">
             <span className={`status-dot ${apiOk ? 'ok' : apiOk === false ? 'bad' : ''}`} />
             {apiOk === null ? 'Checking API…' : apiOk ? 'API connected' : 'API offline'}

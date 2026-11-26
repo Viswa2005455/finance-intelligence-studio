@@ -119,12 +119,26 @@ export function fmtBytes(n: number): string {
   return `${(n / 1024 ** 2).toFixed(1)} MB`;
 }
 
-/** Parse a user-typed number: allows commas, spaces and a leading minus or (parentheses). Empty -> null. */
+/** Short forms people type for big numbers: 45k, 1.2cr, 3.5L, 2m, 1.5bn. */
+const SUFFIX: Record<string, number> = {
+  k: 1e3, thousand: 1e3, l: 1e5, lac: 1e5, lacs: 1e5, lakh: 1e5, lakhs: 1e5, cr: 1e7, crore: 1e7, crores: 1e7,
+  m: 1e6, mn: 1e6, mm: 1e6, million: 1e6, millions: 1e6, b: 1e9, bn: 1e9, billion: 1e9, billions: 1e9,
+};
+
+/** Parse a user-typed number: allows commas, spaces, a leading minus or (parentheses), a trailing % (for percentage
+ * fields), and the short forms k, L/lakh, cr/crore, m/mn and b/bn (45k, 1.2cr, 3.5L). Empty -> null. */
 export function parseInputNumber(s: string): number | null {
-  const t = s.replace(/[,\s₹$€£¥]/g, '').trim();
+  const t = s.replace(/[,\s₹$€£¥]/g, '').replace(/%$/, '').trim();
   if (!t) return null;
   const neg = /^\(.*\)$/.test(t);
-  const n = Number(t.replace(/[()]/g, ''));
+  const body = t.replace(/[()]/g, '');
+  let n = Number(body);
+  if (!Number.isFinite(n)) {
+    const m = /^(-?\d*\.?\d+)([a-z]+)$/i.exec(body);
+    const mult = m ? SUFFIX[m[2].toLowerCase()] : undefined;
+    if (!m || mult === undefined) return null;
+    n = Number(m[1]) * mult;
+  }
   if (!Number.isFinite(n)) return null;
   return neg ? -n : n;
 }

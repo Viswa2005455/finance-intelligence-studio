@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
-import { AUTH_FILE } from './global-setup';
+import { ALL_PAGES, AUTH_FILE } from './global-setup';
 
 /** Automated accessibility check (WCAG 2.0/2.1 A and AA). It fails on serious and critical problems; minor ones are listed in the log. */
 async function audit(page: Page, name: string) {
@@ -31,10 +31,12 @@ test.describe('signed out', () => {
 
 test.describe('signed in', () => {
   test.use({ storageState: AUTH_FILE });
-  for (const [path, ready] of [['/', 'Get started'], ['/ratios', 'Overall reading'], ['/dcf', 'In plain English'], ['/budgeting', 'Budgeted revenue'], ['/upload', 'Drop files here'], ['/investment', 'In plain English']] as const) {
+  // Every page in the app, so a new problem on any of them is caught.
+  for (const path of ALL_PAGES) {
     test(path, async ({ page }) => {
       await page.goto(path);
-      await expect(page.getByText(ready).first()).toBeVisible();
+      await expect(page.locator('main h1').first()).toBeVisible();
+      await page.waitForLoadState('networkidle');
       await audit(page, path);
     });
   }

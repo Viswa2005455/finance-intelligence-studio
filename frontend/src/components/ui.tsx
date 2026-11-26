@@ -249,7 +249,7 @@ export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => vo
 const READING_TONE = { strong: 'pos', good: 'accent', watch: 'warn', concern: 'neg', info: 'info' } as const;
 
 /** "In plain English": what a page's result means, wording only: the numbers come from the engines. */
-export function ReadingCard({ reading, title = 'In plain English' }: { reading: Reading | null | undefined; title?: string }) {
+export function ReadingCard({ reading, title = 'In plain English', showNext = true }: { reading: Reading | null | undefined; title?: string; showNext?: boolean }) {
   if (!reading) return null;
   return (
     <Card title={title} subtitle="A reading of the figures below, using stated rules of thumb"
@@ -258,6 +258,12 @@ export function ReadingCard({ reading, title = 'In plain English' }: { reading: 
         <b style={{ fontSize: 14 }}>{reading.headline}</b>
         <ul className="summary-list">{reading.points.map((p) => <li key={p}>{p}</li>)}</ul>
         {reading.caution && <p className="faint" style={{ fontSize: 12 }}><b>Watch out:</b> {reading.caution}</p>}
+        {showNext && reading.next && reading.next.length > 0 && (
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+            <span className="faint" style={{ fontSize: 12 }}>Next:</span>
+            {reading.next.map((n) => <Link key={n.to} to={n.to} className="btn sm">{n.label}</Link>)}
+          </div>
+        )}
       </div>
     </Card>
   );

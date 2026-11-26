@@ -5,7 +5,8 @@ import { Bar, BarChart, CartesianGrid, ComposedChart, Line, ReferenceLine, Respo
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
 import { FromUpload } from '../components/FromUpload';
 import { SaveLoad } from '../components/SaveLoad';
-import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, Stable, Tabs, Warnings } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, Formula, Kpi, LearnBox, NumberField, PageHeader, ReadingCard, Stable, Tabs, Warnings } from '../components/ui';
+import { readCashBudget } from '../lib/readings';
 import { api } from '../lib/api';
 import { useCompanySources, type StatementData } from '../lib/company';
 import { downloadFile, fmtCompact, fmtMoney, fmtNum, fmtPctPoints, isNum, toCSV } from '../lib/format';
@@ -136,6 +137,7 @@ function CashBudget() {
           <button className="btn" onClick={exportCsv} disabled={!r}><Download size={15} />Export CSV</button>
         </div>
       </div>
+      {r && <div style={{ marginBottom: 16 }}><ReadingCard reading={readCashBudget(r, d.minimum, cur)} /></div>}
       <div className="grid cols-4">
         <Card><NumberField label="Opening cash" value={d.opening} onChange={(v) => set({ ...d, opening: v })} required /></Card>
         <Card><NumberField label="Minimum cash balance" value={d.minimum} onChange={(v) => set({ ...d, minimum: v })} min={0} hint="Shortfalls below this are financed" /></Card>

@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
-import { AUTH_FILE } from './global-setup';
+import { ALL_PAGES, AUTH_FILE } from './global-setup';
 
 // Phone-sized screen: nothing may spill sideways, and wide tables keep their first column in view.
 test.use({ storageState: AUTH_FILE });
 
-for (const path of ['/', '/ratios', '/dcf', '/budgeting', '/upload', '/investment']) {
+for (const path of ALL_PAGES) {
   test(`${path} does not scroll sideways on a phone`, async ({ page }) => {
     await page.goto(path);
     await page.waitForLoadState('networkidle');

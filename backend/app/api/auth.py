@@ -16,7 +16,7 @@ from ..auth.durable import durable_limiter
 from ..auth.reset import create_reset, find_valid, reset_link, reset_message
 from ..auth.security import DUMMY_HASH, EMAIL_RE, hash_password, limiter, new_session_token, normalise_email, password_problems, token_hash, verify_password
 from ..config import Settings, get_settings
-from ..db.models import Activity, AuthSession, PasswordReset, Project, SavedItem, Upload, User, utcnow
+from ..db.models import Activity, AuthSession, Feedback, PasswordReset, Project, SavedItem, Upload, User, utcnow
 from ..payments.mail import mail_configured, send as send_mail
 from ..db.session import get_db
 from .base import BaseModel
@@ -162,6 +162,8 @@ def export_all(user: User = Depends(current_user), db: Session = Depends(get_db)
     from .projects import export_payload
     payload = export_payload(db, user.id, project_id=None)
     payload["account"] = {"email": user.email, "display_name": user.display_name, "created_at": user.created_at}
+    payload["feedback"] = [{"created_at": f.created_at, "kind": f.kind, "page": f.page, "message": f.message, "details": f.details}
+                           for f in db.scalars(select(Feedback).where(Feedback.user_id == user.id).order_by(Feedback.created_at))]
     log_activity(db, user.id, "account.exported")
     db.commit()
     return payload
@@ -192,7 +194,7 @@ def delete_account(body: ConfirmIn, response: Response, user: User = Depends(cur
     if not verify_password(body.password, user.password_hash):
         raise HTTPException(403, "Password is incorrect.")
     # ORM-level deletes so cascades also work on SQLite (test fallback); PostgreSQL cascades via FKs.
-    for model in (Upload, SavedItem, Activity, Project, AuthSession):
+    for model in (Upload, SavedItem, Activity, Project, AuthSession, PasswordReset, Feedback):  # feedback may hold personal details: it goes too
         db.execute(delete(model).where(model.user_id == user.id))
     db.delete(db.get(User, user.id))
     db.commit()

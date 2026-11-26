@@ -8,6 +8,8 @@ export interface Settings {
   currency: Currency;
   units: UnitScale;
   reduceMotion: boolean;
+  /** The 3D background: moving, a still picture, or a plain canvas. */
+  backdrop: 'animated' | 'still' | 'off';
   learningMode: boolean;
   periodFrom: string;
   periodTo: string;
@@ -15,7 +17,7 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, learningMode: true,
+  theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, backdrop: 'animated', learningMode: true,
   periodFrom: '2025-11', periodTo: '2026-10', numberStyle: 'auto',
 };
 
@@ -46,7 +48,8 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     document.documentElement.dataset.theme = resolvedTheme;
     document.documentElement.dataset.motion = settings.reduceMotion ? 'reduce' : 'auto';
-  }, [resolvedTheme, settings.reduceMotion]);
+    document.documentElement.dataset.backdrop = settings.backdrop;
+  }, [resolvedTheme, settings.reduceMotion, settings.backdrop]);
 
   const update = useCallback((p: Partial<Settings>) => {
     setSettings((s) => {

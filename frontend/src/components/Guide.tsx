@@ -1,7 +1,9 @@
 import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, FileSpreadsheet, LineChart, Lightbulb, UploadCloud, X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { addSampleCompany } from '../lib/sampleCompany';
+import { useToast } from '../lib/toast';
 import { useCompanySources } from '../lib/company';
 import { useGuide } from '../lib/guide';
 import { ANALYSIS_PAGES, useVisited } from '../lib/progress';
@@ -68,7 +70,14 @@ export function GetStarted() {
   const visited = useVisited();
   const uploads = useAsync((signal) => api.get<{ uploads: unknown[] }>('/api/uploads', { signal }), []);
   const { sources } = useCompanySources();
+  const toast = useToast();
+  const [busy, setBusy] = useState(false);
   if (!isOn('get-started')) return null;
+  const loadSample = async () => {
+    setBusy(true);
+    try { await addSampleCompany(); window.location.assign('/'); }  // reload so the dashboard picks the company up
+    catch (e) { toast((e as Error).message, 'error'); setBusy(false); }
+  };
 
   const uploaded = (uploads.data?.uploads.length ?? 0) > 0;
   const imported = (sources ?? []).some((s) => !s.isExample);
@@ -102,7 +111,10 @@ export function GetStarted() {
         ))}
       </div>
       <div className="row between first-run-foot">
-        <span className="faint" style={{ fontSize: 13 }}>No file yet? <Link to="/dcf">Try a DCF with example numbers</Link> or <Link to="/investment">appraise a project (NPV and IRR)</Link>.</span>
+        <span className="row" style={{ gap: 10, flexWrap: 'wrap', fontSize: 13 }}>
+          <button className="btn sm" onClick={loadSample} disabled={busy}>{busy ? 'Adding…' : 'Try it with a sample company'}</button>
+          <span className="faint">No file yet? Or <Link to="/dcf">try a DCF</Link> or <Link to="/investment">appraise a project</Link>.</span>
+        </span>
         <span className="row" style={{ gap: 14 }}>
           <button className="hint-link" onClick={() => setOff(true)}>Hide all tips</button>
           <span className="faint" style={{ fontSize: 12 }}>Turn tips back on in Settings.</span>

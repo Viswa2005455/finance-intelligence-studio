@@ -110,7 +110,7 @@ export function TaxAudit() {
       <div className="grid cols-2" style={{ alignItems: 'start' }}>
         <Card title={<span className="row"><FileUp size={17} className="pos" />Your books</span>}
           subtitle="P&L and balance sheet (Excel/CSV), cash book or ledger with a payment-mode column. Read on this server only.">
-          <div className="dropzone" role="button" tabIndex={0} aria-label="Upload books of account: drop here or press Enter to browse"
+          <div className="dropzone" role="button" tabIndex={0}
             onClick={() => inputRef.current?.click()}
             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); inputRef.current?.click(); } }}
             onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); send(Array.from(e.dataTransfer.files)); }}>

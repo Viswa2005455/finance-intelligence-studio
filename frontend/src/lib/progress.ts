@@ -30,3 +30,28 @@ export function useVisited(): string[] {
   }, []);
   return v;
 }
+
+const RKEY = 'fis.recent';
+const REVENT = 'fis-recent-changed';
+export interface Recent { path: string; at: number }
+const readRecent = (): Recent[] => {
+  const v = loadRaw<unknown>(RKEY, []);
+  return Array.isArray(v) ? v.filter((x): x is Recent => !!x && typeof (x as Recent).path === 'string' && typeof (x as Recent).at === 'number') : [];
+};
+
+/** Remember the page just opened (newest first, at most twelve) for "Pick up where you left off". Stays in this browser. */
+export function markRecent(path: string): void {
+  save(RKEY, [{ path, at: Date.now() }, ...readRecent().filter((r) => r.path !== path)].slice(0, 12));
+  window.dispatchEvent(new Event(REVENT));
+}
+
+export function useRecent(): Recent[] {
+  const [v, setV] = useState<Recent[]>(readRecent);
+  useEffect(() => {
+    const sync = () => setV(readRecent());
+    window.addEventListener(REVENT, sync);
+    window.addEventListener('storage', sync);
+    return () => { window.removeEventListener(REVENT, sync); window.removeEventListener('storage', sync); };
+  }, []);
+  return v;
+}

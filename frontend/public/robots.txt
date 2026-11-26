@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+
+Sitemap: https://finance-intelligence-studio.onrender.com/sitemap.xml

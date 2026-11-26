@@ -28,6 +28,10 @@ export function SettingsPage() {
               <Tabs label="Theme" value={settings.theme} onChange={(v: ThemePref) => update({ theme: v })}
                 options={[{ value: 'system', label: 'System' }, { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]} />
             </Field>
+            <Field label="Background" hint="The 3D scene behind the pages. Choose Still or Off on an older computer or if movement distracts you.">
+              <Tabs label="Background" value={settings.backdrop} onChange={(v: 'animated' | 'still' | 'off') => update({ backdrop: v })}
+                options={[{ value: 'animated', label: 'Moving' }, { value: 'still', label: 'Still' }, { value: 'off', label: 'Off' }]} />
+            </Field>
             <label className="row" style={{ fontSize: 13 }}>
               <input type="checkbox" checked={settings.reduceMotion} onChange={(e) => update({ reduceMotion: e.target.checked })} />
               Reduce motion (animations are also reduced automatically when your OS asks for it)

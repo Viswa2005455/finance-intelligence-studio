@@ -25,6 +25,7 @@ interface Summary {
   categories: { category: string; label: string; sentence: string }[];
   strengths: { key: string; name: string; headline: string }[]; concerns: { key: string; name: string; level: string; headline: string }[];
 }
+interface Dupont { roe: number; product: number; consistent: boolean; story: string; note: string; parts: { name: string; value: number; meaning: string }[] }
 const LEVEL_TONE = { strong: 'pos', good: 'accent', watch: 'warn', concern: 'neg', info: 'info' } as const;
 
 function InsightBlock({ r, nameOf }: { r: Ratio; nameOf: (k: string) => string }) {
@@ -45,6 +46,27 @@ function InsightBlock({ r, nameOf }: { r: Ratio; nameOf: (k: string) => string }
       </dl>
       {i.related.length > 0 && <div className="faint" style={{ fontSize: 12 }}>Read with: {i.related.map((x) => nameOf(x.key)).join(', ')}</div>}
     </div>
+  );
+}
+
+function DupontCard({ d }: { d: Dupont }) {
+  const unit = (n: string, v: number) => (n === 'profit margin' ? `${v.toFixed(1)}%` : `${v.toFixed(2)}x`);
+  return (
+    <Card title="What drives return on equity" subtitle="DuPont: margin × turnover × gearing">
+      <div className="dupont">
+        {d.parts.map((p, i) => (
+          <div key={p.name} className="dupont-part">
+            {i > 0 && <span className="dupont-op" aria-hidden="true">×</span>}
+            <div className="dupont-box"><div className="faint" style={{ fontSize: 12 }}>{p.name}</div><b className="num">{unit(p.name, p.value)}</b></div>
+          </div>
+        ))}
+        <span className="dupont-op" aria-hidden="true">=</span>
+        <div className="dupont-box dupont-roe"><div className="faint" style={{ fontSize: 12 }}>return on equity</div><b className="num">{d.roe.toFixed(1)}%</b></div>
+      </div>
+      <p style={{ fontSize: 13.5, fontWeight: 600, margin: '10px 0 0' }}>{d.story}</p>
+      <ul className="summary-list">{d.parts.map((p) => <li key={p.name}><b>{p.name}:</b> {p.meaning}</li>)}</ul>
+      {!d.consistent && <p className="faint" style={{ fontSize: 12, margin: '8px 0 0' }}>The three parts multiply to {d.product.toFixed(1)}%, slightly different from the calculated ROE. {d.note}</p>}
+    </Card>
   );
 }
 
@@ -122,7 +144,7 @@ export function Ratios() {
 
   const body = useMemo(() => ({ data: Object.fromEntries(Object.entries(data).filter(([, v]) => isNum(v))), period_days: days ?? 365 }), [data, days]);
   const req = useDebounced(body, 150);
-  const res = useAsync((signal) => api.post<{ ratios: Ratio[]; summary?: Summary }>('/api/finance/ratios', req, { signal }), [JSON.stringify(req)]);
+  const res = useAsync((signal) => api.post<{ ratios: Ratio[]; summary?: Summary; dupont?: Dupont | null }>('/api/finance/ratios', req, { signal }), [JSON.stringify(req)]);
   const integrity = useMemo(() => integrityIssues(body.data), [body]);
   const ratios = res.data?.ratios ?? [];
   const nameOf = (k: string) => ratios.find((x) => x.key === k)?.name ?? k;
@@ -206,6 +228,7 @@ export function Ratios() {
 
         <div className="span-2 stack">
           {res.data?.summary && ratios.some((r) => r.status === 'ok') && <SummaryCard s={res.data.summary} />}
+          {res.data?.dupont && <DupontCard d={res.data.dupont} />}
           <div className="row between">
             <Tabs label="Category" value={cat} onChange={setCat} options={cats.map((c) => ({ value: c, label: c }))} />
             <span className="faint" style={{ fontSize: 12.5 }}>{ratios.filter((r) => r.status === 'ok').length} of {ratios.length} calculable</span>

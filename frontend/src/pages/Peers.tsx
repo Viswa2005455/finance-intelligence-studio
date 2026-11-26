@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { C, ChartTooltip, axisProps, gridProps } from '../components/charts';
-import { Badge, Callout, Card, EmptyState, ErrorBox, Field, Kpi, LearnBox, NumberField, PageHeader, Skeleton } from '../components/ui';
+import { Badge, Callout, Card, EmptyState, ErrorBox, Field, Kpi, LearnBox, NumberField, PageHeader, ReadingCard, Skeleton } from '../components/ui';
+import { readPeers } from '../lib/readings';
 import { api } from '../lib/api';
 import { toCompany, useCompanySources, type CompanyData } from '../lib/company';
 import { downloadFile, fmtNum, fmtPct, isNum, toCSV } from '../lib/format';
@@ -101,6 +102,8 @@ export function Peers() {
           <Link className="btn" to="/assistant?topic=peers"><Bot size={15} />Explain with AI</Link>
           <button className="btn" onClick={exportCsv}><Download size={15} />Export CSV</button>
         </>} />
+
+      {r && readPeers(r) && <div className="mt"><ReadingCard reading={readPeers(r)} /></div>}
 
       <div className="grid cols-3 mt">
         <div className="stack">

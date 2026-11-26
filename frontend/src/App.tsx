@@ -9,6 +9,8 @@ import { AuthProvider, useAuth } from './lib/auth';
 import { ProjectProvider } from './lib/project';
 import { AuthScreen } from './pages/Auth';
 import { Landing } from './pages/Landing';
+import { Methodology } from './pages/Methodology';
+import { WhatsNew } from './pages/WhatsNew';
 import { Activity } from 'lucide-react';
 import { EmptyState } from './components/ui';
 import { Compass } from 'lucide-react';
@@ -38,6 +40,7 @@ const Investments = lazy(() => import('./pages/Investments').then((m) => ({ defa
 const IncomeTax = lazy(() => import('./pages/IncomeTax').then((m) => ({ default: m.IncomeTax })));
 const GST = lazy(() => import('./pages/GST').then((m) => ({ default: m.GST })));
 const Markets = lazy(() => import('./pages/Markets').then((m) => ({ default: m.Markets })));
+const CloseChecklist = lazy(() => import('./pages/CloseChecklist').then((m) => ({ default: m.CloseChecklist })));
 const Reports = lazy(() => import('./pages/Reports').then((m) => ({ default: m.Reports })));
 const ServicesList = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServicesList })));
 const ServiceDetail = lazy(() => import('./pages/Services').then((m) => ({ default: m.ServiceDetail })));
@@ -45,6 +48,9 @@ const ServiceThankYou = lazy(() => import('./pages/Services').then((m) => ({ def
 const SettingsPage = lazy(() => import('./pages/Settings').then((m) => ({ default: m.SettingsPage })));
 
 export function App() {
+  // The methodology and what's-new pages are public too: anyone can read how the numbers are calculated.
+  if (window.location.pathname === '/methodology') return <SettingsProvider><Methodology /></SettingsProvider>;
+  if (window.location.pathname === '/whats-new') return <SettingsProvider><WhatsNew /></SettingsProvider>;
   // The services catalogue is public: visitors see it without an account.
   if (window.location.pathname === '/services' || window.location.pathname.startsWith('/services/')) {
     return (
@@ -97,6 +103,7 @@ function Gate() {
                 <Route path="forecasting" element={<Forecasting />} />
                 <Route path="variance" element={<Variance />} />
                 <Route path="costing" element={<Costing />} />
+                <Route path="close" element={<CloseChecklist />} />
                 <Route path="accounting" element={<Accounting />} />
                 <Route path="investments" element={<Investments />} />
                 <Route path="markets" element={<Markets />} />

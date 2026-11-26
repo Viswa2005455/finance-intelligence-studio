@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
-import { Badge, Callout, Card, ErrorBox, Field, LearnBox, NumberField, PageHeader, Skeleton, Tabs } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, Field, LearnBox, NumberField, PageHeader, ReadingCard, Skeleton, Tabs } from '../components/ui';
+import { readTornado } from '../lib/readings';
 import { api } from '../lib/api';
 import { useDCFModel } from '../lib/dcfModel';
 import { fmtCompact, fmtMoney, fmtNum, fmtPct, isNum } from '../lib/format';
@@ -228,7 +229,10 @@ function Tornado({ model, output }: { model: DCFModel; output: string }) {
     high: isNum(b.high_output) ? b.high_output - t.base_output : null,
     b,
   })) ?? [];
+  const tornadoReading = t ? readTornado(t, (v) => VARS.find((x) => x.key === v)?.label ?? v, settings.currency) : null;
   return (
+    <div className="stack">
+    {tornadoReading && <ReadingCard reading={tornadoReading} />}
     <div className="grid cols-3">
       <Card title="Shock size">
         <NumberField label="Change each input by ± (relative)" percent value={shock} onChange={setShock} min={0} hint="10% of WACC 11% = 9.9% to 12.1%" required />
@@ -267,6 +271,7 @@ function Tornado({ model, output }: { model: DCFModel; output: string }) {
           </div>
         )}
       </Card>
+    </div>
     </div>
   );
 }

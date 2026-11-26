@@ -16,7 +16,7 @@ import { Badge, Callout, Card, Disclosure, ErrorBox, Skeleton, Warnings } from '
 export interface RevealUpload {
   id: string; name: string; label: string; extension: string; size: number; status: string; project_id?: string | null;
   recommendations: Recommendation[]; statement_mapping: Mapping[]; statements: SuggestedStatement[] | null; variance_lines: VarianceSuggestion | null;
-  analysis: { kind: string; warnings?: string[]; sheets?: (Sheet & SheetData)[]; context?: { currencies: Record<string, number>; units: Record<string, number>; periods: string[] } };
+  analysis: { kind: string; warnings?: string[]; oddities?: { severity: 'high' | 'medium' | 'info'; title: string; detail: string; where: string | null }[]; sheets?: (Sheet & SheetData)[]; context?: { currencies: Record<string, number>; units: Record<string, number>; periods: string[] } };
 }
 
 const SCALE = /\b(?:in\s+)?(?:₹|rs\.?|inr|usd|\$|eur|€|gbp|£)?\s*(lakhs?|crores?|cr\.?|millions?|mn|thousands?|'000|billions?|bn)\b/i;
@@ -93,6 +93,14 @@ export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNo
           <div><dt>Status</dt><dd>{u.status === 'processed' ? 'Read successfully' : 'Could not be read'}</dd></div>
         </dl>
         {warnings.length > 0 && <div className="mt"><Warnings items={warnings} /></div>}
+        {(u.analysis.oddities?.length ?? 0) > 0 && (
+          <div className="mt">
+            <Callout tone={u.analysis.oddities!.some((o) => o.severity === 'high') ? 'warn' : 'info'} title={`${u.analysis.oddities!.length} thing${u.analysis.oddities!.length === 1 ? '' : 's'} in this file look unusual`}>
+              <ul>{u.analysis.oddities!.map((o) => <li key={o.title}><b>{o.title}.</b> {o.detail}{o.where && <span className="faint"> ({o.where})</span>}</li>)}</ul>
+              <p className="faint" style={{ fontSize: 12, margin: '6px 0 0' }}>These are prompts to check the file, not corrections. Nothing was changed.</p>
+            </Callout>
+          </div>
+        )}
 
         {!tabular ? (
           <div className="mt stack">

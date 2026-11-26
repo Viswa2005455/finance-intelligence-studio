@@ -1,5 +1,5 @@
 import { ArrowRight, Bot, RotateCcw } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { ChartActions } from '../components/ChartActions';
@@ -13,11 +13,16 @@ import { api } from '../lib/api';
 import { useDCFModel } from '../lib/dcfModel';
 import { fmtCompact, fmtMoney, fmtNum, fmtPct, isNum } from '../lib/format';
 import { useSettings } from '../lib/settings';
-import type { DCFResult } from '../lib/types';
+import type { DCFModel, DCFResult } from '../lib/types';
 import { useAsync, useDebounced } from '../lib/useApi';
+
+interface Template { id: string; name: string; description: string; model: DCFModel }
 
 export function DCF() {
   const { model, patch, reset, isExample, setModel } = useDCFModel();
+  const [templates, setTemplates] = useState<Template[]>([]);
+  const [templateId, setTemplateId] = useState('');
+  useEffect(() => { api.get<{ templates: Template[] }>('/api/finance/dcf/templates').then((r) => setTemplates(r.templates)).catch(() => undefined); }, []);
   const { settings } = useSettings();
   const cur = settings.currency;
   const [marketPrice, setMarketPrice] = useMarketPrice();
@@ -56,11 +61,19 @@ export function DCF() {
         subtitle="Unlevered free cash flow (FCFF) model. These assumptions are shared with Scenario Planning and Sensitivity Analysis."
         actions={<>
           <SaveLoad kind="dcf" label="DCF model" getData={() => model} onLoad={(m) => setModel(m)} />
-          <button className="btn" onClick={reset}><RotateCcw size={15} />Reset to example</button>
+          {templates.length > 0 && (
+            <select className="input compact" style={{ width: 210 }} aria-label="Start from a template" value={templateId}
+              onChange={(e) => { const t = templates.find((x) => x.id === e.target.value); setTemplateId(e.target.value); if (t) setModel(t.model); }}>
+              <option value="">Start from a template…</option>
+              {templates.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          )}
+          <button className="btn" onClick={() => { reset(); setTemplateId(''); }}><RotateCcw size={15} />Reset to example</button>
           <Link className="btn" to="/assistant?topic=dcf"><Bot size={15} />Challenge with AI</Link>
           <Link className="btn" to="/sensitivity">Sensitivity <ArrowRight size={15} /></Link>
         </>} />
       {isExample && <div style={{ marginBottom: 16 }}><Callout tone="warn">The default inputs are illustrative examples, not verified market data. Replace them with your own assumptions and sources.</Callout></div>}
+      {templateId && <div style={{ marginBottom: 16 }}><Callout tone="info" title={templates.find((t) => t.id === templateId)?.name}>{templates.find((t) => t.id === templateId)?.description} These are illustrative starting numbers, not forecasts: replace them with your own.</Callout></div>}
 
       <div className="grid cols-3">
         <div className="stack">

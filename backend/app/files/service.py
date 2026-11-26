@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from ..config import Settings
 from ..db.models import Activity, AuthSession, Upload, UploadBlob, utcnow
 from . import archive, documents, tabular
+from .oddities import find_oddities
 from .detect import EXTENSIONS, detect, safe_display_name
 from .routing import recommend, suggest_statement_mapping, suggest_statements, suggest_variance_lines
 
@@ -146,7 +147,7 @@ def summary_out(u: Upload) -> dict:
 
 # Bump when the parsers or the statement matching change. An upload analysed by an older revision is
 # re-analysed from its stored original the next time it is opened, so fixes reach existing uploads too.
-PARSER_REV = 5
+PARSER_REV = 6
 
 
 def refresh_if_stale(db: Session, u: Upload, settings: Settings) -> Upload:
@@ -164,6 +165,7 @@ def refresh_if_stale(db: Session, u: Upload, settings: Settings) -> Upload:
     u.statement_mapping = suggest_statement_mapping(sheets, u.name)
     u.variance_lines = suggest_variance_lines(sheets, u.name)
     u.statements = suggest_statements(sheets, u.name)
+    parsed["oddities"] = find_oddities(sheets, u.statements)
     u.recommendations = recommend(u.category, parsed)
     u.summary = _summary(parsed)
     u.analysis = {**_json_safe(parsed), "parser_rev": PARSER_REV}
@@ -197,6 +199,9 @@ def save_upload(db: Session, user_id: uuid.UUID, project_id: uuid.UUID | None, f
         error = f"The file could not be parsed ({type(e).__name__}). It may be corrupt, password-protected or in an unexpected format."
 
     sheets = parsed.get("sheets", []) or []
+    statements = suggest_statements(sheets, name)
+    if status == "processed":
+        parsed["oddities"] = find_oddities(sheets, statements)
     now = utcnow()
     u = Upload(
         id=uuid.uuid4(), user_id=user_id, project_id=project_id, name=name, extension=det.extension, category=det.category,
@@ -204,7 +209,7 @@ def save_upload(db: Session, user_id: uuid.UUID, project_id: uuid.UUID | None, f
         summary=_summary(parsed) if status == "processed" else error,
         recommendations=recommend(det.category, parsed) if status == "processed" else [],
         statement_mapping=suggest_statement_mapping(sheets, name), variance_lines=suggest_variance_lines(sheets, name),
-        statements=suggest_statements(sheets, name), analysis={**_json_safe(parsed), "parser_rev": PARSER_REV}, uploaded_at=now,
+        statements=statements, analysis={**_json_safe(parsed), "parser_rev": PARSER_REV}, uploaded_at=now,
         expires_at=now + dt.timedelta(days=settings.fis_upload_retention_days),
     )
     db.add(u)

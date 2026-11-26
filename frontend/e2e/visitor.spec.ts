@@ -45,3 +45,18 @@ test('private pages and calculators are not open to visitors', async ({ request 
   const r = await request.post('/api/finance/appraisal', { data: { cash_flows: [-100, 60, 60], discount_rate: 0.1 } });
   expect(r.status()).toBe(401);
 });
+
+test('anyone can read how the numbers are calculated', async ({ page }) => {
+  await page.goto('/methodology');
+  await expect(page.getByRole('heading', { level: 1, name: 'How we calculate' })).toBeVisible();
+  await expect(page.getByText('Return on equity').first()).toBeVisible();
+  await page.getByLabel('Search the formulas').fill('beneish');
+  await expect(page.getByText('M = −4.84').first()).toBeVisible();
+  await expect(page.getByText('Return on equity')).toHaveCount(0);
+});
+
+test("the what's new page lists changes with dates", async ({ page }) => {
+  await page.goto('/whats-new');
+  await expect(page.getByRole('heading', { level: 1, name: "What's new" })).toBeVisible();
+  await expect(page.getByText('Plain-English readings, messier files, and a front door')).toBeVisible();
+});

@@ -7,7 +7,8 @@
 import { fmtMoney, fmtPct, isNum, type Currency } from './format';
 
 export type Level = 'strong' | 'good' | 'watch' | 'concern' | 'info';
-export interface Reading { level: Level; headline: string; points: string[]; caution?: string }
+export interface NextStep { to: string; label: string }
+export interface Reading { level: Level; headline: string; points: string[]; caution?: string; next?: NextStep[] }
 
 export const LEVEL_LABEL: Record<Level, string> = { strong: 'Strong', good: 'Healthy', watch: 'Watch', concern: 'Concern', info: 'Context' };
 
@@ -19,7 +20,12 @@ export interface DcfLike {
   implied_exit_multiple: number | null; implied_terminal_growth: number | null; warnings: string[]; years: { fcff: number }[];
 }
 
-export function readDCF(r: DcfLike, m: { wacc: number; terminal_growth: number; terminal_method: string }, cur: Currency, price?: number | null): Reading {
+export interface DcfModelLike {
+  wacc: number; terminal_growth: number; terminal_method: string; tax_rate?: number; da_pct_revenue?: number; capex_pct_revenue?: number;
+  ebit_margin?: number[]; revenue_growth?: number[];
+}
+
+export function readDCF(r: DcfLike, m: DcfModelLike, cur: Currency, price?: number | null): Reading {
   const points: string[] = [];
   const levels: Level[] = [];
   const share = r.terminal_value_share_of_ev;
@@ -36,6 +42,13 @@ export function readDCF(r: DcfLike, m: { wacc: number; terminal_growth: number; 
   } else if (isNum(r.implied_terminal_growth) && r.implied_terminal_growth > 0.05) {
     levels.push('watch'); points.push(`The exit multiple implies terminal growth of ${fmtPct(r.implied_terminal_growth, 1)}, above most long-run economic growth rates.`);
   }
+  // Sanity checks on the assumptions themselves.
+  if (m.terminal_method === 'gordon' && m.terminal_growth > 0.06) { levels.push('concern'); points.push(`Terminal growth of ${fmtPct(m.terminal_growth, 1)} is above what most economies sustain for ever (about 3-6% in nominal terms). Few companies outgrow the economy for ever.`); }
+  if (m.wacc < 0.06) { levels.push('watch'); points.push(`A WACC of ${fmtPct(m.wacc, 1)} is unusually low. Check the cost of equity and the weights.`); }
+  if (isNum(m.capex_pct_revenue) && isNum(m.da_pct_revenue) && m.capex_pct_revenue < m.da_pct_revenue) { levels.push('watch'); points.push(`Capital spending (${fmtPct(m.capex_pct_revenue, 1)} of revenue) is below depreciation (${fmtPct(m.da_pct_revenue, 1)}), which shrinks the asset base for ever. Growth normally needs spending at or above depreciation.`); }
+  if (isNum(m.tax_rate) && (m.tax_rate < 0.1 || m.tax_rate > 0.45)) { levels.push('watch'); points.push(`A tax rate of ${fmtPct(m.tax_rate, 0)} is outside the usual 10-45% range. Check it is the long-run rate, not a one-year effect.`); }
+  if (m.ebit_margin && m.ebit_margin.length > 1 && m.ebit_margin[m.ebit_margin.length - 1] - m.ebit_margin[0] > 0.1) { levels.push('watch'); points.push(`The operating margin rises by ${(100 * (m.ebit_margin[m.ebit_margin.length - 1] - m.ebit_margin[0])).toFixed(0)} points over the forecast. Large margin gains need a reason such as scale or pricing power.`); }
+  if (m.revenue_growth && m.revenue_growth.length && m.terminal_method === 'gordon' && m.revenue_growth[m.revenue_growth.length - 1] - m.terminal_growth > 0.1) { levels.push('watch'); points.push(`Growth in the last forecast year (${fmtPct(m.revenue_growth[m.revenue_growth.length - 1], 0)}) drops to ${fmtPct(m.terminal_growth, 1)} immediately after. A gradual fade is more realistic and usually lowers the value.`); }
   if (r.years.length && r.years.some((y) => y.fcff < 0)) { levels.push('watch'); points.push('Free cash flow is negative in some years, so the business must be funded until it turns positive.'); }
   if (isNum(price) && isNum(r.value_per_share) && price > 0) {
     const gap = r.value_per_share / price - 1;
@@ -48,7 +61,8 @@ export function readDCF(r: DcfLike, m: { wacc: number; terminal_growth: number; 
   const headline = level === 'concern' ? 'This valuation rests on fragile assumptions'
     : level === 'watch' ? 'Reasonable, but a few assumptions drive most of the answer'
       : 'The valuation is not dominated by a single assumption';
-  return { level, headline, points, caution: 'A DCF is only as good as its inputs. Test the answer against a range (Monte Carlo below) rather than trusting one number.' };
+  return { level, headline, points, caution: 'A DCF is only as good as its inputs. Test the answer against a range (Monte Carlo below) rather than trusting one number.',
+    next: [{ to: '/sensitivity', label: 'Test WACC and growth' }, { to: '/scenarios', label: 'Compare scenarios' }] };
 }
 
 // ------------------------------------------------------------------------------------------------ Forecast
@@ -85,7 +99,8 @@ export function readForecast(r: ForecastLike): Reading {
   const level = worst(levels);
   const headline = level === 'strong' || level === 'good' ? 'The forecast has held up on data it had not seen'
     : level === 'info' ? 'Forecast produced; accuracy could not be measured' : 'Use this forecast with care';
-  return { level, headline, points, caution: 'Forecasts assume the past pattern continues. A new product, price change or market shock will not be in them.' };
+  return { level, headline, points, caution: 'Forecasts assume the past pattern continues. A new product, price change or market shock will not be in them.',
+    next: [{ to: '/variance', label: 'Compare with actuals' }, { to: '/budgeting', label: 'Turn it into a budget' }] };
 }
 
 // ------------------------------------------------------------------------------------------------ Investment appraisal
@@ -121,7 +136,8 @@ export function readAppraisal(r: AppraisalLike, rate: number, cur: Currency): Re
   const level = worst(levels);
   const headline = r.npv > 0 ? (level === 'watch' ? 'Adds value, but with thin margins or risk to check' : 'The project adds value at your required return')
     : r.npv < 0 ? 'The project does not earn your required return' : 'The project only breaks even at your required return';
-  return { level, headline, points, caution: 'The result is only as good as the cash flow estimates. Test a lower-sales case before committing.' };
+  return { level, headline, points, caution: 'The result is only as good as the cash flow estimates. Test a lower-sales case before committing.',
+    next: [{ to: '/sensitivity', label: 'Test the assumptions' }, { to: '/dcf', label: 'Value the whole business' }] };
 }
 
 // ------------------------------------------------------------------------------------------------ Variance
@@ -149,7 +165,8 @@ export function readVariance(r: VarianceLike, cur: Currency): Reading {
   const level = worst(levels);
   const headline = level === 'concern' ? 'Results are clearly worse than budget' : level === 'watch' ? 'Mixed against budget: some areas need explaining'
     : level === 'strong' ? 'Results are well ahead of budget' : 'Results are close to or better than budget';
-  return { level, headline, points, caution: 'A variance says what moved, not why. Ask the budget owner about the largest lines and check whether the budget itself was realistic.' };
+  return { level, headline, points, caution: 'A variance says what moved, not why. Ask the budget owner about the largest lines and check whether the budget itself was realistic.',
+    next: [{ to: '/cash-flow', label: 'See the cash effect' }, { to: '/forecasting', label: 'Forecast the rest of the year' }] };
 }
 
 // ------------------------------------------------------------------------------------------------ Red flags
@@ -185,5 +202,108 @@ export function readRedFlags(r: RedFlagsLike): Reading {
   const level = worst(levels.length ? levels : ['info']);
   const headline = level === 'concern' ? 'Several screens say look closer before relying on these accounts'
     : level === 'watch' ? 'A few warning signs to check' : level === 'info' ? 'Not enough data for a firm reading' : 'No major red flags in the screens that could run';
-  return { level, headline, points, caution: 'These are statistical screens built on past cases. They say where to look in the annual report; they prove nothing.' };
+  return { level, headline, points, caution: 'These are statistical screens built on past cases. They say where to look in the annual report; they prove nothing.',
+    next: [{ to: '/ratios', label: 'Check the ratios' }, { to: '/assistant?topic=red-flags', label: 'Ask the AI to explain' }] };
+}
+
+
+// ------------------------------------------------------------------------------------------------ Scenarios
+export interface ScenarioLike { name: string; error?: string | null; enterprise_value: number; equity_value: number; terminal_share?: number | null }
+
+export function readScenarios(list: ScenarioLike[], cur: Currency): Reading | null {
+  const ok = list.filter((s) => !s.error && isNum(s.equity_value));
+  if (ok.length < 2) return null;
+  const sorted = [...ok].sort((a, b) => a.equity_value - b.equity_value);
+  const worst = sorted[0];
+  const best = sorted[sorted.length - 1];
+  const base = ok[0];
+  const points: string[] = [];
+  const levels: Level[] = [];
+  const spread = base.equity_value !== 0 ? (best.equity_value - worst.equity_value) / Math.abs(base.equity_value) : null;
+  points.push(`Equity value ranges from ${fmtMoney(worst.equity_value, cur)} (${worst.name}) to ${fmtMoney(best.equity_value, cur)} (${best.name})${isNum(spread) ? `, a spread of ${fmtPct(spread, 0)} of the base case` : ''}.`);
+  if (isNum(spread)) {
+    if (spread > 1) { levels.push('concern'); points.push('The answer more than doubles between the worst and best case. The value depends heavily on which future happens, so avoid quoting a single number.'); }
+    else if (spread > 0.5) { levels.push('watch'); points.push('A wide range: the assumptions you varied matter a lot to the value.'); }
+    else { levels.push('good'); points.push('A fairly narrow range, so the value is not very sensitive to these scenarios.'); }
+  }
+  if (ok.some((s) => s.equity_value < 0)) { levels.push('concern'); points.push(`${ok.filter((s) => s.equity_value < 0).map((s) => s.name).join(', ')} gives a negative equity value: debt would be larger than the business is worth.`); }
+  const high = ok.filter((s) => isNum(s.terminal_share) && (s.terminal_share as number) > 0.85);
+  if (high.length) { levels.push('watch'); points.push(`In ${high.map((s) => s.name).join(', ')} more than 85% of the value is terminal value, which is the least certain part.`); }
+  return { level: worst_level(levels), headline: levels.includes('concern') ? 'The scenarios disagree sharply' : levels.includes('watch') ? 'The scenarios show real uncertainty' : 'The scenarios tell a consistent story',
+    points, caution: 'Scenarios are only as good as the shifts you chose. Make the pessimistic case genuinely uncomfortable, not a small step from the base.',
+    next: [{ to: '/sensitivity', label: 'See which input matters most' }, { to: '/dcf', label: 'Back to the DCF' }] };
+}
+
+function worst_level(levels: Level[]): Level { return levels.length ? worst(levels) : 'info'; }
+
+// ------------------------------------------------------------------------------------------------ Cash budget
+export interface CashBudgetLike {
+  total_financing: number; first_negative_period: string | null; lowest_closing_without_financing: number; lowest_period: string;
+  runway: { months: number | null } | null; periods: { closing: number }[];
+}
+
+export function readCashBudget(r: CashBudgetLike, minimum: number | null, cur: Currency): Reading {
+  const points: string[] = [];
+  const levels: Level[] = [];
+  if (r.total_financing > 0) {
+    levels.push('concern');
+    points.push(`Cash would fall short of your minimum${isNum(minimum) ? ` balance of ${fmtMoney(minimum, cur)}` : ''} by up to ${fmtMoney(r.total_financing, cur)}. The low point is ${r.lowest_period} (${fmtMoney(r.lowest_closing_without_financing, cur)} without any borrowing).`);
+    if (r.first_negative_period) points.push(`Cash goes negative from ${r.first_negative_period}, so arrange a facility before then.`);
+    else points.push('Cash stays positive but dips below your minimum balance, so a standby facility or faster collections would cover it.');
+  } else {
+    levels.push('good');
+    points.push(`Cash stays above your minimum every month. The lowest point is ${fmtMoney(r.lowest_closing_without_financing, cur)} in ${r.lowest_period}.`);
+  }
+  const m = r.runway?.months;
+  if (isNum(m)) {
+    if (m < 6) { levels.push('concern'); points.push(`At the average monthly outflow, cash lasts about ${m.toFixed(1)} months. Under six months leaves little time to react.`); }
+    else if (m < 12) { levels.push('watch'); points.push(`Cash would last about ${m.toFixed(1)} months at the average outflow.`); }
+    else points.push(`Cash would last about ${m.toFixed(0)} months at the average outflow.`);
+  }
+  const last = r.periods[r.periods.length - 1];
+  const first = r.periods[0];
+  if (last && first && last.closing < first.closing * 0.7) { levels.push('watch'); points.push('Closing cash at the end of the year is much lower than at the start: the business is consuming cash over the period.'); }
+  return { level: worst_level(levels), headline: r.total_financing > 0 ? 'A cash shortfall is coming' : 'Cash covers the plan', points,
+    caution: 'A cash budget is only as good as its timing assumptions. Late customer payments move the low point earlier and make it deeper.',
+    next: [{ to: '/variance', label: 'Compare with actuals' }, { to: '/forecasting', label: 'Forecast receipts' }] };
+}
+
+// ------------------------------------------------------------------------------------------------ Tornado (what matters most)
+export interface TornadoLike { base_output: number; bars: { variable: string; low_output: number | null; high_output: number | null; swing: number; error: string | null }[] }
+
+export function readTornado(t: TornadoLike, labelOf: (v: string) => string, cur: Currency): Reading | null {
+  const bars = t.bars.filter((b) => !b.error && isNum(b.swing) && b.swing > 0).sort((a, b) => b.swing - a.swing);
+  if (bars.length < 2 || !isNum(t.base_output) || t.base_output === 0) return null;
+  const total = bars.reduce((a, b) => a + b.swing, 0);
+  const top = bars[0];
+  const second = bars[1];
+  const share = top.swing / total;
+  const points = [
+    `${labelOf(top.variable)} moves the answer the most: a swing of ${fmtMoney(top.swing, cur)} (${fmtPct(top.swing / Math.abs(t.base_output), 0)} of the base value).`,
+    `Next is ${labelOf(second.variable)}, a swing of ${fmtMoney(second.swing, cur)}.`,
+  ];
+  const level: Level = share > 0.5 ? 'watch' : 'info';
+  if (share > 0.5) points.push(`One input accounts for ${fmtPct(share, 0)} of all the movement. Spend your research time on that number first.`);
+  return { level, headline: share > 0.5 ? `The valuation hinges on ${labelOf(top.variable)}` : 'No single input dominates the valuation', points,
+    caution: 'Each input is changed alone by the same percentage. Real inputs move together, and some are far easier to forecast than others.',
+    next: [{ to: '/scenarios', label: 'Combine inputs into scenarios' }] };
+}
+
+// ------------------------------------------------------------------------------------------------ Peer comparison
+export interface PeersLike { companies: string[]; average_rank: (number | null)[]; ranked_on: number[]; warnings: string[] }
+
+export function readPeers(r: PeersLike): Reading | null {
+  const ranked = r.companies.map((c, i) => ({ c, rank: r.average_rank[i], n: r.ranked_on[i] })).filter((x) => isNum(x.rank)) as { c: string; rank: number; n: number }[];
+  if (ranked.length < 2) return null;
+  ranked.sort((a, b) => a.rank - b.rank);
+  const lead = ranked[0];
+  const last = ranked[ranked.length - 1];
+  const points = [
+    `${lead.c} ranks best overall, with an average rank of ${lead.rank.toFixed(1)} across ${lead.n} metrics (1 is best).`,
+    `${last.c} ranks lowest, at ${last.rank.toFixed(1)}.`,
+  ];
+  if (r.warnings.length) points.push(`${r.warnings.length} comparability warning(s) are listed below: companies in different industries or years should not be ranked head to head.`);
+  return { level: 'info', headline: `${lead.c} leads the group, ${last.c} trails`, points,
+    caution: 'Rank averages treat every metric equally and hide size. A small company ahead on margin may be far behind on scale.',
+    next: [{ to: '/red-flags', label: 'Screen each company' }, { to: '/ratios', label: 'Look at one company in depth' }] };
 }

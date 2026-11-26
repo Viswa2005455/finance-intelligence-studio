@@ -63,3 +63,24 @@ describe('format', () => {
     expect(fmtScaled(1500, 'units')).toBe(fmtMoney(1500));
   });
 });
+
+describe('parseInputNumber short forms', () => {
+  it('reads thousands, lakhs, crores, millions and billions', () => {
+    expect(parseInputNumber('45k')).toBe(45000);
+    expect(parseInputNumber('3.5L')).toBe(350000);
+    expect(parseInputNumber('2 lakh')).toBe(200000);
+    expect(parseInputNumber('1.2cr')).toBeCloseTo(12_000_000);
+    expect(parseInputNumber('₹ 2.5 Crore')).toBeCloseTo(25_000_000);
+    expect(parseInputNumber('2m')).toBe(2_000_000);
+    expect(parseInputNumber('1.5bn')).toBe(1_500_000_000);
+    expect(parseInputNumber('-45k')).toBe(-45000);
+    expect(parseInputNumber('(45k)')).toBe(-45000);
+  });
+  it('accepts a trailing percent sign and still refuses nonsense', () => {
+    expect(parseInputNumber('12%')).toBe(12);
+    expect(parseInputNumber('12.5 %')).toBe(12.5);
+    expect(parseInputNumber('45x')).toBeNull();
+    expect(parseInputNumber('k')).toBeNull();
+    expect(parseInputNumber('1e5')).toBe(100000);
+  });
+});

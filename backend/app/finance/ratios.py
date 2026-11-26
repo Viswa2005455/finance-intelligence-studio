@@ -354,6 +354,16 @@ def compute_ratios(data: dict[str, float | None], period_days: int = 365) -> lis
         return _div(d, e, "Total debt", "Equity")
     add("debt_to_equity", "Debt-to-equity", "Leverage", "Total debt / Shareholders' equity", "x",
         lambda v: "Conservative leverage" if v < 0.5 else "Moderate leverage" if v < 1.5 else "High leverage", de)
+    def equity_multiplier(c: _Ctx):
+        ta, eq = c.get("total_assets", True), c.get("total_equity", True)
+        if None in (ta, eq):
+            return None
+        closing = data.get("total_equity")
+        if eq <= 0 or (closing is not None and closing <= 0):
+            return None, "Equity is zero or negative (average or closing), so the equity multiplier is not meaningful."
+        return _div(ta, eq, "Avg total assets", "Avg equity")
+    add("equity_multiplier", "Equity multiplier", "Leverage", "Average total assets / Average shareholders' equity", "x",
+        lambda v: f"Every 1 of owners' money controls {v:.2f} of assets", equity_multiplier)
     add("debt_to_assets", "Debt-to-assets", "Leverage", "Total debt / Total assets", "x",
         lambda v: f"{v:.0%} of assets are financed with debt",
         lambda c: _div(c.get("total_debt"), c.get("total_assets"), "Total debt", "Total assets"))
