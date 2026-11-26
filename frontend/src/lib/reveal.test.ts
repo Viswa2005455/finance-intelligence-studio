@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { accepted, inputFromUpload, isExactMatch, mapRows, ratioData, type Mapping, type SuggestedStatement } from './reveal';
+import { accepted, inputFromUpload, integrityIssues, isExactMatch, mapRows, ratioData, type Mapping, type SuggestedStatement } from './reveal';
 
 const mapping: Mapping[] = [
   { item: 'revenue', item_label: 'Revenue', source_label: 'Revenue', value: 12480, source: 'pl.xlsx › P&L › C2', period: 'FY2025', prior_value: 11000, prior_source: 'pl.xlsx › P&L › B2', prior_period: 'FY2024' },
@@ -31,5 +31,20 @@ describe('upload reveal', () => {
     expect(ratioData(inp).data).toEqual({});
     const ok = inputFromUpload(statements, [], rows, { receivables: 'confirmed' });
     expect(ratioData(ok).data).toEqual({ revenue: 12480, receivables: 1720, receivables_prior: 1500 });
+  });
+});
+
+describe('integrityIssues', () => {
+  it('passes a balanced balance sheet', () => {
+    expect(integrityIssues({ total_assets: 4200, total_liabilities: 2300, total_equity: 1900, current_assets: 1700, cash: 260, receivables: 720, inventory: 610 })).toEqual([]);
+  });
+  it('flags a balance sheet that does not balance', () => {
+    const r = integrityIssues({ total_assets: 4200, total_liabilities: 2300, total_equity: 1500 });
+    expect(r).toHaveLength(1);
+    expect(r[0].check).toBe('Assets = Liabilities + Equity');
+  });
+  it('flags components above current assets and does not guess when inputs are missing', () => {
+    expect(integrityIssues({ current_assets: 1000, cash: 500, receivables: 400, inventory: 300 })[0].check).toMatch(/Current-asset components/);
+    expect(integrityIssues({ total_assets: 100 })).toEqual([]);
   });
 });

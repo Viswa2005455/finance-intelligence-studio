@@ -234,6 +234,8 @@ function Calculations({ u, tabular, rowsReady, sc, screenerPending, mapping, dec
 
   const openFull = () => { if (u.project_id && u.project_id !== activeId) setActive(u.project_id); };
   const ran = blocks?.filter((b) => b.status === 'ok').length ?? 0;
+  // Similar-name matches nobody has decided on yet: withheld from every calculation.
+  const awaiting = sc ? [] : mapping.filter((r) => r.certainty === 'suggested' && !decisions[r.key]);
 
   return (
     <Card title={<span className="row"><Calculator size={17} className="pos" />Calculations done</span>}
@@ -244,6 +246,14 @@ function Calculations({ u, tabular, rowsReady, sc, screenerPending, mapping, dec
             : !blocks.length ? <p className="muted" style={{ margin: 0 }}>No calculation could be run: no line in this file matched a standard statement item, and no analysis was recommended.</p>
               : (
                 <div className="stack">
+                  {awaiting.length > 0 && (
+                    <Callout tone="warn">
+                      <b>{awaiting.length} line{awaiting.length === 1 ? ' is' : 's are'} waiting for your confirmation and not used in any calculation yet.</b>{' '}
+                      They were matched by a similar name, not the exact one, so a person should check them before the numbers are relied on:{' '}
+                      {awaiting.map((r) => `${r.itemLabel} ← "${r.sourceLabel}"${r.value !== null ? ` (${fmtNum(r.value, 2)})` : ''}`).join('; ')}.
+                      Confirm or reject each in the matching table above.
+                    </Callout>
+                  )}
                   <div className="faint" style={{ fontSize: 12.5 }}>{ran} calculation group{ran === 1 ? '' : 's'} run{blocks.length > ran ? ` · ${blocks.length - ran} not run (reasons below)` : ''}</div>
                   {blocks.map((b) => (
                     <section key={b.id} className={`calc-block ${b.status}`}>
@@ -252,7 +262,7 @@ function Calculations({ u, tabular, rowsReady, sc, screenerPending, mapping, dec
                           {b.status === 'ok' ? <CheckCircle2 size={16} className="pos" /> : b.status === 'error' ? <XCircle size={16} className="neg" /> : <MinusCircle size={16} className="faint" />}
                           <b>{b.title}</b>
                           <Badge tone={b.status === 'ok' ? 'pos' : b.status === 'gap' ? 'warn' : b.status === 'error' ? 'neg' : undefined}>
-                            {b.status === 'ok' ? 'Calculated' : b.status === 'gap' ? 'Inputs missing' : b.status === 'error' ? 'Not calculated' : 'Skipped'}
+                            {b.badge ?? (b.status === 'ok' ? 'Calculated' : b.status === 'gap' ? 'Inputs missing' : b.status === 'error' ? 'Not calculated' : 'Skipped')}
                           </Badge>
                         </div>
                         {b.route && <Link className="btn sm" to={b.route} onClick={openFull}>Open full page <ArrowRight size={13} /></Link>}

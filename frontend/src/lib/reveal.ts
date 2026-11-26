@@ -35,6 +35,53 @@ export interface CalcRow { metric: string; formula: string; substituted: string;
 export interface Block {
   id: string; title: string; route: string | null; status: 'ok' | 'gap' | 'skipped' | 'error';
   rows: CalcRow[]; message?: string; more?: number;
+  /** Overrides the default status badge text (used by the integrity block). */
+  badge?: string;
+}
+
+/** Statements that must hold before ratios are trusted: the balance sheet balances and the cash flow ties back. */
+export interface IntegrityIssue { check: string; detail: string }
+
+/**
+ * Quick consistency check on a single set of ratio inputs (closing balances). Used where no statement
+ * report exists, e.g. the Ratio Analysis page. Uses the same 0.5% (minimum 1 unit) tolerance as the
+ * statements engine. A check that cannot be run because an input is missing is not reported.
+ */
+export function integrityIssues(d: Record<string, number | null | undefined>): IntegrityIssue[] {
+  const out: IntegrityIssue[] = [];
+  const tol = (a: number, b: number) => Math.max(1, 0.005 * Math.max(Math.abs(a), Math.abs(b)));
+  const { total_assets: ta, total_liabilities: tl, total_equity: te, cash, receivables: rec, inventory: inv, current_assets: ca } = d;
+  if (isNum(ta) && isNum(tl) && isNum(te) && Math.abs(ta - (tl + te)) > tol(ta, tl + te)) {
+    out.push({ check: 'Assets = Liabilities + Equity', detail: `Total assets ${fmtNum(ta, 2)} vs liabilities + equity ${fmtNum(tl + te, 2)} (difference ${fmtNum(ta - (tl + te), 2)}).` });
+  }
+  if (isNum(ca) && isNum(cash) && isNum(rec) && isNum(inv) && cash + rec + inv - ca > tol(ca, cash + rec + inv)) {
+    out.push({ check: 'Current-asset components ≤ total current assets', detail: `Cash + receivables + inventory is ${fmtNum(cash + rec + inv, 2)}, above current assets of ${fmtNum(ca, 2)}.` });
+  }
+  if (isNum(ca) && isNum(ta) && ca - ta > tol(ca, ta)) {
+    out.push({ check: 'Current assets ≤ total assets', detail: `Current assets ${fmtNum(ca, 2)} exceed total assets ${fmtNum(ta, 2)}.` });
+  }
+  return out;
+}
+
+/** Statement-report checks as an "Integrity checks" block: every period, failures first. Returns null when there is nothing to show. */
+function integrityBlock(rep: StatementReport): Block | null {
+  const tested = rep.checks.filter((c) => c.status !== 'insufficient');
+  const untestable = [...new Set(rep.checks.filter((c) => c.status === 'insufficient').map((c) => c.name))];
+  if (!tested.length && !untestable.length) return null;
+  const fails = tested.filter((c) => c.status === 'fail');
+  const rows: CalcRow[] = [...fails, ...tested.filter((c) => c.status === 'pass')].map((c) => ({
+    metric: `${c.name} (${c.period})`, formula: c.name, substituted: c.detail, unit: '—', source: 'Statement lines',
+    result: c.status === 'pass' ? 'Pass' : `Fails by ${num(c.difference)}`,
+  }));
+  const parts: string[] = [];
+  if (fails.length) parts.push(`${fails.length} check${fails.length === 1 ? '' : 's'} failed. The ratios below are built on these numbers, so find the cause (wrong line matched, mixed units, missing item) before relying on them. A failed check flags an inconsistency to investigate; it is not evidence of misstatement.`);
+  if (untestable.length) parts.push(`Could not be tested, missing lines: ${untestable.join('; ')}.`);
+  if (!fails.length && tested.length) parts.unshift('The statements are internally consistent on every check that could be run.');
+  return {
+    id: 'integrity', title: 'Integrity checks (balance sheet and cash flow)', route: null, rows: rows.slice(0, MAX_ROWS * 2), message: parts.join(' '),
+    status: fails.length ? 'error' : tested.length ? 'ok' : 'gap',
+    badge: fails.length ? 'Check failed' : tested.length ? 'All checks passed' : 'Not testable',
+  };
 }
 
 export const MAX_ROWS = 12;
@@ -397,9 +444,17 @@ export async function buildBlocks(opts: {
     else if (!inp?.lines.length && rec('statements')) blocks.push({ id: 'statements', title: 'Financial statements', route: route('statements', '/statements'), status: 'gap', rows: [],
       message: 'Missing: a statement-shaped table (line items down the first column, years or periods across).' });
   }
+  // Integrity checks come before any ratio so a reader sees whether the inputs reconcile first.
+  const integrity = report && want('integrity') ? integrityBlock(report) : null;
+  if (integrity) {
+    const at = blocks.findIndex((b) => b.id === 'statements');
+    blocks.splice(at >= 0 ? at : 0, 0, integrity);
+  }
   if (want('ratios') && (hasKeys || rec('ratios'))) {
     const { data, sources } = inp ? ratioData(inp) : { data: {}, sources: {} };
-    blocks.push(await ratiosBlock(data, sources, route('ratios', '/ratios'), signal));
+    const rb = await ratiosBlock(data, sources, route('ratios', '/ratios'), signal);
+    if (integrity?.status === 'error') rb.message = `Warning: the integrity checks above failed, so treat these ratios with caution. ${rb.message ?? ''}`.trim();
+    blocks.push(rb);
   }
   const hasCash = !!inp?.lines.some((l) => l.key === 'operating_cash_flow');
   if (want('cash') && (hasCash || rec('cash'))) {
