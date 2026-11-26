@@ -9,10 +9,62 @@ import { useSettings } from '../lib/settings';
 import { useToast } from '../lib/toast';
 import type { UploadSummary } from '../lib/types';
 import { useAsync, useDebounced } from '../lib/useApi';
+import { integrityIssues, isExactMatch } from '../lib/reveal';
 
 interface Ratio {
   key: string; name: string; category: string; formula: string; unit: string; value: number | null; status: 'ok' | 'missing' | 'undefined';
   inputs: Record<string, number>; steps: string; interpretation: string; notes: string[]; missing: string[];
+  insight?: Insight | null;
+}
+interface Insight {
+  level: 'strong' | 'good' | 'watch' | 'concern' | 'info'; label: string; headline: string; meaning: string; typical: string; caution: string;
+  next_step: string; context: string[]; related: { key: string; value: number }[];
+}
+interface Summary {
+  overall: string; headline: string; note: string;
+  categories: { category: string; label: string; sentence: string }[];
+  strengths: { key: string; name: string; headline: string }[]; concerns: { key: string; name: string; level: string; headline: string }[];
+}
+const LEVEL_TONE = { strong: 'pos', good: 'accent', watch: 'warn', concern: 'neg', info: 'info' } as const;
+
+function InsightBlock({ r, nameOf }: { r: Ratio; nameOf: (k: string) => string }) {
+  const i = r.insight;
+  if (!i) return r.interpretation ? <p className="mt-sm" style={{ fontSize: 13 }}>{r.interpretation}</p> : null;
+  return (
+    <div className={`insight ${i.level}`}>
+      <div className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
+        <Badge tone={LEVEL_TONE[i.level]}>{i.label}</Badge>
+        <b style={{ fontSize: 13.5 }}>{i.headline}</b>
+      </div>
+      <p>{i.meaning}</p>
+      {i.context.map((c) => <p key={c} className="insight-context">{c}</p>)}
+      <dl>
+        <dt>Typical range</dt><dd>{i.typical}</dd>
+        <dt>Next step</dt><dd>{i.next_step}</dd>
+        {i.caution && <><dt>Watch out</dt><dd>{i.caution}</dd></>}
+      </dl>
+      {i.related.length > 0 && <div className="faint" style={{ fontSize: 12 }}>Read with: {i.related.map((x) => nameOf(x.key)).join(', ')}</div>}
+    </div>
+  );
+}
+
+function SummaryCard({ s }: { s: Summary }) {
+  return (
+    <Card title="Overall reading" subtitle="What the numbers add up to, in plain English"
+      actions={<Badge tone={s.overall === 'Strong' || s.overall === 'Healthy' ? 'pos' : s.overall === 'Mixed' ? 'warn' : s.overall === 'Under pressure' ? 'neg' : 'info'}>{s.overall}</Badge>}>
+      <p style={{ fontSize: 14, fontWeight: 600, margin: 0 }}>{s.headline}</p>
+      <ul className="summary-list">{s.categories.map((c) => <li key={c.category}>{c.sentence}</li>)}</ul>
+      {(s.strengths.length > 0 || s.concerns.length > 0) && (
+        <div className="grid cols-2 mt-sm">
+          {s.strengths.length > 0 && <div><div className="faint" style={{ fontSize: 12, marginBottom: 4 }}>Strengths</div>
+            <ul className="summary-list">{s.strengths.map((x) => <li key={x.key}><b>{x.name}:</b> {x.headline}</li>)}</ul></div>}
+          {s.concerns.length > 0 && <div><div className="faint" style={{ fontSize: 12, marginBottom: 4 }}>Look closer at</div>
+            <ul className="summary-list">{s.concerns.map((x) => <li key={x.key}><b>{x.name}:</b> {x.headline}</li>)}</ul></div>}
+        </div>
+      )}
+      <p className="faint" style={{ fontSize: 12, margin: '10px 0 0' }}>{s.note}</p>
+    </Card>
+  );
 }
 interface Mapping { item: string; item_label: string; source_label: string; value: number; source: string; period: string; prior_value: number | null; prior_source: string | null; prior_period: string | null }
 
@@ -49,7 +101,8 @@ export function Ratios() {
     try {
       const rec = await api.get<{ name: string; statement_mapping: Mapping[] }>(`/api/uploads/${id}`);
       if (!rec.statement_mapping.length) { toast('No recognisable statement lines found', 'error'); return; }
-      setPending({ file: rec.name, rows: rec.statement_mapping.map((m) => ({ ...m, accept: true })) });
+      // Exact-name matches start ticked; similar-name matches start unticked so a person must opt in.
+      setPending({ file: rec.name, rows: rec.statement_mapping.map((m) => ({ ...m, accept: isExactMatch(m.source_label, m.item_label) })) });
     } catch (e) { toast((e as Error).message, 'error'); }
   };
   const fileParam = params.get('file');
@@ -69,8 +122,10 @@ export function Ratios() {
 
   const body = useMemo(() => ({ data: Object.fromEntries(Object.entries(data).filter(([, v]) => isNum(v))), period_days: days ?? 365 }), [data, days]);
   const req = useDebounced(body, 150);
-  const res = useAsync((signal) => api.post<{ ratios: Ratio[] }>('/api/finance/ratios', req, { signal }), [JSON.stringify(req)]);
+  const res = useAsync((signal) => api.post<{ ratios: Ratio[]; summary?: Summary }>('/api/finance/ratios', req, { signal }), [JSON.stringify(req)]);
+  const integrity = useMemo(() => integrityIssues(body.data), [body]);
   const ratios = res.data?.ratios ?? [];
+  const nameOf = (k: string) => ratios.find((x) => x.key === k)?.name ?? k;
   const cats = ['All', ...Array.from(new Set(ratios.map((r) => r.category)))];
   const shown = ratios.filter((r) => cat === 'All' || r.category === cat);
   const set = (k: string, v: number | null) => { setIsExample(false); setData((d) => ({ ...d, [k]: v })); setSources((s) => { const n = { ...s }; delete n[k]; return n; }); };
@@ -99,11 +154,13 @@ export function Ratios() {
         <Card title={`Confirm values from ${pending.file}`} subtitle="Matched by line-item name; the latest period is used, with the previous period as the opening balance. Untick anything that is wrong.">
           <div className="table-wrap" tabIndex={0}>
             <table className="data">
-              <thead><tr><th>Use</th><th>Engine item</th><th>Label in file</th><th className="r">Value</th><th>Period</th><th className="r">Prior</th><th>Source</th></tr></thead>
+              <thead><tr><th>Use</th><th>Engine item</th><th>Match</th><th>Label in file</th><th className="r">Value</th><th>Period</th><th className="r">Prior</th><th>Source</th></tr></thead>
               <tbody>{pending.rows.map((m, i) => (
                 <tr key={m.item}>
                   <td><input type="checkbox" checked={m.accept} aria-label={`Use ${m.item_label}`} onChange={(e) => setPending({ ...pending, rows: pending.rows.map((r, j) => j === i ? { ...r, accept: e.target.checked } : r) })} /></td>
-                  <td>{m.item_label}</td><td>{m.source_label}</td><td className="r">{fmtNum(m.value, 2)}</td><td>{m.period}</td>
+                  <td>{m.item_label}</td>
+                  <td>{isExactMatch(m.source_label, m.item_label) ? <Badge tone="pos">Same name</Badge> : <Badge tone="warn">Similar name: please check</Badge>}</td>
+                  <td>{m.source_label}</td><td className="r">{fmtNum(m.value, 2)}</td><td>{m.period}</td>
                   <td className="r">{AVERAGEABLE.has(m.item) && isNum(m.prior_value) ? fmtNum(m.prior_value, 2) : ''}</td><td className="mono" style={{ fontSize: 11.5 }}>{m.source}</td>
                 </tr>
               ))}</tbody>
@@ -112,6 +169,15 @@ export function Ratios() {
           <div className="row mt"><button className="btn primary" onClick={applyMapping}>Apply confirmed values</button><button className="btn" onClick={() => setPending(null)}>Cancel</button></div>
           <div className="mt-sm"><Callout tone="warn">Check that every value uses the same currency, units and reporting period before applying.</Callout></div>
         </Card>
+      )}
+
+      {!isExample && integrity.length > 0 && (
+        <div className="mt">
+          <Callout tone="warn">
+            <b>The inputs do not reconcile, so check them before trusting the ratios.</b>
+            <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>{integrity.map((x) => <li key={x.check}><b>{x.check}:</b> {x.detail}</li>)}</ul>
+          </Callout>
+        </div>
       )}
 
       <div className="grid cols-3 mt">
@@ -139,6 +205,7 @@ export function Ratios() {
         </div>
 
         <div className="span-2 stack">
+          {res.data?.summary && ratios.some((r) => r.status === 'ok') && <SummaryCard s={res.data.summary} />}
           <div className="row between">
             <Tabs label="Category" value={cat} onChange={setCat} options={cats.map((c) => ({ value: c, label: c }))} />
             <span className="faint" style={{ fontSize: 12.5 }}>{ratios.filter((r) => r.status === 'ok').length} of {ratios.length} calculable</span>
@@ -150,7 +217,7 @@ export function Ratios() {
                 : <Badge tone={r.status === 'missing' ? 'warn' : 'neg'}>{r.status === 'missing' ? 'Missing inputs' : 'Not meaningful'}</Badge>}>
                 <Formula>{r.formula}</Formula>
                 {r.steps && <div className="mono mt-sm" style={{ fontSize: 12, color: 'var(--text-muted)' }}>{r.steps}</div>}
-                {r.interpretation && <p className="mt-sm" style={{ fontSize: 13 }}>{r.interpretation}</p>}
+                {r.status === 'ok' && <InsightBlock r={r} nameOf={nameOf} />}
                 {r.missing.length > 0 && <p className="mt-sm faint" style={{ fontSize: 12.5 }}>Needs: {r.missing.join(', ')}</p>}
                 {r.notes.filter((n) => !n.startsWith('Cannot calculate')).map((n) => <p key={n} className="mt-sm faint" style={{ fontSize: 12 }}>{n}</p>)}
               </Card>

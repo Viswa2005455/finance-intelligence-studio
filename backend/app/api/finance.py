@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter
 from pydantic import Field, model_validator
 
-from ..finance import FinanceInputError, forecasting, ratios, sensitivity, tvm, valuation_range, variance
+from ..finance import FinanceInputError, forecasting, ratio_insights, ratios, sensitivity, tvm, valuation_range, variance
 from ..finance.cost_of_capital import capm, wacc
 from ..finance.dcf import OUTPUTS, SENSITIVITY_VARIABLES, DCFInputs, run_dcf
 from .base import BaseModel
@@ -294,7 +294,9 @@ def ratios_endpoint(req: RatioRequest):
     unknown = [k for k in req.data if k.removesuffix("_prior") not in ratios.ITEMS]
     if unknown:
         raise FinanceInputError(f"Unknown statement items: {', '.join(unknown)}")
-    return clean({"ratios": [asdict(r) for r in ratios.compute_ratios(req.data, req.period_days)]})
+    results = [asdict(r) for r in ratios.compute_ratios(req.data, req.period_days)]
+    summary = ratio_insights.attach(results)
+    return clean({"ratios": results, "summary": summary})
 
 
 # ---------------------------------------------------------------- Forecasting

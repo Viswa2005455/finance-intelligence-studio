@@ -1,6 +1,7 @@
-import { AlertTriangle, ChevronDown, GraduationCap, Info, CheckCircle2, XCircle, Construction } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Copy, GraduationCap, Info, CheckCircle2, XCircle, Construction } from 'lucide-react';
 import { cloneElement, isValidElement, memo, useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { problemLog } from '../lib/api';
 import { isNum, parseInputNumber } from '../lib/format';
 import { useSettings } from '../lib/settings';
 
@@ -211,12 +212,51 @@ export function SkeletonCards({ n = 4 }: { n?: number }) {
   );
 }
 
+/** Short heading for an error, chosen from what the message says, so people see what kind of problem it is. */
+export function errorTitle(error: string): string {
+  if (/not answering|still starting/i.test(error)) return 'The server is not ready yet';
+  if (/went wrong on our side/i.test(error)) return 'Something went wrong on our side';
+  if (/inputs need attention/i.test(error)) return 'Check your inputs';
+  if (/too large/i.test(error)) return 'That is too large';
+  if (/too many/i.test(error)) return 'Slow down for a moment';
+  if (/did not answer within/i.test(error)) return 'This is taking too long';
+  return 'That did not work';
+}
+
 export function ErrorBox({ error, onRetry }: { error: string; onRetry?: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const details = problemLog.get(error);
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(`${error}\n\n${details ?? ''}\nPage: ${window.location.pathname}`.trim());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard blocked: the details stay visible below */ }
+  };
   return (
-    <Callout tone="error" title="Cannot complete this request">
+    <Callout tone="error" title={errorTitle(error)}>
       <div>{error}</div>
-      {onRetry && <button className="btn sm mt-sm" onClick={onRetry}>Retry</button>}
+      <div className="row mt-sm" style={{ gap: 8, flexWrap: 'wrap' }}>
+        {onRetry && <button className="btn sm" onClick={onRetry}>Retry</button>}
+        {details && <button className="btn sm ghost" onClick={copy}><Copy size={14} />{copied ? 'Copied' : 'Copy details'}</button>}
+      </div>
+      {details && <details className="faint" style={{ fontSize: 12, marginTop: 6 }}><summary>Technical details</summary><pre style={{ whiteSpace: 'pre-wrap', margin: '4px 0 0' }}>{details}</pre></details>}
     </Callout>
+  );
+}
+
+/** A collapsible block for a page's inputs, so the results can come first. Closed by default on small
+ * screens is handled by the caller via `open`. The summary line shows the current key settings. */
+export function Setup({ title, summary, open, children }: { title: ReactNode; summary?: ReactNode; open?: boolean; children: ReactNode }) {
+  return (
+    <details className="setup card" open={open}>
+      <summary>
+        <span className="setup-title">{title}</span>
+        {summary && <span className="setup-summary faint">{summary}</span>}
+        <ChevronDown size={16} className="chev" />
+      </summary>
+      <div className="setup-body">{children}</div>
+    </details>
   );
 }
 

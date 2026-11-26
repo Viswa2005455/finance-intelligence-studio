@@ -13,13 +13,19 @@ EXTENSIONS: dict[str, tuple[str, str]] = {
     ".xls": ("spreadsheet", "Excel 97-2003 workbook"),
     ".csv": ("table", "CSV"),
     ".tsv": ("table", "TSV"),
+    ".dat": ("table", "Delimited data file"),
+    ".prn": ("table", "Delimited data file"),
+    ".psv": ("table", "Pipe-delimited file"),
     ".pdf": ("pdf", "PDF"),
     ".docx": ("word", "Word document"),
     ".doc": ("word_legacy", "Word 97-2003 document"),
     ".txt": ("text", "Plain text"),
     ".md": ("text", "Markdown"),
     ".log": ("text", "Log"),
+    ".rtf": ("text", "Rich text (RTF)"),
     ".json": ("data", "JSON"),
+    ".jsonl": ("data", "JSON Lines"),
+    ".ndjson": ("data", "JSON Lines"),
     ".xml": ("data", "XML"),
     ".yml": ("data", "YAML"),
     ".yaml": ("data", "YAML"),
@@ -33,6 +39,7 @@ EXTENSIONS: dict[str, tuple[str, str]] = {
     ".ts": ("code", "TypeScript"),
     ".tsx": ("code", "TypeScript (TSX)"),
     ".html": ("code", "HTML"),
+    ".htm": ("code", "HTML"),
     ".css": ("code", "CSS"),
     ".r": ("code", "R"),
     ".rmd": ("code", "R Markdown"),
@@ -42,6 +49,9 @@ EXTENSIONS: dict[str, tuple[str, str]] = {
     ".mat": ("binary_data", "MATLAB data"),
     ".zip": ("archive", "ZIP archive"),
 }
+
+# Programs and installers are never accepted, even if their content looks like text.
+BLOCKED = {".exe", ".dll", ".msi", ".bat", ".cmd", ".com", ".scr", ".vbs", ".ps1", ".sh", ".jar", ".apk", ".app", ".dmg", ".iso", ".bin"}
 
 ZIP_BASED = {".xlsx", ".xlsm", ".docx", ".zip"}
 OLE_BASED = {".xls", ".doc"}
@@ -65,10 +75,45 @@ def safe_display_name(name: str) -> str:
     return base[:180]
 
 
+def _sniff(head: bytes) -> Detection | None:
+    """Guess the type of a text file whose extension is missing or unknown, from its first bytes.
+    Only ever returns a text-based type; the file is read as data and never run."""
+    if head.startswith((b"\xff\xfe", b"\xfe\xff")):
+        text = head.decode("utf-16", "replace")
+    elif b"\x00" in head[:4096]:
+        return None
+    else:
+        text = head.decode("utf-8", "replace")
+    if not text.strip():
+        return None
+    printable = sum(ch.isprintable() or ch in "\r\n\t" for ch in text) / len(text)
+    if printable < 0.9:
+        return None
+    body = text.lstrip("﻿ \t\r\n")
+    if body[:1] in ("{", "["):
+        return Detection(".json", "data", "JSON (type guessed from the content)")
+    if re.match(r"<\?xml|<[A-Za-z][\w:-]*[ >/]", body):
+        return Detection(".xml", "data", "XML (type guessed from the content)")
+    lines = [ln for ln in text.splitlines() if ln.strip()][:30]
+    if len(lines) >= 2:
+        for d in (",", "\t", ";", "|"):
+            counts = [ln.count(d) for ln in lines]
+            common = max(set(counts), key=counts.count)
+            if common >= 1 and counts.count(common) / len(counts) >= 0.7:
+                return Detection(".csv", "table", "Delimited text (type guessed from the content)")
+    return Detection(".txt", "text", "Plain text (type guessed from the content)")
+
+
 def detect(filename: str, head: bytes) -> Detection:
     ext = PurePath(filename.lower()).suffix
+    if ext in BLOCKED:
+        return Detection(ext, "unsupported", "Unsupported", f"'{ext}' files are programs or installers and are never accepted. If it holds data, export it as CSV or Excel.")
     if ext not in EXTENSIONS:
-        return Detection(ext, "unsupported", "Unsupported", f"File type '{ext or 'none'}' is not supported yet.")
+        guess = _sniff(head)
+        if guess:
+            return guess
+        return Detection(ext, "unsupported", "Unsupported",
+                         f"File type '{ext or 'none'}' could not be read as text. Export the data as Excel, CSV, PDF, Word or text and upload that.")
     category, label = EXTENSIONS[ext]
     if ext in ZIP_BASED and not head.startswith(b"PK\x03\x04"):
         if ext == ".zip" and head.startswith(b"PK\x05\x06"):

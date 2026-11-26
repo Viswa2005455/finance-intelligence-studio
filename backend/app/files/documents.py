@@ -16,8 +16,10 @@ import tomllib
 import defusedxml.ElementTree as SafeET
 import yaml
 
+from . import unstructured as U
 from .tabular import analyse_grid, decode_text, parse_number
 
+MAX_ROWS_JSONL = 5000
 MAX_PDF_PAGES = 60
 MAX_TEXT_PREVIEW = 60_000
 
@@ -203,9 +205,29 @@ def parse_docx(data: bytes) -> dict:
 
 def parse_text(data: bytes, label: str) -> dict:
     text, warn = decode_text(data)
-    return {"kind": "document", "text": text[:MAX_TEXT_PREVIEW], "line_count": text.count("\n") + 1,
+    if text.lstrip().startswith("{\\rtf"):
+        text = U.strip_rtf(text)
+    sheets = U.sheets_from_grids(U.markdown_tables(text), "Table")
+    mentions = U.number_mentions(text)
+    if mentions:
+        sheets.append(mentions)
+    out = {"kind": "document", "text": text[:MAX_TEXT_PREVIEW], "line_count": text.count("\n") + 1,
+           "context": detect_financial_context(text), "warnings": [warn] if warn else [],
+           "truncated": len(text) > MAX_TEXT_PREVIEW, "format": label}
+    if sheets:
+        out["sheets"] = sheets
+    return out
+
+
+def parse_html(data: bytes, label: str) -> dict | None:
+    """HTML pages and saved web tables: the tables become sheets and the visible text is kept. None when the page has no table."""
+    html, warn = decode_text(data)
+    grids, text = U.html_tables(html)
+    if not grids:
+        return None
+    return {"kind": "document", "format": label, "text": text[:MAX_TEXT_PREVIEW], "line_count": text.count("\n") + 1,
             "context": detect_financial_context(text), "warnings": [warn] if warn else [],
-            "truncated": len(text) > MAX_TEXT_PREVIEW, "format": label}
+            "truncated": len(text) > MAX_TEXT_PREVIEW, "sheets": U.sheets_from_grids(grids, "Table")}
 
 
 def parse_structured(data: bytes, ext: str, label: str) -> dict:
@@ -213,21 +235,28 @@ def parse_structured(data: bytes, ext: str, label: str) -> dict:
     out = {"kind": "data", "format": label, "text": text[:MAX_TEXT_PREVIEW], "line_count": text.count("\n") + 1,
            "warnings": [warn] if warn else [], "valid": True, "error": None, "structure": None}
     try:
+        obj = None
         if ext == ".json":
             obj = json.loads(text)
             out["structure"] = _describe(obj)
-            if isinstance(obj, list) and obj and all(isinstance(x, dict) for x in obj[:50]):
-                keys = list(dict.fromkeys(k for x in obj[:5000] for k in x))[:200]
-                grid = [keys] + [[x.get(k) if not isinstance(x.get(k), (dict, list)) else json.dumps(x.get(k)) for k in keys]
-                                 for x in obj[:5000]]
-                out["sheets"] = [analyse_grid("Records", grid, excel=False)]
+        elif ext in (".jsonl", ".ndjson"):
+            lines = [ln for ln in text.splitlines() if ln.strip()]
+            obj = [json.loads(ln) for ln in lines[:MAX_ROWS_JSONL]]
+            out["structure"] = {"type": "json lines", "length": len(lines)}
         elif ext == ".xml":
             root = SafeET.fromstring(text.encode())
             out["structure"] = {"root": root.tag, "children": len(list(root))}
+            obj = {root.tag: U.xml_to_obj(root)}
         elif ext in (".yml", ".yaml"):
-            out["structure"] = _describe(yaml.safe_load(text))
+            obj = yaml.safe_load(text)
+            out["structure"] = _describe(obj)
         elif ext == ".toml":
-            out["structure"] = _describe(tomllib.loads(text))
+            obj = tomllib.loads(text)
+            out["structure"] = _describe(obj)
+        if obj is not None:
+            sheets = U.structured_sheets(obj)
+            if sheets:
+                out["sheets"] = sheets
     except Exception as e:  # report syntax problems as data, not as a server error
         out["valid"] = False
         out["error"] = f"{type(e).__name__}: {str(e)[:300]}"

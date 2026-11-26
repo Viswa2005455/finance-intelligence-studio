@@ -65,16 +65,33 @@ def _is_blank(v: Any) -> bool:
     return v is None or (isinstance(v, str) and not v.strip())
 
 
+_YEAR_MIN, _YEAR_MAX = 1990, 2100
+
+
+def _year_header(cells: list[Any]) -> bool:
+    """A label followed by two or more calendar years in one direction: ["Item", 2024, 2025]. Text files give
+    years as strings, so both numbers and numeric text count. Ordinary figures are never mistaken for years,
+    because every value after the label must be a whole year between 1990 and 2100."""
+    if len(cells) < 3 or not (isinstance(cells[0], str) and parse_number(cells[0])[0] is None):
+        return False
+    years = []
+    for c in cells[1:]:
+        v, _ = parse_number(c)
+        if v is None or not float(v).is_integer() or not _YEAR_MIN <= int(v) <= _YEAR_MAX:
+            return False
+        years.append(int(v))
+    return all(b > a for a, b in zip(years, years[1:])) or all(b < a for a, b in zip(years, years[1:]))
+
+
 def _header_row(grid: list[list[Any]]) -> int | None:
-    """Index of the first row that looks like a header (>=2 non-empty cells, mostly text)."""
+    """Index of the first row that looks like a header (>=2 non-empty cells, mostly text, or a label plus years)."""
     for i, row in enumerate(grid[:25]):
         cells = [c for c in row if not _is_blank(c)]
         if len(cells) >= 2 and sum(isinstance(c, str) and parse_number(c)[0] is None for c in cells) / len(cells) >= 0.6:
             return i
+        if _year_header(cells):
+            return i
     return None
-
-
-_YEAR_MIN, _YEAR_MAX = 1990, 2100
 
 
 def _timeline(row: list[Any]) -> tuple[str, dict[int, str]] | None:
@@ -404,7 +421,10 @@ def decode_text(data: bytes) -> tuple[str, str | None]:
             return data.decode(enc), None
         except UnicodeDecodeError:
             continue
-    return data.decode("latin-1"), "File is not valid UTF-8; decoded as Latin-1. Some characters may be wrong."
+    try:
+        return data.decode("cp1252"), "File is not valid UTF-8; decoded as Windows-1252 (typical for Excel exports). Check accented characters."
+    except UnicodeDecodeError:
+        return data.decode("latin-1"), "File is not valid UTF-8; decoded as Latin-1. Some characters may be wrong."
 
 
 def parse_delimited(data: bytes, delimiter: str | None = None) -> dict:
@@ -421,8 +441,67 @@ def parse_delimited(data: bytes, delimiter: str | None = None) -> dict:
             truncated = True
             break
         grid.append([None if not c.strip() else c for c in row[:MAX_COLS]])
+    grid, converted = normalise_decimal_commas(grid)
     sheet = analyse_grid("Data", grid, excel=False, truncated=truncated)
     if warn:
         sheet["warnings"].append(warn)
+    if converted:
+        sheet["warnings"].append(f"{converted} number(s) use a decimal comma (for example 11000,50) and were read as 11000.50. "
+                                 "Check a few against the source.")
+    ragged = ragged_rows(grid)
+    if ragged:
+        sheet["warnings"].append(f"{ragged} row(s) have more columns than the rest. Numbers written like 11,000 must be in quotes in a "
+                                 "comma-separated file, otherwise the comma splits them into separate columns. Check those rows or re-export the file.")
     sheet["delimiter"] = {"\t": "tab"}.get(delimiter, delimiter)
     return {"kind": "tabular", "sheets": [sheet]}
+
+
+_THOUSANDS = re.compile(r"^\(?-?\d{1,3}(?:,\d{2,3})*,\d{3}(?:\.\d+)?\)?$")
+_DECIMAL_COMMA = re.compile(r"^\(?-?(?:\d+|\d{1,3}(?:\.\d{3})+),\d+\)?$")
+
+
+def normalise_decimal_commas(grid: list[list[Any]]) -> tuple[list[list[Any]], int]:
+    """Read "11000,50" and "1.234,56" as 11000.50 and 1234.56 when the file clearly uses a decimal comma.
+
+    The whole file is judged together: if any cell is written with thousands commas (12,480 or 1,23,456) the file
+    uses English-style numbers and nothing is changed, because 12,480 would otherwise be ambiguous."""
+    thousands = decimals = 0
+    for row in grid:
+        for c in row:
+            if isinstance(c, str):
+                t = _CURRENCY.sub("", c).strip().replace(" ", "").rstrip("%")
+                if _THOUSANDS.match(t):
+                    thousands += 1
+                elif _DECIMAL_COMMA.match(t):
+                    decimals += 1
+    if not decimals or thousands:
+        return grid, 0
+    out, n = [], 0
+    for row in grid:
+        new = []
+        for c in row:
+            if isinstance(c, str):
+                t = _CURRENCY.sub("", c).strip().replace(" ", "").rstrip("%")
+                if _DECIMAL_COMMA.match(t):
+                    neg = t.startswith("(") and t.endswith(")")
+                    core = t.strip("()").replace(".", "").replace(",", ".")
+                    c = f"({core})" if neg else core
+                    n += 1
+            new.append(c)
+        out.append(new)
+    return out, n
+
+
+def ragged_rows(grid: list[list[Any]]) -> int:
+    """Rows wider than the usual row width (trailing blanks ignored): a sign that unquoted commas split a number."""
+    widths = []
+    for row in grid:
+        w = len(row)
+        while w and _is_blank(row[w - 1]):
+            w -= 1
+        if w:
+            widths.append(w)
+    if not widths:
+        return 0
+    usual = Counter(widths).most_common(1)[0][0]
+    return sum(1 for w in widths if w > usual)

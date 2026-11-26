@@ -1,0 +1,98 @@
+name: CI
+
+# Runs on every push and pull request: backend tests (against real PostgreSQL),
+# frontend typecheck + tests + build, and dependency audits.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: fis_app
+          POSTGRES_PASSWORD: fis_dev_password
+          POSTGRES_DB: finance_studio_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fis_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      # Matches the default in backend/tests/conftest.py. If PostgreSQL were unreachable the
+      # suite would silently fall back to SQLite, so the step below checks it first.
+      TEST_DATABASE_URL: postgresql+psycopg://fis_app:fis_dev_password@localhost:5432/finance_studio_test
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Check PostgreSQL is reachable (no silent SQLite fallback)
+        run: |
+          uv run python - <<'PY'
+          import os
+          from sqlalchemy import create_engine, text
+          with create_engine(os.environ["TEST_DATABASE_URL"]).connect() as c:
+              print(c.execute(text("select version()")).scalar())
+          PY
+      - name: Run tests
+        run: uv run pytest
+
+  frontend:
+    name: Frontend typecheck, tests, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: npm audit (high and above)
+        working-directory: frontend
+        run: npm audit --audit-level=high
+      - uses: astral-sh/setup-uv@v5
+      - name: pip-audit
+        working-directory: backend
+        run: |
+          uv export --frozen --no-hashes --no-emit-project -o "$RUNNER_TEMP/requirements.txt"
+          uvx pip-audit --requirement "$RUNNER_TEMP/requirements.txt" --disable-pip --no-deps

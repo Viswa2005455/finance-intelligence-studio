@@ -30,7 +30,6 @@ interface Analysis {
 type UploadRecord = UploadSummary & Omit<RevealUpload, 'analysis'> & { sha256: string; analysis: Analysis & RevealUpload['analysis'] };
 interface Pending { key: string; file: File; progress: number; state: 'uploading' | 'processing' | 'error'; error?: string }
 
-const ACCEPT = '.xlsx,.xlsm,.xls,.csv,.tsv,.pdf,.docx,.doc,.txt,.md,.json,.xml,.py,.ipynb,.sql,.java,.js,.jsx,.ts,.tsx,.html,.css,.r,.rmd,.sas,.do,.m,.mat,.yml,.yaml,.toml,.log,.zip';
 
 function iconFor(cat: string) {
   if (cat === 'spreadsheet' || cat === 'table') return FileSpreadsheet;
@@ -111,7 +110,7 @@ export function UploadPage() {
             <div className="faint" style={{ fontSize: 12, marginTop: 4 }}>
               Excel, CSV, PDF, Word, text, JSON/XML, Python, notebooks, SQL, Java and more · up to {maxMb} MB each · ZIP archives inspected safely
             </div>
-            <input ref={inputRef} type="file" multiple accept={ACCEPT} hidden onChange={(e) => { send(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
+            <input ref={inputRef} type="file" multiple hidden onChange={(e) => { send(Array.from(e.target.files ?? [])); e.target.value = ''; }} />
           </div>
 
           {pending.length > 0 && (

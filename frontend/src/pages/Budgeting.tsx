@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { C, ChartTooltip, Legend, axisProps, gridProps } from '../components/charts';
 import { SaveLoad } from '../components/SaveLoad';
-import { Badge, Callout, Card, ErrorBox, Field, Kpi, LearnBox, NumberField, PageHeader, Stable, Warnings } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, Field, Kpi, LearnBox, NumberField, PageHeader, Setup, Stable, Warnings } from '../components/ui';
 import { api } from '../lib/api';
 import { downloadFile, fmtCompact, fmtMoney, fmtNum, fmtPctPoints, isNum, toCSV } from '../lib/format';
 import { useSettings } from '../lib/settings';
@@ -129,52 +129,8 @@ export function Budgeting() {
           <button className="btn primary" onClick={sendToVariance} disabled={!r}>Compare with actuals <ArrowRight size={15} /></button>
         </>} />
 
-      <div className="grid cols-4">
-        <Card className="span-2 wide-sm" title="Version">
-          <div className="form-grid">
-            <Field label="Active version">
-              <select className="input" value={v.id} onChange={(e) => setStore({ ...store, active: e.target.value })}>
-                {store.versions.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.status}</option>)}
-              </select>
-            </Field>
-            <Field label="Name"><input className="input" value={v.name} maxLength={60} onChange={(e) => updV({ name: e.target.value })} /></Field>
-            <Field label="Approval status">
-              <select className="input" value={v.status} onChange={(e) => updV({ status: e.target.value as Status })}>
-                {(['Draft', 'Submitted', 'Approved', 'Rejected'] as Status[]).map((s) => <option key={s}>{s}</option>)}
-              </select>
-            </Field>
-          </div>
-          <div className="row mt-sm">
-            <button className="btn sm" onClick={newVersion}><Copy size={14} />New version from this</button>
-            <button className="btn sm danger" disabled={store.versions.length <= 1} onClick={() => {
-              if (!confirm(`Delete version "${v.name}"?`)) return;
-              const rest = store.versions.filter((x) => x.id !== v.id);
-              setStore({ ...store, versions: rest, active: rest[0].id });
-            }}><Trash2 size={14} />Delete version</button>
-          </div>
-          <p className="faint mt-sm" style={{ fontSize: 12 }}>Approval status is a label in this version — user sign-off and audit trail arrive with accounts (Phase 7). Approved versions are locked for editing.</p>
-        </Card>
-        <Card title="Fiscal year">
-          <div className="stack" style={{ gap: 10 }}>
-            <Field label="Starts in">
-              <select className="input" value={v.start_month} disabled={locked} onChange={(e) => updV({ start_month: Number(e.target.value) })}>
-                {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
-              </select>
-            </Field>
-            <NumberField label="Year" value={v.start_year} onChange={(y) => y && updV({ start_year: Math.round(y) })} min={1990} max={2100} />
-          </div>
-        </Card>
-        <Card title="Approach">
-          <label className="row" style={{ fontSize: 13 }}>
-            <input type="checkbox" checked={v.zero_based} disabled={locked} onChange={(e) => updV({ zero_based: e.target.checked })} />
-            Zero-based budgeting
-          </label>
-          <p className="faint mt-sm" style={{ fontSize: 12.5 }}>When on, every line needs a justification and cost lines should be built from drivers rather than last year's figures.</p>
-        </Card>
-      </div>
-
       {r && (
-        <div className="grid cols-4 mt">
+        <div className="grid cols-4">
           <Kpi label="Budgeted revenue" value={fmtMoney(r.totals_annual.revenue, cur)} />
           <Kpi label="Budgeted operating expenses" value={fmtMoney(r.totals_annual.expense, cur)} />
           <Kpi label="Operating result" value={fmtMoney(r.totals_annual.operating_result, cur)} deltaTone={r.totals_annual.operating_result >= 0 ? 'pos' : 'neg'}
@@ -182,6 +138,53 @@ export function Budgeting() {
           <Kpi label="Capital expenditure" value={fmtMoney(r.totals_annual.capex, cur)} />
         </div>
       )}
+      <div className="mt">
+        <Setup title="Budget setup" summary={`${v.name} · ${v.status} · starts ${MONTH_NAMES[v.start_month - 1]} ${v.start_year}${v.zero_based ? ' · zero-based' : ''}`}>
+        <div className="grid cols-4">
+          <Card className="span-2 wide-sm" title="Version">
+            <div className="form-grid">
+              <Field label="Active version">
+                <select className="input" value={v.id} onChange={(e) => setStore({ ...store, active: e.target.value })}>
+                  {store.versions.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.status}</option>)}
+                </select>
+              </Field>
+              <Field label="Name"><input className="input" value={v.name} maxLength={60} onChange={(e) => updV({ name: e.target.value })} /></Field>
+              <Field label="Approval status">
+                <select className="input" value={v.status} onChange={(e) => updV({ status: e.target.value as Status })}>
+                  {(['Draft', 'Submitted', 'Approved', 'Rejected'] as Status[]).map((s) => <option key={s}>{s}</option>)}
+                </select>
+              </Field>
+            </div>
+            <div className="row mt-sm">
+              <button className="btn sm" onClick={newVersion}><Copy size={14} />New version from this</button>
+              <button className="btn sm danger" disabled={store.versions.length <= 1} onClick={() => {
+                if (!confirm(`Delete version "${v.name}"?`)) return;
+                const rest = store.versions.filter((x) => x.id !== v.id);
+                setStore({ ...store, versions: rest, active: rest[0].id });
+              }}><Trash2 size={14} />Delete version</button>
+            </div>
+            <p className="faint mt-sm" style={{ fontSize: 12 }}>Approval status is a label in this version — user sign-off and audit trail arrive with accounts (Phase 7). Approved versions are locked for editing.</p>
+          </Card>
+          <Card title="Fiscal year">
+            <div className="stack" style={{ gap: 10 }}>
+              <Field label="Starts in">
+                <select className="input" value={v.start_month} disabled={locked} onChange={(e) => updV({ start_month: Number(e.target.value) })}>
+                  {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                </select>
+              </Field>
+              <NumberField label="Year" value={v.start_year} onChange={(y) => y && updV({ start_year: Math.round(y) })} min={1990} max={2100} />
+            </div>
+          </Card>
+          <Card title="Approach">
+            <label className="row" style={{ fontSize: 13 }}>
+              <input type="checkbox" checked={v.zero_based} disabled={locked} onChange={(e) => updV({ zero_based: e.target.checked })} />
+              Zero-based budgeting
+            </label>
+            <p className="faint mt-sm" style={{ fontSize: 12.5 }}>When on, every line needs a justification and cost lines should be built from drivers rather than last year's figures.</p>
+          </Card>
+        </div>
+        </Setup>
+      </div>
       {res.error && <div className="mt"><ErrorBox error={res.error} /></div>}
       {bad.length > 0 && <div className="mt"><Callout tone="warn">Complete the inputs for: {bad.slice(0, 6).join(', ')}. Blank values are not treated as zero.</Callout></div>}
       {r && r.warnings.length > 0 && <div className="mt"><Warnings items={r.warnings} /></div>}

@@ -22,8 +22,43 @@ function signalUnauthorized(path: string) {
   if (!path.startsWith('/api/auth/')) window.dispatchEvent(new Event(UNAUTHORIZED_EVENT));
 }
 
-const BACKEND_DOWN = 'The app\'s backend is not answering. Check the "Finance Studio - BACKEND" window: if it is closed, run start-windows.bat again; if it shows an error, send a screenshot of it.';
+const BACKEND_DOWN = 'The calculation server is not answering yet. It may still be starting: wait about 20 seconds and press Retry. If you run the app on your own PC, check that the "Finance Studio - BACKEND" window is open (run start-windows.bat again if it is closed).';
+const SERVER_FAULT = 'Something went wrong on our side while handling this request. Your data and your other work are safe. Try again in a moment; if it keeps happening, copy the details below and send them to support.';
 const DEFAULT_TIMEOUT_MS = 60_000;
+
+/** Technical details for each friendly message, so the error box can offer "Copy details" without
+ * showing jargon to everyone. Keyed by the message text the user sees. */
+export const problemLog = new Map<string, string>();
+function remember(message: string, method: string, path: string, status: number, raw?: string): void {
+  const lines = [`Time: ${new Date().toISOString()}`, `Request: ${method} ${path}`, `Status: ${status || 'no response'}`];
+  if (raw && raw !== message) lines.push(`Server said: ${raw}`);
+  if (problemLog.size > 50) problemLog.delete(problemLog.keys().next().value as string);
+  problemLog.set(message, lines.join('\n'));
+}
+
+/** FastAPI validation errors arrive as a list of {loc, msg}; turn them into one readable sentence. */
+function validationText(detail: unknown): string | null {
+  if (!Array.isArray(detail) || !detail.length) return null;
+  const parts = detail.slice(0, 3).map((d) => {
+    const loc = Array.isArray(d?.loc) ? d.loc.filter((x: unknown) => x !== 'body').join(' › ') : '';
+    const msg = typeof d?.msg === 'string' ? d.msg.replace(/^Value error, /, '') : 'is not valid';
+    return loc ? `${loc}: ${msg}` : msg;
+  });
+  return `Some inputs need attention. ${parts.join('; ')}${detail.length > 3 ? `; and ${detail.length - 3} more` : ''}.`;
+}
+
+function friendlyStatus(status: number, detail: unknown, hasBody: boolean): { message: string; category?: string } {
+  if (typeof detail === 'string' && detail && !/^internal error/i.test(detail)) return { message: detail };
+  const v = validationText(detail);
+  if (v) return { message: v, category: 'validation' };
+  if (!hasBody && [500, 502, 503, 504].includes(status)) return { message: BACKEND_DOWN, category: 'network' };
+  if (status >= 500) return { message: SERVER_FAULT, category: 'server' };
+  if (status === 404) return { message: 'We could not find what you asked for. It may have been deleted or moved.', category: 'not_found' };
+  if (status === 413) return { message: 'That file or request is too large. Try a smaller file or split it into parts.', category: 'too_large' };
+  if (status === 429) return { message: 'Too many requests in a short time. Wait a minute and try again.', category: 'rate_limit' };
+  if (status === 403) return { message: 'You do not have permission to do that.', category: 'forbidden' };
+  return { message: `This request could not be completed (code ${status}). Check your inputs and try again.` };
+}
 
 async function once<T>(path: string, init: RequestInit, opts: RequestOpts): Promise<T> {
   const ctl = new AbortController();
@@ -42,6 +77,7 @@ async function once<T>(path: string, init: RequestInit, opts: RequestOpts): Prom
     } catch (e) {
       if (opts.signal?.aborted) throw new DOMException('Request cancelled', 'AbortError');
       if (timedOut) throw new ApiError(`The server did not answer within ${Math.round(timeoutMs / 1000)} seconds. Try again.`, 0, 'timeout');
+      remember(BACKEND_DOWN, init.method ?? 'GET', path, 0);
       throw new ApiError(BACKEND_DOWN, 0, isAbort(e) ? 'aborted' : 'network');
     }
     let body: unknown = null;
@@ -57,10 +93,9 @@ async function once<T>(path: string, init: RequestInit, opts: RequestOpts): Prom
         const d = detail as { message: string; category?: string };
         throw new ApiError(d.message, res.status, d.category);
       }
-      const msg = typeof detail === 'string' ? detail : (res.status === 502 || res.status === 504 || res.status === 500) && !body
-        ? BACKEND_DOWN
-        : `Request failed (${res.status}).`;
-      throw new ApiError(msg, res.status);
+      const f = friendlyStatus(res.status, detail, body !== null);
+      remember(f.message, init.method ?? 'GET', path, res.status, typeof detail === 'string' ? detail : undefined);
+      throw new ApiError(f.message, res.status, f.category);
     }
     return body as T;
   } finally {
@@ -77,7 +112,7 @@ async function request<T>(path: string, init: RequestInit = {}, opts: RequestOpt
     // One retry for reads that failed on the network or a gateway hiccup; writes are never repeated.
     const retryable = e instanceof ApiError && (e.category === 'network' || e.status === 502 || e.status === 503);
     if (!idempotent || !retryable || opts.signal?.aborted) throw e;
-    await new Promise((r) => setTimeout(r, 400));
+    await new Promise((r) => setTimeout(r, 1200));
     return once<T>(path, init, opts);
   }
 }
@@ -114,9 +149,12 @@ export async function downloadPost(path: string, data: unknown, fallbackName: st
   }
   if (res.status === 401) signalUnauthorized(path);
   if (!res.ok) {
-    let msg = `Request failed (${res.status}).`;
-    try { const b = await res.json(); if (typeof b?.detail === 'string') msg = b.detail; else if (typeof b?.detail?.message === 'string') msg = b.detail.message; } catch { /* not JSON */ }
-    throw new ApiError(msg, res.status);
+    let detail: unknown;
+    let hasBody = false;
+    try { const b = await res.json(); hasBody = true; detail = typeof b?.detail?.message === 'string' ? b.detail.message : b?.detail; } catch { /* not JSON */ }
+    const f = friendlyStatus(res.status, detail, hasBody);
+    remember(f.message, 'POST', path, res.status, typeof detail === 'string' ? detail : undefined);
+    throw new ApiError(f.message, res.status, f.category);
   }
   const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;
   const url = URL.createObjectURL(await res.blob());
@@ -138,11 +176,15 @@ export function uploadWithProgress<T>(path: string, files: File[], onProgress: (
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress(e.loaded / e.total); };
     xhr.onerror = () => reject(new ApiError('Upload failed: cannot reach the backend.', 0));
     xhr.onload = () => {
-      let body: { detail?: string } | null = null;
+      let body: { detail?: unknown } | null = null;
       try { body = JSON.parse(xhr.responseText); } catch { /* ignore */ }
       if (xhr.status === 401) signalUnauthorized(path);
       if (xhr.status >= 200 && xhr.status < 300) resolve(body as T);
-      else reject(new ApiError(body?.detail ?? `Upload failed (${xhr.status}).`, xhr.status));
+      else {
+        const f = friendlyStatus(xhr.status, body?.detail, body !== null);
+        remember(f.message, 'POST', path, xhr.status, typeof body?.detail === 'string' ? body.detail : undefined);
+        reject(new ApiError(f.message, xhr.status, f.category));
+      }
     };
     xhr.send(fd);
   });

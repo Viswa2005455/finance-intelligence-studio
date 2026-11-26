@@ -1,7 +1,11 @@
 import { ArrowDown, ArrowRight, ArrowUp, CheckCircle2, FileSpreadsheet, LineChart, Lightbulb, UploadCloud, X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { api } from '../lib/api';
+import { useCompanySources } from '../lib/company';
 import { useGuide } from '../lib/guide';
+import { ANALYSIS_PAGES, useVisited } from '../lib/progress';
+import { useAsync } from '../lib/useApi';
 
 /**
  * A friendly tip with a bouncing arrow that points at what to do next. It sits in the page flow (above or below
@@ -57,23 +61,52 @@ export function GuideSteps({ compact = false }: { compact?: boolean }) {
   );
 }
 
-/** The "Get started" card for a first visit: dismissible, and it can be brought back from Settings. */
+/** First-run checklist: three steps with progress that ticks itself off, plus a no-file path to explore. It is
+ * dismissible and can be brought back from Settings. */
 export function GetStarted() {
   const { isOn, dismiss, setOff } = useGuide();
+  const visited = useVisited();
+  const uploads = useAsync((signal) => api.get<{ uploads: unknown[] }>('/api/uploads', { signal }), []);
+  const { sources } = useCompanySources();
   if (!isOn('get-started')) return null;
+
+  const uploaded = (uploads.data?.uploads.length ?? 0) > 0;
+  const imported = (sources ?? []).some((s) => !s.isExample);
+  const analysed = ANALYSIS_PAGES.some((p) => visited.includes(p));
+  const steps: { done: boolean; icon: ReactNode; title: string; text: string; to: string; cta: string }[] = [
+    { done: uploaded, icon: <UploadCloud size={20} />, title: 'Bring your data', text: 'Upload any file: Excel, CSV, PDF, Word, text, JSON and more. Messy files are fine; the app shows what it found and what it could not read.', to: '/upload', cta: uploaded ? 'Upload another' : 'Upload a file' },
+    { done: imported, icon: <FileSpreadsheet size={20} />, title: 'Turn it into statements', text: 'Open Financial Statements and click your file, or import a Screener.in export in one click.', to: '/statements', cta: imported ? 'Open statements' : 'Import a company' },
+    { done: analysed, icon: <LineChart size={20} />, title: 'Run your first analysis', text: 'Ratios, red flags, DCF and more reuse the same data. Every number shows its formula and what it means.', to: '/ratios', cta: analysed ? 'Open Ratio Analysis' : 'See your ratios' },
+  ];
+  const doneCount = steps.filter((s) => s.done).length;
+  const next = steps.findIndex((s) => !s.done);
+
   return (
     <div className="card get-started" role="region" aria-label="Get started">
       <div className="row between" style={{ alignItems: 'flex-start' }}>
         <div>
-          <div className="row" style={{ gap: 8 }}><Lightbulb size={18} className="pos" /><b style={{ fontSize: 16 }}>New here? Get your statements in three steps</b></div>
-          <p className="faint" style={{ margin: '4px 0 0', fontSize: 13 }}>Follow the arrows. Everything stays private to your account, and every number shows its formula and source.</p>
+          <div className="row" style={{ gap: 8 }}><Lightbulb size={18} className="pos" /><b style={{ fontSize: 16 }}>Get started: {doneCount} of 3 done</b></div>
+          <p className="faint" style={{ margin: '4px 0 0', fontSize: 13 }}>Everything stays private to your account, and every number shows its formula and source.</p>
         </div>
         <button className="btn sm ghost" aria-label="Close this guide" onClick={() => dismiss('get-started')}><X size={15} />Close</button>
       </div>
-      <GuideSteps />
-      <div className="row" style={{ gap: 14, marginTop: 8 }}>
-        <button className="hint-link" onClick={() => setOff(true)}>Hide all tips</button>
-        <span className="faint" style={{ fontSize: 12 }}><CheckCircle2 size={12} style={{ verticalAlign: -2 }} /> You can turn tips back on in Settings.</span>
+      <div className="progress first-run-bar" role="progressbar" aria-valuemin={0} aria-valuemax={3} aria-valuenow={doneCount} aria-label="First-run progress"><i style={{ width: `${(doneCount / 3) * 100}%` }} /></div>
+      <div className="first-run-steps">
+        {steps.map((s, i) => (
+          <div key={s.title} className={`first-run-step ${s.done ? 'done' : ''} ${i === next ? 'next' : ''}`}>
+            <span className="first-run-icon" aria-hidden="true">{s.done ? <CheckCircle2 size={20} /> : s.icon}</span>
+            <b>{i + 1}. {s.title}</b>
+            <p>{s.text}</p>
+            <Link to={s.to} className={`btn sm ${i === next ? 'primary' : ''}`}>{s.cta}{i === next && <ArrowRight size={14} />}</Link>
+          </div>
+        ))}
+      </div>
+      <div className="row between first-run-foot">
+        <span className="faint" style={{ fontSize: 13 }}>No file yet? <Link to="/dcf">Try a DCF with example numbers</Link> or <Link to="/investment">appraise a project (NPV and IRR)</Link>.</span>
+        <span className="row" style={{ gap: 14 }}>
+          <button className="hint-link" onClick={() => setOff(true)}>Hide all tips</button>
+          <span className="faint" style={{ fontSize: 12 }}>Turn tips back on in Settings.</span>
+        </span>
       </div>
     </div>
   );

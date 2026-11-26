@@ -55,6 +55,10 @@ def _parse(name: str, ext: str, category: str, label: str, data: bytes, settings
     if category == "notebook":
         return documents.parse_notebook(data)
     if category == "code":
+        if ext in (".html", ".htm"):
+            parsed = documents.parse_html(data, label)
+            if parsed:
+                return parsed
         return documents.parse_code(data, ext, label)
     if category == "binary_data":
         return {"kind": "binary", "warnings": [f"{label} files are binary; previews are not supported yet."]}
