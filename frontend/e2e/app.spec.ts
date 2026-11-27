@@ -132,15 +132,14 @@ test('a file dropped anywhere is analysed', async ({ page }) => {
   await expect(page.getByText('dropped-anywhere.csv').first()).toBeVisible();
 });
 
-test('the background is navy, white and pink by default and can be made plain in Settings', async ({ page }) => {
+test('the 3D scene is the default background and can be made plain in Settings', async ({ page }) => {
   await page.goto('/settings');
-  await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'tricolor');
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light');
-  await expect(page.locator('.app-bg i')).toHaveCount(0); // no 3D pieces
+  await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'scene');
+  await expect(page.locator('.app-bg .solid').first()).toBeAttached(); // the 3D pieces are there
   await page.getByRole('tab', { name: 'Plain' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'off');
-  await page.getByRole('tab', { name: 'Navy, white and pink' }).click();
-  await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'tricolor');
+  await page.getByRole('tab', { name: '3D scene' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'scene');
 });
 
 test('scenarios open with a plain-English reading', async ({ page }) => {

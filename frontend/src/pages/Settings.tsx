@@ -28,9 +28,9 @@ export function SettingsPage() {
               <Tabs label="Theme" value={settings.theme} onChange={(v: ThemePref) => update({ theme: v })}
                 options={[{ value: 'system', label: 'System' }, { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]} />
             </Field>
-            <Field label="Background" hint="A soft pink wash behind the pages. Choose Plain for a flat background.">
-              <Tabs label="Background" value={settings.backdrop} onChange={(v: 'tricolor' | 'off') => update({ backdrop: v })}
-                options={[{ value: 'tricolor', label: 'Navy, white and pink' }, { value: 'off', label: 'Plain' }]} />
+            <Field label="Background" hint="The slowly moving 3D scene behind the pages. Choose Plain on an older computer or if movement distracts you.">
+              <Tabs label="Background" value={settings.backdrop} onChange={(v: 'scene' | 'off') => update({ backdrop: v })}
+                options={[{ value: 'scene', label: '3D scene' }, { value: 'off', label: 'Plain' }]} />
             </Field>
             <Field label="Text size" hint="Scales the whole interface. Your browser's own zoom (Ctrl and +) works too.">
               <Tabs label="Text size" value={settings.textSize} onChange={(v: 'normal' | 'large' | 'larger') => update({ textSize: v })}

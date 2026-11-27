@@ -24,38 +24,38 @@
   --dur-slow: 240ms;
 
   /* light theme (default): "ledger" canvas — warm vellum with brass and emerald light */
-  --bg: #FFF4F8;
-  --canvas-top: #FFFFFF;
-  --canvas-bottom: #FFE6EF;
+  --bg: #EAF0FF;
+  --canvas-top: #F3F7FF;
+  --canvas-bottom: #DAE6FF;
   --bg-light-a: rgba(196, 152, 44, .22);
   --bg-light-b: rgba(8, 127, 104, .14);
   /* Prism backdrop: teal, indigo, amber */
-  --tri-a: #0FA88A; --tri-b: #6366F1; --tri-c: #F59E0B;
-  --tri-a-glow: rgba(15, 168, 138, .34); --tri-b-glow: rgba(99, 102, 241, .30); --tri-c-glow: rgba(245, 158, 11, .30);
-  --tri-a-line: rgba(15, 168, 138, .30); --tri-b-line: rgba(99, 102, 241, .26); --tri-c-line: rgba(245, 158, 11, .34);
-  --tri-a-face: rgba(15, 168, 138, .30); --tri-b-face: rgba(99, 102, 241, .28); --tri-c-face: rgba(245, 158, 11, .30);
+  --tri-a: #2F6BFF; --tri-b: #6D5DF6; --tri-c: #F472B6;
+  --tri-a-glow: rgba(47, 107, 255, .34); --tri-b-glow: rgba(109, 93, 246, .26); --tri-c-glow: rgba(244, 114, 182, .22);
+  --tri-a-line: rgba(47, 107, 255, .34); --tri-b-line: rgba(109, 93, 246, .28); --tri-c-line: rgba(244, 114, 182, .30);
+  --tri-a-face: rgba(47, 107, 255, .30); --tri-b-face: rgba(109, 93, 246, .26); --tri-c-face: rgba(244, 114, 182, .26);
   --solid-edge: rgba(255, 255, 255, .75); --ring-o: .55;
   --ledger-rule: rgba(20, 80, 64, .10);
   --ledger-col: rgba(20, 80, 64, .05);
   --ledger-margin: rgba(170, 70, 40, .20);
-  --curve: rgba(8, 127, 104, .45);
-  --curve-fill: rgba(8, 127, 104, .10);
+  --curve: rgba(35, 66, 201, .45);
+  --curve-fill: rgba(35, 66, 201, .10);
   --curve-alt: rgba(120, 90, 30, .42);
   --bg-elev: #FFFFFF;
-  --bg-sunken: #FFF6F9;   /* inputs, table headers */
-  --bg-hover: #FFEAF2;
-  --border: #EBDCE5;
-  --border-strong: #D2BECB;
-  --text: #1B1F3B;
-  --text-muted: #474C70;  /* secondary text: 5:1 or more on white and on every pink-tinted surface (WCAG AA) */
-  --text-faint: #474C70;
-  --navy: #0B1240;
-  --heading: #0B1240;
-  --accent: #1B2A7A;
-  --accent-strong: #141F63;
-  --accent-soft: #E8EBFA;
+  --bg-sunken: #F1F5FF;   /* inputs, table headers */
+  --bg-hover: #E4ECFF;
+  --border: #D3DDF5;
+  --border-strong: #B3C2EA;
+  --text: #0F1B3D;
+  --text-muted: #3B4873;  /* secondary text: 5:1 or more on white and on every blue-tinted surface (WCAG AA) */
+  --text-faint: #3B4873;
+  --navy: #0B1B4D;
+  --heading: #0B1B4D;
+  --accent: #2342C9;
+  --accent-strong: #1A33A3;
+  --accent-soft: #E3EAFF;
   --accent-text: #FFFFFF;
-  --teal: #1B2A7A;
+  --teal: #2342C9;
   --cyan: #2F6F9F;
   --indigo: #4F6D9A;
   --positive: #15803D;
@@ -73,10 +73,10 @@
   --shadow: 0 1px 2px rgba(16, 24, 40, .05), 0 10px 28px rgba(18, 50, 77, .07);
   --shadow-md: 0 4px 12px rgba(16, 24, 40, .06);
   --shadow-lg: 0 16px 40px rgba(16, 24, 40, .14);
-  --focus: 0 0 0 3px rgba(27, 42, 122, .28);
+  --focus: 0 0 0 3px rgba(35, 66, 201, .30);
 
   /* sidebar */
-  --sb-bg: linear-gradient(180deg, #131C5E 0%, #0B1240 55%, #070B2B 100%);
+  --sb-bg: linear-gradient(180deg, #2038A8 0%, #14246E 55%, #0A1450 100%);
   --sb-text: #EEF0FF;
   --sb-muted: #C6CCF0;
   --sb-faint: #A9B1E0;
@@ -87,14 +87,14 @@
   --sb-ink: #0B1240;
 
   /* charts: teal and navy first, then muted supporting hues */
-  --chart-1: #1B2A7A;
+  --chart-1: #2342C9;
   --chart-2: #D6336C;
-  --chart-3: #7C8BE0;
+  --chart-3: #6A8BFF;
   --chart-4: #B45309;
   --chart-5: #8B5CF6;
-  --chart-grid: #F1E4EB;
+  --chart-grid: #E1E8F8;
   --chart-axis: #64748B;
-  --chart-band: rgba(27, 42, 122, .10);
+  --chart-band: rgba(35, 66, 201, .10);
 
   color-scheme: light;
 }
@@ -178,6 +178,99 @@ body {
   background-color: var(--bg);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: 'cv11', 'ss01';
+}
+
+/* ------------------------------------------------------------------ Prism backdrop
+   Fixed behind everything (z-index 0; the shell is z-index 1). Three colours (--tri-a teal, --tri-b indigo,
+   --tri-c amber) drift as aurora lights, a perspective grid floor glides toward the viewer and glass cubes
+   and rings turn in 3D. Only transforms and opacity animate. Reduced motion stops everything except the
+   still image; print hides it. Content is always on solid cards above it. */
+.app-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+  --px: 0; --py: 0;
+  background: linear-gradient(180deg, var(--canvas-top) 0%, var(--canvas-bottom) 100%); }
+
+.bg-aurora { position: absolute; inset: 0; }
+.bg-aurora .orb { position: absolute; border-radius: 50%; filter: blur(46px); will-change: transform; }
+.bg-aurora .o1 { width: 58vmax; height: 58vmax; left: -16vmax; top: -22vmax; background: radial-gradient(closest-side, var(--tri-a-glow), transparent); animation: orb-a 26s ease-in-out infinite alternate; }
+.bg-aurora .o2 { width: 54vmax; height: 54vmax; right: -18vmax; top: -8vmax; background: radial-gradient(closest-side, var(--tri-b-glow), transparent); animation: orb-b 32s ease-in-out infinite alternate; }
+.bg-aurora .o3 { width: 60vmax; height: 60vmax; left: 22vmax; bottom: -34vmax; background: radial-gradient(closest-side, var(--tri-c-glow), transparent); animation: orb-c 38s ease-in-out infinite alternate; }
+@keyframes orb-a { to { transform: translate3d(14vmax, 10vmax, 0) scale(1.12); } }
+@keyframes orb-b { to { transform: translate3d(-16vmax, 14vmax, 0) scale(.92); } }
+@keyframes orb-c { to { transform: translate3d(-18vmax, -8vmax, 0) scale(1.1); } }
+
+.bg-stage { position: absolute; inset: 0; perspective: 1100px; perspective-origin: 50% 26%;
+  transform-style: preserve-3d;
+  transform: rotateX(calc(var(--py) * -2.5deg)) rotateY(calc(var(--px) * 3.5deg));
+  transition: transform .5s var(--ease); }
+
+/* Grid floor: tilted away from the viewer; the inner grid slides one cell at a time so it loops without a jump. */
+.bg-floor { position: absolute; left: -60%; right: -60%; bottom: -6%; height: 78%;
+  transform: rotateX(74deg); transform-origin: 50% 100%; overflow: hidden;
+  -webkit-mask-image: linear-gradient(to top, #000 0%, rgba(0, 0, 0, .55) 55%, transparent 100%);
+  mask-image: linear-gradient(to top, #000 0%, rgba(0, 0, 0, .55) 55%, transparent 100%); }
+.bg-floor-grid { position: absolute; left: 0; right: 0; top: -64px; bottom: 0;
+  background-image:
+    linear-gradient(90deg, var(--tri-a-line) 0 2px, transparent 2px),
+    linear-gradient(var(--tri-b-line) 0 2px, transparent 2px),
+    linear-gradient(90deg, var(--tri-c-line) 0 2px, transparent 2px);
+  background-size: 64px 100%, 100% 64px, 256px 100%;
+  animation: floor-glide 3.2s linear infinite; will-change: transform; }
+@keyframes floor-glide { to { transform: translateY(64px); } }
+
+.bg-solids { position: absolute; inset: 0; transform-style: preserve-3d; }
+.solid { position: absolute; transform-style: preserve-3d; animation: solid-float 9s ease-in-out infinite alternate; }
+@keyframes solid-float { from { translate: 0 -10px; } to { translate: 0 14px; } }
+
+.cube { --s: 86px; position: relative; width: var(--s); height: var(--s); transform-style: preserve-3d;
+  animation: cube-spin 34s linear infinite; }
+.cube i { position: absolute; inset: 0; border: 1px solid var(--solid-edge);
+  background: linear-gradient(135deg, var(--f1), var(--f2)); }
+.cube i.front  { transform: translateZ(calc(var(--s) / 2)); }
+.cube i.back   { transform: rotateY(180deg) translateZ(calc(var(--s) / 2)); }
+.cube i.right  { transform: rotateY(90deg) translateZ(calc(var(--s) / 2)); }
+.cube i.left   { transform: rotateY(-90deg) translateZ(calc(var(--s) / 2)); }
+.cube i.top    { transform: rotateX(90deg) translateZ(calc(var(--s) / 2)); }
+.cube i.bottom { transform: rotateX(-90deg) translateZ(calc(var(--s) / 2)); }
+@keyframes cube-spin { from { transform: rotateX(-24deg) rotateY(0deg); } to { transform: rotateX(-24deg) rotateY(360deg); } }
+
+/* Each cube mixes the three colours differently so the scene never reads as one hue. */
+.solid.c1 { right: 9%; top: 12%; animation-delay: -2s; }
+.solid.c1 .cube { --s: 96px; --f1: var(--tri-a-face); --f2: var(--tri-b-face); }
+.solid.c2 { left: 7%; top: 40%; animation-delay: -5s; }
+.solid.c2 .cube { --s: 64px; --f1: var(--tri-b-face); --f2: var(--tri-c-face); animation-duration: 28s; animation-direction: reverse; }
+.solid.c3 { right: 18%; bottom: 20%; animation-delay: -7s; }
+.solid.c3 .cube { --s: 74px; --f1: var(--tri-c-face); --f2: var(--tri-a-face); animation-duration: 40s; }
+.solid.c4 { left: 34%; top: 9%; animation-delay: -3s; }
+.solid.c4 .cube { --s: 44px; --f1: var(--tri-a-face); --f2: var(--tri-c-face); animation-duration: 24s; }
+
+.ring { width: var(--d, 150px); height: var(--d, 150px); border-radius: 50%; border: 10px solid transparent;
+  background: conic-gradient(from 0deg, var(--tri-a), var(--tri-b), var(--tri-c), var(--tri-a)) border-box;
+  -webkit-mask: linear-gradient(#000 0 0) padding-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) padding-box exclude, linear-gradient(#000 0 0);
+  opacity: var(--ring-o); animation: ring-tumble 22s linear infinite; }
+@keyframes ring-tumble { from { transform: rotateX(66deg) rotateZ(0deg); } to { transform: rotateX(66deg) rotateZ(360deg); } }
+.solid.r1 { left: 14%; bottom: 14%; --d: 170px; animation-delay: -4s; }
+.solid.r2 { right: 5%; top: 52%; --d: 110px; animation-delay: -1s; }
+.solid.r2 .ring { animation-direction: reverse; animation-duration: 30s; }
+
+.bg-curve { position: absolute; left: 0; right: 0; bottom: 0; width: 100%; height: 34vh; min-height: 180px; }
+.bg-curve path { vector-effect: non-scaling-stroke; fill: none; }
+.bg-curve .area { fill: var(--curve-fill); animation: bg-curve-fade 1.6s var(--ease) .5s both; }
+.bg-curve .line { stroke: url(#fis-tri); stroke-width: 2; stroke-dasharray: 1; animation: bg-curve-draw 2.2s var(--ease) both; }
+.bg-curve .bench { stroke: var(--curve-alt); stroke-width: 1.25; stroke-dasharray: 5 7; }
+@keyframes bg-curve-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes bg-curve-fade { from { opacity: 0; } to { opacity: 1; } }
+@media (max-width: 720px) {
+  .bg-curve { height: 22vh; min-height: 120px; opacity: .7; }
+  .bg-stage { perspective: 800px; }
+  .solid.c3, .solid.c4, .solid.r2 { display: none; }
+  .solid.c1 { right: 4%; top: 9%; } .solid.c1 .cube { --s: 64px; }
+  .solid.c2 { left: 3%; top: 55%; } .solid.c2 .cube { --s: 44px; }
+  .solid.r1 { --d: 120px; left: 8%; bottom: 10%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bg-aurora .orb, .bg-floor-grid, .solid, .cube, .ring { animation: none !important; }
+  .bg-stage { transform: none; transition: none; }
 }
 
 /* Links in text are underlined so they are not identified by colour alone (WCAG 1.4.1). */
@@ -1174,7 +1267,8 @@ dialog.palette::backdrop { background: rgba(2, 6, 15, .45); }
 .skip-link:focus { top: 12px; }
 #main:focus { outline: none; }
 
-/* ------------------------------------------------------------------ Tri-colour: navy, white, light pink (plain, no animation) */
+
+/* ------------------------------------------------------------------ Dark theme: navy with a pink accent (unchanged); the 3D scene takes its colours */
 :root[data-theme='dark'] {
   --bg: #0A1030; --canvas-top: #0C1438; --canvas-bottom: #070B22;
   --bg-elev: #111B45; --bg-sunken: #0D1539; --bg-hover: #18246B;
@@ -1184,18 +1278,13 @@ dialog.palette::backdrop { background: rgba(2, 6, 15, .45); }
   --accent: #FF4D97; --accent-strong: #FF7DB4; --accent-soft: rgba(255, 77, 151, .16); --accent-text: #0A1030;
   --focus: 0 0 0 3px rgba(255, 77, 151, .35);
 }
-.app-bg { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
-  background:
-    radial-gradient(60vmax 44vmax at 100% 0%, rgba(255, 170, 205, .55), transparent 62%),
-    radial-gradient(52vmax 40vmax at 0% 100%, rgba(255, 205, 225, .65), transparent 62%),
-    radial-gradient(44vmax 34vmax at 0% 0%, rgba(27, 42, 122, .07), transparent 60%),
-    linear-gradient(180deg, var(--canvas-top) 0%, var(--canvas-bottom) 100%); }
-:root[data-theme='dark'] .app-bg {
-  background:
-    radial-gradient(60vmax 44vmax at 100% 0%, rgba(255, 77, 151, .20), transparent 62%),
-    radial-gradient(52vmax 40vmax at 0% 100%, rgba(99, 102, 241, .22), transparent 62%),
-    linear-gradient(180deg, var(--canvas-top) 0%, var(--canvas-bottom) 100%); }
-:root[data-backdrop='off'] .app-bg { background: var(--bg); }
-:root[data-contrast='high'] .app-bg { background: var(--bg); }
-
-@media (max-width: 1500px) { .topbar-title .crumb, .topbar-title .crumb-sep { display: none; } }
+:root[data-theme='dark'] {
+  --tri-a: #818CF8; --tri-b: #FF4D97; --tri-c: #38BDF8;
+  --tri-a-glow: rgba(99, 102, 241, .30); --tri-b-glow: rgba(255, 77, 151, .22); --tri-c-glow: rgba(56, 189, 248, .14);
+  --tri-a-line: rgba(129, 140, 248, .32); --tri-b-line: rgba(255, 77, 151, .28); --tri-c-line: rgba(56, 189, 248, .26);
+  --tri-a-face: rgba(129, 140, 248, .24); --tri-b-face: rgba(255, 77, 151, .20); --tri-c-face: rgba(56, 189, 248, .18);
+  --curve: rgba(255, 125, 180, .45); --curve-fill: rgba(255, 77, 151, .06);
+}
+/* The background can be made plain in Settings; high contrast turns it off too. */
+:root[data-backdrop='off'] .app-bg > *, :root[data-contrast='high'] .app-bg > * { display: none; }
+:root[data-backdrop='off'] .app-bg, :root[data-contrast='high'] .app-bg { background: var(--bg); }

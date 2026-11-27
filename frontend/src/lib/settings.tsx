@@ -9,7 +9,7 @@ export interface Settings {
   units: UnitScale;
   reduceMotion: boolean;
   /** The 3D background: moving, a still picture, or a plain canvas. */
-  backdrop: 'tricolor' | 'off';
+  backdrop: 'scene' | 'off';
   /** Settings layout version: lets a new default background reach people who never chose one. */
   bgv: number;
   learningMode: boolean;
@@ -23,7 +23,7 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, backdrop: 'tricolor', bgv: 3, learningMode: true,
+  theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, backdrop: 'scene', bgv: 4, learningMode: true,
   periodFrom: '2025-11', periodTo: '2026-10', numberStyle: 'auto', textSize: 'normal', contrast: 'normal',
 };
 
@@ -37,8 +37,8 @@ function systemDark() {
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => {
     const stored = load<Settings>('fis.settings', DEFAULTS);
-    // Version 3 is the plain navy, white and pink look. Everyone moves to it once (light theme, no 3D scene); after that their choices are kept.
-    const s: Settings = { ...DEFAULTS, ...stored, ...((stored.bgv ?? 1) < 3 ? { backdrop: 'tricolor' as const, theme: 'light' as const, bgv: 3 } : {}) };
+    // Version 4 brings the 3D scene back, with the navy dark theme as the starting look. Everyone moves to it once; after that their choices are kept.
+    const s: Settings = { ...DEFAULTS, ...stored, ...((stored.bgv ?? 1) < 4 ? { backdrop: 'scene' as const, theme: 'dark' as const, bgv: 4 } : {}) };
     setNumberStyle(s.numberStyle);
     return s;
   });
