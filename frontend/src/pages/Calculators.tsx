@@ -1,25 +1,35 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Badge, Callout, Card, Field, Kpi, NumberField, PageHeader, Tabs } from '../components/ui';
 import { fmtMoney, fmtNum } from '../lib/format';
+import { concentration, depreciation, leaseVsBuy, loanCost, whyDiffers } from '../lib/quickCalcs2';
 import { ageReceivables, BUCKETS, breakEven, cashFreed, checkGstin, hireCost, loanPlan, monthlySavingFor, priceFor } from '../lib/quickCalcs';
-import { load, save } from '../lib/storage';
+import { loadRaw, save } from '../lib/storage';
 import { useSettings } from '../lib/settings';
 
-type Tab = 'loan' | 'goal' | 'price' | 'hire' | 'breakeven' | 'wc' | 'gstin' | 'ageing';
+type Tab = 'loans' | 'depr' | 'lease' | 'conc' | 'differ' | 'loan' | 'goal' | 'price' | 'hire' | 'breakeven' | 'wc' | 'gstin' | 'ageing';
 const TABS: { value: Tab; label: string }[] = [
   { value: 'loan', label: 'Loan & prepayment' }, { value: 'goal', label: 'Savings goal' }, { value: 'price', label: 'Pricing' }, { value: 'hire', label: 'Cost of a hire' },
+  { value: 'loans', label: 'Compare two loans' }, { value: 'depr', label: 'Depreciation' }, { value: 'lease', label: 'Lease or buy' }, { value: 'conc', label: 'Customer concentration' }, { value: 'differ', label: 'Why does my number differ?' },
   { value: 'breakeven', label: 'Break-even' }, { value: 'wc', label: 'Working-capital what-if' }, { value: 'gstin', label: 'GSTIN check' }, { value: 'ageing', label: 'Receivables ageing' },
 ];
 
 /** Small calculators for everyday questions. Every rate is typed in by you; nothing assumes a tax rule. */
 export function Calculators() {
-  const [tab, setTab] = useState<Tab>(() => load<Tab>('fis.calc.tab', 'loan'));
+  const [tab, setTab] = useState<Tab>(() => loadRaw<Tab>('fis.calc.tab', 'loan'));
   return (
     <div className="page">
       <PageHeader title="Calculators" subtitle="Quick answers to everyday money questions. Every rate is something you type; nothing here assumes a tax rule." badge={<Badge tone="accent">Quick tools</Badge>} />
+      <div className="row" style={{ justifyContent: 'flex-end', marginBottom: 8 }}>
+        <button className="btn sm ghost" onClick={() => { if (window.confirm('Put every calculator back to its example numbers?')) { Object.keys(localStorage).filter((k) => k.startsWith('fis.calc.') && k !== 'fis.calc.tab').forEach((k) => localStorage.removeItem(k)); window.location.reload(); } }}>Reset all to examples</button>
+      </div>
       <Tabs label="Calculator" value={tab} onChange={(t) => { setTab(t); save('fis.calc.tab', t); }} options={TABS} />
       <div className="mt">
         {tab === 'loan' && <LoanTool />}
+        {tab === 'loans' && <LoanCompareTool />}
+        {tab === 'depr' && <DepreciationTool />}
+        {tab === 'lease' && <LeaseTool />}
+        {tab === 'conc' && <ConcentrationTool />}
+        {tab === 'differ' && <DifferTool />}
         {tab === 'goal' && <GoalTool />}
         {tab === 'price' && <PriceTool />}
         {tab === 'hire' && <HireTool />}
@@ -34,14 +44,22 @@ export function Calculators() {
 
 const n = (v: number | null) => v ?? 0;
 
+/** State that is remembered in this browser, so a calculator comes back as you left it. */
+function usePersisted<T>(key: string, initial: T): [T, (v: T) => void] {
+  const k = `fis.calc.${key}`;
+  const [v, setV] = useState<T>(() => loadRaw<T>(k, initial));
+  useEffect(() => { save(k, v); }, [k, v]);
+  return [v, setV];
+}
+
 function LoanTool() {
   const cur = useSettings().settings.currency;
-  const [p, setP] = useState<number | null>(5_000_000);
-  const [rate, setRate] = useState<number | null>(9);
-  const [years, setYears] = useState<number | null>(20);
-  const [extra, setExtra] = useState<number | null>(5000);
-  const [lump, setLump] = useState<number | null>(0);
-  const [lumpAt, setLumpAt] = useState<number | null>(12);
+  const [p, setP] = usePersisted<number | null>('loan.p', 5_000_000);
+  const [rate, setRate] = usePersisted<number | null>('loan.rate', 9);
+  const [years, setYears] = usePersisted<number | null>('loan.years', 20);
+  const [extra, setExtra] = usePersisted<number | null>('loan.extra', 5000);
+  const [lump, setLump] = usePersisted<number | null>('loan.lump', 0);
+  const [lumpAt, setLumpAt] = usePersisted<number | null>('loan.lumpAt', 12);
   const ok = n(p) > 0 && n(years) > 0 && n(rate) >= 0;
   const r = ok ? loanPlan({ principal: n(p), annualRatePct: n(rate), years: n(years), extraMonthly: n(extra), lumpSum: n(lump), lumpAtMonth: n(lumpAt) }) : null;
   return (
@@ -77,10 +95,10 @@ function LoanTool() {
 
 function GoalTool() {
   const cur = useSettings().settings.currency;
-  const [target, setTarget] = useState<number | null>(5_000_000);
-  const [start, setStart] = useState<number | null>(0);
-  const [years, setYears] = useState<number | null>(8);
-  const [ret, setRet] = useState<number | null>(10);
+  const [target, setTarget] = usePersisted<number | null>('goal.target', 5_000_000);
+  const [start, setStart] = usePersisted<number | null>('goal.start', 0);
+  const [years, setYears] = usePersisted<number | null>('goal.years', 8);
+  const [ret, setRet] = usePersisted<number | null>('goal.ret', 10);
   const valid = n(target) > 0 && n(years) > 0;
   const paths = [['If returns disappoint', n(ret) - 3], ['Your expected return', n(ret)], ['If returns beat it', n(ret) + 3]] as const;
   return (
@@ -101,11 +119,11 @@ function GoalTool() {
 
 function PriceTool() {
   const cur = useSettings().settings.currency;
-  const [cost, setCost] = useState<number | null>(60);
-  const [margin, setMargin] = useState<number | null>(25);
-  const [disc, setDisc] = useState<number | null>(10);
-  const [fee, setFee] = useState<number | null>(2);
-  const [gst, setGst] = useState<number | null>(18);
+  const [cost, setCost] = usePersisted<number | null>('price.cost', 60);
+  const [margin, setMargin] = usePersisted<number | null>('price.margin', 25);
+  const [disc, setDisc] = usePersisted<number | null>('price.disc', 10);
+  const [fee, setFee] = usePersisted<number | null>('price.fee', 2);
+  const [gst, setGst] = usePersisted<number | null>('price.gst', 18);
   const r = priceFor({ unitCost: n(cost), targetMarginPct: n(margin), discountPct: n(disc), feePct: n(fee), gstPct: n(gst) });
   return (
     <div className="stack">
@@ -130,12 +148,12 @@ function PriceTool() {
 
 function HireTool() {
   const cur = useSettings().settings.currency;
-  const [sal, setSal] = useState<number | null>(1_200_000);
-  const [basic, setBasic] = useState<number | null>(50);
-  const [pf, setPf] = useState<number | null>(12);
-  const [bonus, setBonus] = useState<number | null>(50_000);
-  const [kit, setKit] = useState<number | null>(80_000);
-  const [oh, setOh] = useState<number | null>(10);
+  const [sal, setSal] = usePersisted<number | null>('hire.sal', 1_200_000);
+  const [basic, setBasic] = usePersisted<number | null>('hire.basic', 50);
+  const [pf, setPf] = usePersisted<number | null>('hire.pf', 12);
+  const [bonus, setBonus] = usePersisted<number | null>('hire.bonus', 50_000);
+  const [kit, setKit] = usePersisted<number | null>('hire.kit', 80_000);
+  const [oh, setOh] = usePersisted<number | null>('hire.oh', 10);
   const h = hireCost({ annualSalary: n(sal), basicSharePct: n(basic), employerPfPct: n(pf), bonus: n(bonus), oneOffEquipment: n(kit), overheadPct: n(oh) });
   return (
     <div className="stack">
@@ -161,10 +179,10 @@ function HireTool() {
 
 function BreakEvenTool() {
   const cur = useSettings().settings.currency;
-  const [price, setPrice] = useState<number | null>(100);
-  const [vc, setVc] = useState<number | null>(60);
-  const [fc, setFc] = useState<number | null>(200_000);
-  const [exp, setExp] = useState<number | null>(8000);
+  const [price, setPrice] = usePersisted<number | null>('breakeven.price', 100);
+  const [vc, setVc] = usePersisted<number | null>('breakeven.vc', 60);
+  const [fc, setFc] = usePersisted<number | null>('breakeven.fc', 200_000);
+  const [exp, setExp] = usePersisted<number | null>('breakeven.exp', 8000);
   const b = breakEven(n(price), n(vc), n(fc), n(exp));
   return (
     <div className="stack">
@@ -182,17 +200,18 @@ function BreakEvenTool() {
         <Kpi label="Margin of safety" value={b.safetyPct === null ? '—' : `${fmtNum(b.safetyPct, 1)}%`} delta={b.safetyPct !== null && b.safetyPct < 0 ? 'Below break-even' : 'Sales can fall this far'} deltaTone={b.safetyPct !== null && b.safetyPct < 0 ? 'neg' : 'pos'} />
         <Kpi label="Profit at your expected sales" value={fmtMoney(b.profitAtExpected, cur)} deltaTone={b.profitAtExpected < 0 ? 'neg' : 'pos'} />
       </div> : <Callout tone="warn">The price must be higher than the variable cost, or no amount of sales covers the fixed costs.</Callout>}
+      {b && <BreakEvenChart price={n(price)} vc={n(vc)} fc={n(fc)} be={b.units} expected={n(exp)} />}
     </div>
   );
 }
 
 function WorkingCapitalTool() {
   const cur = useSettings().settings.currency;
-  const [rev, setRev] = useState<number | null>(60_000_000);
-  const [cogs, setCogs] = useState<number | null>(40_000_000);
-  const [dso, setDso] = useState<number | null>(5);
-  const [dio, setDio] = useState<number | null>(5);
-  const [dpo, setDpo] = useState<number | null>(5);
+  const [rev, setRev] = usePersisted<number | null>('workingcapital.rev', 60_000_000);
+  const [cogs, setCogs] = usePersisted<number | null>('workingcapital.cogs', 40_000_000);
+  const [dso, setDso] = usePersisted<number | null>('workingcapital.dso', 5);
+  const [dio, setDio] = usePersisted<number | null>('workingcapital.dio', 5);
+  const [dpo, setDpo] = usePersisted<number | null>('workingcapital.dpo', 5);
   const a = cashFreed(n(rev), n(dso)), b = cashFreed(n(cogs), n(dio)), c = cashFreed(n(cogs), n(dpo));
   return (
     <div className="stack">
@@ -236,7 +255,7 @@ const SAMPLE_AGEING = 'Asha Traders, 2026-11-20, 10,000\nBharat Co, 2026-09-15, 
 
 function AgeingTool() {
   const cur = useSettings().settings.currency;
-  const [text, setText] = useState(() => load<string>('fis.calc.ageing', SAMPLE_AGEING));
+  const [text, setText] = useState(() => loadRaw<string>('fis.calc.ageing', SAMPLE_AGEING));
   const [asOf, setAsOf] = useState(() => new Date().toISOString().slice(0, 10));
   const a = ageReceivables(text, new Date(`${asOf}T00:00:00`));
   return (
@@ -258,5 +277,183 @@ function AgeingTool() {
       </>}
       {a.skipped.length > 0 && <Callout tone="warn" title={`${a.skipped.length} line(s) could not be read`}><ul className="summary-list">{a.skipped.slice(0, 5).map((s) => <li key={s}><code>{s}</code></li>)}</ul>Use the form: customer, 2026-11-20, 10000.</Callout>}
     </div>
+  );
+}
+
+function LoanCompareTool() {
+  const cur = useSettings().settings.currency;
+  const [amount, setAmount] = usePersisted<number | null>('loans.amount', 2_000_000);
+  const [years, setYears] = usePersisted<number | null>('loans.years', 5);
+  const [ra, setRa] = usePersisted<number | null>('loans.ra', 10.5);
+  const [fa, setFa] = usePersisted<number | null>('loans.fa', 2);
+  const [rb, setRb] = usePersisted<number | null>('loans.rb', 11);
+  const [fb, setFb] = usePersisted<number | null>('loans.fb', 0);
+  const a = loanCost({ amount: n(amount), annualRatePct: n(ra), years: n(years), feePct: n(fa) });
+  const b = loanCost({ amount: n(amount), annualRatePct: n(rb), years: n(years), feePct: n(fb) });
+  const better = a.total < b.total ? 'A' : b.total < a.total ? 'B' : null;
+  return (
+    <div className="stack">
+      <Card title="Compare two loan offers" subtitle="The lower rate is not always the cheaper loan once the fee is added">
+        <div className="grid cols-3">
+          <NumberField label="Amount" value={amount} onChange={setAmount} min={0} />
+          <NumberField label="Term (years)" value={years} onChange={setYears} min={1} max={40} />
+          <span />
+          <NumberField label="Offer A: interest a year (%)" value={ra} onChange={setRa} min={0} max={100} />
+          <NumberField label="Offer A: fee (% of amount)" value={fa} onChange={setFa} min={0} max={20} />
+          <span />
+          <NumberField label="Offer B: interest a year (%)" value={rb} onChange={setRb} min={0} max={100} />
+          <NumberField label="Offer B: fee (% of amount)" value={fb} onChange={setFb} min={0} max={20} />
+        </div>
+      </Card>
+      <div className="grid cols-2">
+        {([['A', a], ['B', b]] as const).map(([name, r]) => (
+          <Card key={name} title={`Offer ${name}`} actions={better === name ? <Badge tone="pos">Cheaper</Badge> : undefined}>
+            <div className="metric-row"><span>Monthly instalment</span><span className="v">{fmtMoney(r.emi, cur)}</span></div>
+            <div className="metric-row"><span>Interest over the term</span><span className="v">{fmtMoney(r.interest, cur)}</span></div>
+            <div className="metric-row"><span>Fee</span><span className="v">{fmtMoney(r.fee, cur)}</span></div>
+            <div className="metric-row"><span><b>Total cost of borrowing</b></span><span className="v">{fmtMoney(r.total, cur)}</span></div>
+          </Card>
+        ))}
+      </div>
+      {better && <Callout tone="info">Offer {better} costs {fmtMoney(Math.abs(a.total - b.total), cur)} less over the whole term. This ignores the time value of money and any insurance or other charges, so ask each lender for the full cost.</Callout>}
+    </div>
+  );
+}
+
+function DepreciationTool() {
+  const cur = useSettings().settings.currency;
+  const [cost, setCost] = usePersisted<number | null>('depr.cost', 1_000_000);
+  const [scrap, setScrap] = usePersisted<number | null>('depr.scrap', 100_000);
+  const [life, setLife] = usePersisted<number | null>('depr.life', 5);
+  const [rate, setRate] = usePersisted<number | null>('depr.rate', 30);
+  const [method, setMethod] = usePersisted<'straight' | 'reducing'>('depr.method', 'straight');
+  const rows = depreciation(n(cost), n(scrap), n(life), method, n(rate));
+  return (
+    <div className="stack">
+      <Card title="Depreciation schedule" subtitle="Type the life or the rate that applies to your asset; nothing is assumed">
+        <div className="grid cols-3">
+          <NumberField label="Cost of the asset" value={cost} onChange={setCost} min={0} />
+          <NumberField label="Value left at the end (scrap)" value={scrap} onChange={setScrap} min={0} />
+          <NumberField label="Life (years)" value={life} onChange={setLife} min={1} max={60} />
+          <Field label="Method"><Tabs label="Method" value={method} onChange={setMethod} options={[{ value: 'straight', label: 'Straight line' }, { value: 'reducing', label: 'Reducing balance' }]} /></Field>
+          {method === 'reducing' && <NumberField label="Rate a year (%)" value={rate} onChange={setRate} min={0} max={100} />}
+        </div>
+      </Card>
+      <Card title="Schedule" flush>
+        <div className="table-wrap" tabIndex={0} style={{ border: 0 }}>
+          <table className="data"><thead><tr><th>Year</th><th className="r">Charge</th><th className="r">Book value at year end</th></tr></thead>
+            <tbody>{rows.map((r) => <tr key={r.year}><td>{r.year}</td><td className="r">{fmtMoney(r.charge, cur)}</td><td className="r">{fmtMoney(r.bookValue, cur)}</td></tr>)}</tbody></table>
+        </div>
+      </Card>
+    </div>
+  );
+}
+
+function LeaseTool() {
+  const cur = useSettings().settings.currency;
+  const [price, setPrice] = usePersisted<number | null>('lease.price', 1_000_000);
+  const [resale, setResale] = usePersisted<number | null>('lease.resale', 300_000);
+  const [years, setYears] = usePersisted<number | null>('lease.years', 4);
+  const [maint, setMaint] = usePersisted<number | null>('lease.maint', 30_000);
+  const [lease, setLease] = usePersisted<number | null>('lease.lease', 280_000);
+  const [disc, setDisc] = usePersisted<number | null>('lease.disc', 10);
+  const r = leaseVsBuy({ price: n(price), resale: n(resale), years: Math.max(1, Math.round(n(years))), maintenancePerYear: n(maint), leasePerYear: n(lease), discountPct: n(disc) });
+  return (
+    <div className="stack">
+      <Card title="Lease or buy" subtitle="Compares the cost of each, in today's money, at the return you could earn elsewhere">
+        <div className="grid cols-3">
+          <NumberField label="Price to buy" value={price} onChange={setPrice} min={0} />
+          <NumberField label="Resale value at the end" value={resale} onChange={setResale} min={0} />
+          <NumberField label="Years you will use it" value={years} onChange={setYears} min={1} max={30} />
+          <NumberField label="Upkeep each year if you own it" value={maint} onChange={setMaint} min={0} />
+          <NumberField label="Lease payment each year" value={lease} onChange={setLease} min={0} />
+          <NumberField label="Your discount rate (%)" value={disc} onChange={setDisc} min={0} max={100} hint="The return you could earn on the money instead." />
+        </div>
+      </Card>
+      <div className="grid cols-3">
+        <Kpi label="Cost of buying (today's money)" value={fmtMoney(r.buy, cur)} />
+        <Kpi label="Cost of leasing (today's money)" value={fmtMoney(r.lease, cur)} />
+        <Kpi label="Cheaper" value={r.cheaper === 'same' ? 'Equal' : r.cheaper === 'buy' ? 'Buy' : 'Lease'} delta={r.cheaper === 'same' ? undefined : `by ${fmtMoney(r.difference, cur)}`} deltaTone="pos" />
+      </div>
+      <Callout tone="info">Tax effects, financing charges and the value of flexibility are not included. They can change the answer, so check them with your adviser.</Callout>
+    </div>
+  );
+}
+
+const SAMPLE_CUSTOMERS = 'Asha Traders, 600000\nBharat Co, 200000\nCity Ltd, 100000\nDelta Stores, 100000';
+
+function ConcentrationTool() {
+  const [text, setText] = usePersisted<string>('conc.text', SAMPLE_CUSTOMERS);
+  const c = concentration(text);
+  const tone = c.level === 'high' ? 'warn' : c.level === 'watch' ? 'info' : 'success';
+  return (
+    <div className="stack">
+      <Card title="Customer concentration" subtitle="One line per customer: name, sales. Repeated names are added together.">
+        <Field label="Sales by customer"><textarea className="input" rows={7} value={text} onChange={(e) => setText(e.target.value)} spellCheck={false} /></Field>
+      </Card>
+      {c.rows.length > 0 && <>
+        <div className="grid cols-4">
+          <Kpi label="Biggest customer" value={`${fmtNum(c.top1, 1)}%`} />
+          <Kpi label="Top 3 customers" value={`${fmtNum(c.top3, 1)}%`} />
+          <Kpi label="Top 5 customers" value={`${fmtNum(c.top5, 1)}%`} />
+          <Kpi label="Concentration index" value={fmtNum(c.hhi, 0)} hint="Sum of squared shares, out of 10,000. Higher means fewer customers matter more." />
+        </div>
+        <Callout tone={tone} title={c.level === 'high' ? 'Heavily dependent on a few customers' : c.level === 'watch' ? 'Worth watching' : 'Reasonably spread'}>
+          {c.level === 'high' ? 'Losing one of your biggest customers would hurt badly. Consider widening the base and agreeing longer contracts.' : c.level === 'watch' ? 'No single customer dominates, but a few carry a lot. Keep an eye on them.' : 'No small group of customers carries most of your sales.'} These cut-offs are a rule of thumb (one customer over 30% or the top three over 60% is high), not a standard.
+        </Callout>
+      </>}
+      {c.skipped.length > 0 && <Callout tone="warn" title={`${c.skipped.length} line(s) could not be read`}><ul className="summary-list">{c.skipped.slice(0, 5).map((x) => <li key={x}><code>{x}</code></li>)}</ul></Callout>}
+    </div>
+  );
+}
+
+function DifferTool() {
+  const [app, setApp] = usePersisted<number | null>('differ.app', 1000);
+  const [mine, setMine] = usePersisted<number | null>('differ.mine', 1048.8);
+  const [disc, setDisc] = usePersisted<number | null>('differ.disc', 10);
+  const r = whyDiffers(n(app), n(mine), n(disc));
+  return (
+    <div className="stack">
+      <Card title="Why does my number differ?" subtitle="Enter this app's figure and the one from your own sheet. The usual causes are each a fixed ratio between the two.">
+        <div className="grid cols-3">
+          <NumberField label="The app's figure" value={app} onChange={setApp} />
+          <NumberField label="Your figure" value={mine} onChange={setMine} />
+          <NumberField label="Discount rate used (%)" value={disc} onChange={setDisc} min={0} max={100} hint="Only needed to test mid-year discounting." />
+        </div>
+      </Card>
+      {Number.isFinite(r.diffPct) && <>
+        <div className="grid cols-2"><Kpi label="Your figure is" value={`${fmtNum(r.diffPct, 2)}% ${r.diffPct >= 0 ? 'higher' : 'lower'}`} /><Kpi label="Ratio" value={fmtNum(r.ratio, 4)} /></div>
+        {r.matches.length > 0
+          ? <Callout tone="success" title="Likely cause">{r.note}<ul className="summary-list">{r.matches.map((m) => <li key={m.name}><b>{m.name}.</b> {m.why}</li>)}</ul></Callout>
+          : <Callout tone="info" title="No single usual cause fits">{r.note}</Callout>}
+      </>}
+    </div>
+  );
+}
+
+/** Sales and total cost against units sold: they cross at the break-even point. Plain SVG so it needs no chart library. */
+function BreakEvenChart({ price, vc, fc, be, expected }: { price: number; vc: number; fc: number; be: number; expected: number }) {
+  const maxUnits = Math.max(be * 2, expected * 1.1, 1);
+  const maxY = Math.max(price * maxUnits, fc + vc * maxUnits, 1);
+  const W = 560, H = 220, L = 8, R = 8, T = 10, B = 24;
+  const x = (u: number) => L + (u / maxUnits) * (W - L - R);
+  const y = (v: number) => H - B - (v / maxY) * (H - T - B);
+  return (
+    <Card title="Where sales meet cost" subtitle="Left of the crossing you lose money; right of it you make a profit">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={`Sales and total cost cross at ${Math.ceil(be)} units`} style={{ width: '100%', height: 'auto', maxHeight: 260 }}>
+        <line x1={L} y1={H - B} x2={W - R} y2={H - B} stroke="var(--border-strong)" />
+        <line x1={x(0)} y1={y(fc)} x2={x(maxUnits)} y2={y(fc + vc * maxUnits)} stroke="var(--negative)" strokeWidth="2.2" />
+        <line x1={x(0)} y1={y(0)} x2={x(maxUnits)} y2={y(price * maxUnits)} stroke="var(--accent)" strokeWidth="2.2" />
+        <line x1={x(fc ? 0 : 0)} y1={y(fc)} x2={x(maxUnits)} y2={y(fc)} stroke="var(--text-muted)" strokeDasharray="4 4" />
+        <circle cx={x(be)} cy={y(be * price)} r="5" fill="var(--heading)" />
+        <text x={Math.min(x(be) + 8, W - 120)} y={Math.max(y(be * price) - 8, 14)} fontSize="12" fill="var(--text)">Break-even: {Math.ceil(be).toLocaleString()} units</text>
+        {expected > 0 && <line x1={x(expected)} y1={T} x2={x(expected)} y2={H - B} stroke="var(--chart-4)" strokeDasharray="3 3" />}
+        <text x={L} y={H - 6} fontSize="11" fill="var(--text-muted)">0 units</text>
+        <text x={W - R} y={H - 6} fontSize="11" fill="var(--text-muted)" textAnchor="end">{Math.round(maxUnits).toLocaleString()} units</text>
+      </svg>
+      <div className="row" style={{ gap: 16, fontSize: 12.5 }}>
+        <span><b style={{ color: 'var(--accent)' }}>Line</b> sales</span><span><b style={{ color: 'var(--negative)' }}>Line</b> total cost</span><span className="faint">Dotted: fixed costs{expected > 0 ? ' · dashed vertical: your expected sales' : ''}</span>
+      </div>
+    </Card>
   );
 }

@@ -37,6 +37,8 @@ export const NAV: NavItem[] = [
   { to: '/assistant', label: 'AI Finance Assistant', icon: Bot, ready: true, group: 'Tools' },
   { to: '/ai-health', label: 'AI Model Health', icon: Activity, ready: true, group: 'Tools' },
   { to: '/reports', label: 'Reports & Exports', icon: FileText, ready: true, group: 'Tools' },
+  { to: '/glossary', label: 'Glossary', icon: GraduationCap, ready: true, group: 'Reference' },
+  { to: '/self-check', label: 'Self-check', icon: ShieldAlert, ready: true, group: 'Reference' },
   { to: '/learn', label: 'Methodology Library', icon: GraduationCap, ready: true, group: 'Reference' },
   { to: '/settings', label: 'Settings', icon: SettingsIcon, ready: true, group: 'Reference' },
 ];

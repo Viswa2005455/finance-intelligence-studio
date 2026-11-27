@@ -16,7 +16,7 @@ import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
 import { useGuide } from '../lib/guide';
 import { markRecent, markVisited } from '../lib/progress';
-import { load, save } from '../lib/storage';
+import { loadRaw, save } from '../lib/storage';
 
 export function Layout() {
   const [open, setOpen] = useState(false);
@@ -29,7 +29,7 @@ export function Layout() {
   const navigate = useNavigate();
   const guide = useGuide();
   const [palette, setPalette] = useState(false);
-  const [pins, setPins] = useState<string[]>(() => load<string[]>('fis.pins', []));
+  const [pins, setPins] = useState<string[]>(() => loadRaw<string[]>('fis.pins', []));
   const togglePin = (to: string) => setPins((p) => { const next = p.includes(to) ? p.filter((x) => x !== to) : [...p, to]; save('fis.pins', next); return next; });
   const pinned = pins.map((to) => NAV.find((n) => n.to === to)).filter((n): n is (typeof NAV)[number] => !!n);
   const [help, setHelp] = useState(false);

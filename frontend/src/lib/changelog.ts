@@ -3,6 +3,15 @@ export interface ChangeEntry { date: string; title: string; items: string[] }
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    date: '2026-11-29', title: 'More calculators, a glossary and a self-check',
+    items: [
+      'Calculators: compare two loan offers, depreciation schedules, lease or buy, customer concentration, and "why does my number differ?", which tests the usual causes such as mid-year discounting and units. Break-even now has a chart.',
+      'Calculator inputs are remembered in your browser, with one button to put them all back to the examples.',
+      'A Glossary page with every term and where to see it used, and a Self-check page that runs textbook problems through the engine so you can see it agrees with a hand calculation.',
+      'The site can be added to a phone or computer home screen. It still needs a connection to work.',
+    ],
+  },
+  {
     date: '2026-11-28', title: 'Calculators, version comparison and an accountant handover pack',
     items: [
       'A Calculators page: loan with extra payments, savings goal, price from a target margin, true cost of a hire, break-even, working-capital what-if, GSTIN check and receivables ageing.',

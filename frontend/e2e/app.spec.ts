@@ -300,3 +300,48 @@ test('a saved model shows what changed between versions', async ({ page }) => {
   await page.getByRole('button', { name: 'What changed' }).click();
   await expect(page.getByRole('list', { name: 'Changes in version 2' })).toContainText('0.11 to 0.09');
 });
+
+test('more calculators: loans, lease, differ and the break-even chart', async ({ page }) => {
+  await page.goto('/calculators');
+  await page.getByRole('tab', { name: 'Compare two loans' }).click();
+  await expect(page.getByText('Total cost of borrowing').first()).toBeVisible();
+  await page.getByRole('tab', { name: 'Lease or buy' }).click();
+  await expect(page.getByText('Cost of buying')).toBeVisible();
+  await page.getByRole('tab', { name: 'Customer concentration' }).click();
+  await expect(page.getByText('Heavily dependent on a few customers')).toBeVisible();
+  await page.getByRole('tab', { name: 'Why does my number differ?' }).click();
+  await expect(page.getByText('Mid-year discounting').first()).toBeVisible();
+  await page.getByRole('tab', { name: 'Break-even' }).click();
+  await expect(page.getByRole('img', { name: /cross at/ })).toBeVisible();
+});
+
+test('calculator inputs are remembered', async ({ page }) => {
+  await page.goto('/calculators');
+  await page.getByRole('tab', { name: 'Break-even' }).click();
+  await page.getByLabel('Selling price per unit').fill('150');
+  await page.getByLabel('Selling price per unit').blur();
+  await page.reload();
+  await expect(page.getByLabel('Selling price per unit')).toHaveValue('150');
+  page.once('dialog', (d) => d.accept());
+  await page.getByRole('button', { name: 'Reset all to examples' }).click();
+  await page.getByRole('tab', { name: 'Break-even' }).click();
+  await expect(page.getByLabel('Selling price per unit')).toHaveValue('100');
+});
+
+test('the glossary searches and the self-check agrees with the textbook', async ({ page }) => {
+  await page.goto('/glossary');
+  await page.getByLabel('Search terms').fill('wacc');
+  await expect(page.getByText('Weighted average cost of capital').first()).toBeVisible();
+  await expect(page.getByRole('link', { name: /See it in DCF Valuation/ })).toBeVisible();
+  await page.goto('/self-check');
+  await page.getByRole('button', { name: 'Run the checks' }).click();
+  await expect(page.getByText('7 of 7 agree')).toBeVisible();
+});
+
+test('a pinned page is still pinned after a reload', async ({ page }) => {
+  await page.goto('/calculators');
+  await page.getByRole('button', { name: /^Pin/ }).click();
+  await page.reload();
+  await expect(page.locator('.nav').getByText('Pinned', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^Unpin/ }).click();
+});

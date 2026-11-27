@@ -40,6 +40,8 @@ const Investments = lazy(() => import('./pages/Investments').then((m) => ({ defa
 const IncomeTax = lazy(() => import('./pages/IncomeTax').then((m) => ({ default: m.IncomeTax })));
 const GST = lazy(() => import('./pages/GST').then((m) => ({ default: m.GST })));
 const Markets = lazy(() => import('./pages/Markets').then((m) => ({ default: m.Markets })));
+const Glossary = lazy(() => import('./pages/Glossary').then((m) => ({ default: m.Glossary })));
+const SelfCheck = lazy(() => import('./pages/SelfCheck').then((m) => ({ default: m.SelfCheck })));
 const Calculators = lazy(() => import('./pages/Calculators').then((m) => ({ default: m.Calculators })));
 const Calendar = lazy(() => import('./pages/Calendar').then((m) => ({ default: m.Calendar })));
 const CloseChecklist = lazy(() => import('./pages/CloseChecklist').then((m) => ({ default: m.CloseChecklist })));
@@ -108,6 +110,8 @@ function Gate() {
                 <Route path="close" element={<CloseChecklist />} />
                 <Route path="calendar" element={<Calendar />} />
                 <Route path="calculators" element={<Calculators />} />
+                <Route path="glossary" element={<Glossary />} />
+                <Route path="self-check" element={<SelfCheck />} />
                 <Route path="accounting" element={<Accounting />} />
                 <Route path="investments" element={<Investments />} />
                 <Route path="markets" element={<Markets />} />
