@@ -1,0 +1,26 @@
+# A SECOND, separate public copy of the app. It does not touch the existing service.
+# In Render: New > Blueprint > pick this repository > set "Blueprint file path" to render-new.yaml > Apply.
+# Render asks for DATABASE_URL: paste a NEW Neon connection string (neon.tech, free) so this copy has its own empty database.
+# It uses no Render database, because Render's free database expires after about 30 days.
+services:
+  - type: web
+    name: finance-studio-v2
+    runtime: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    autoDeployTrigger: checksPass
+    envVars:
+      - key: FIS_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: FIS_CORS_ORIGINS
+        value: ""
+      # Anyone may sign up. Set to "false" after you have created your own account.
+      - key: FIS_ALLOW_REGISTRATION
+        value: "true"
+      - key: FIS_AI_PROVIDER
+        value: none
+      - key: FIS_MARKET_PROVIDER
+        value: none
