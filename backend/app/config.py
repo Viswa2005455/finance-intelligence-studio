@@ -71,7 +71,12 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def _driver(cls, url: str) -> str:
-        """Hosting providers hand out postgres:// or postgresql:// URLs; use the installed psycopg 3 driver."""
+        """Hosting providers hand out postgres:// or postgresql:// URLs; use the installed psycopg 3 driver.
+
+        A value pasted into a dashboard often arrives with extra text around it: spaces, a trailing newline, quotes, a
+        "DATABASE_URL=" prefix or a whole `psql '...'` command. The address itself is picked out of that."""
+        found = re.search(r"postgres(?:ql)?://[^\s'\"]+", url)
+        url = found.group(0) if found else url.strip().strip("'\"")
         for prefix in ("postgres://", "postgresql://"):
             if url.startswith(prefix):
                 return "postgresql+psycopg://" + url[len(prefix):]
