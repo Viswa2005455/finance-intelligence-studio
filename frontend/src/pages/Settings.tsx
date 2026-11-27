@@ -29,8 +29,8 @@ export function SettingsPage() {
                 options={[{ value: 'system', label: 'System' }, { value: 'dark', label: 'Dark' }, { value: 'light', label: 'Light' }]} />
             </Field>
             <Field label="Background" hint="The 3D scene behind the pages. Choose Still or Off on an older computer or if movement distracts you.">
-              <Tabs label="Background" value={settings.backdrop} onChange={(v: 'animated' | 'still' | 'off') => update({ backdrop: v })}
-                options={[{ value: 'animated', label: 'Moving' }, { value: 'still', label: 'Still' }, { value: 'off', label: 'Off' }]} />
+              <Tabs label="Background" value={settings.backdrop} onChange={(v: 'navy' | 'animated' | 'still' | 'off') => update({ backdrop: v })}
+                options={[{ value: 'navy', label: 'Navy' }, { value: 'animated', label: '3D scene' }, { value: 'still', label: 'Still' }, { value: 'off', label: 'Off' }]} />
             </Field>
             <Field label="Text size" hint="Scales the whole interface. Your browser's own zoom (Ctrl and +) works too.">
               <Tabs label="Text size" value={settings.textSize} onChange={(v: 'normal' | 'large' | 'larger') => update({ textSize: v })}

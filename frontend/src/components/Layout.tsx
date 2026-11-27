@@ -124,7 +124,7 @@ export function Layout() {
             <span className="here">{current?.label ?? 'Not found'}</span>
           </div>
           <div className="topbar-spacer" />
-          {current && current.to !== '/' && <button className="btn sm ghost hide-sm" aria-pressed={pins.includes(current.to)} title={pins.includes(current.to) ? 'Unpin this page' : 'Pin this page to the top of the menu'} onClick={() => togglePin(current.to)}>{pins.includes(current.to) ? <PinOff size={15} aria-hidden="true" /> : <Pin size={15} aria-hidden="true" />}<span className="hide-md">{pins.includes(current.to) ? 'Unpin' : 'Pin'}</span></button>}
+          {current && current.to !== '/' && <button className="btn sm ghost hide-sm" aria-pressed={pins.includes(current.to)} aria-label={pins.includes(current.to) ? 'Unpin this page' : 'Pin this page'} title={pins.includes(current.to) ? 'Unpin this page' : 'Pin this page to the top of the menu'} onClick={() => togglePin(current.to)}>{pins.includes(current.to) ? <PinOff size={15} aria-hidden="true" /> : <Pin size={15} aria-hidden="true" />}</button>}
           <button className="btn sm ghost no-print hide-sm" aria-label="Print this page" title="Print this page" onClick={() => window.print()}><Printer size={15} aria-hidden="true" /></button>
           <button className="btn sm search-btn" aria-keyshortcuts="Control+K" title="Search pages (Ctrl+K)" onClick={() => setPalette(true)}><Search size={15} aria-hidden="true" /><span>Search</span><kbd className="hide-md" aria-hidden="true">Ctrl K</kbd></button>
           <div className="topbar-controls">

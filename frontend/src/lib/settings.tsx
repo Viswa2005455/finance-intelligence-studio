@@ -9,7 +9,9 @@ export interface Settings {
   units: UnitScale;
   reduceMotion: boolean;
   /** The 3D background: moving, a still picture, or a plain canvas. */
-  backdrop: 'animated' | 'still' | 'off';
+  backdrop: 'navy' | 'animated' | 'still' | 'off';
+  /** Settings layout version: lets a new default background reach people who never chose one. */
+  bgv: number;
   learningMode: boolean;
   periodFrom: string;
   periodTo: string;
@@ -21,7 +23,7 @@ export interface Settings {
 }
 
 const DEFAULTS: Settings = {
-  theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, backdrop: 'animated', learningMode: true,
+  theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, backdrop: 'navy', bgv: 2, learningMode: true,
   periodFrom: '2025-11', periodTo: '2026-10', numberStyle: 'auto', textSize: 'normal', contrast: 'normal',
 };
 
@@ -34,7 +36,9 @@ function systemDark() {
 
 export function SettingsProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<Settings>(() => {
-    const s = { ...DEFAULTS, ...load('fis.settings', DEFAULTS) };
+    const stored = load<Settings>('fis.settings', DEFAULTS);
+    // Before version 2 the only default was the 3D scene. Everyone moves to the new navy look once; after that their choice is kept.
+    const s: Settings = { ...DEFAULTS, ...stored, ...((stored.bgv ?? 1) < 2 ? { backdrop: 'navy' as const, bgv: 2 } : {}) };
     setNumberStyle(s.numberStyle);
     return s;
   });

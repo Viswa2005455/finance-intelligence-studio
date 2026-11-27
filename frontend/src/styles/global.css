@@ -1271,3 +1271,29 @@ dialog.palette::backdrop { background: rgba(2, 6, 15, .45); }
 .skip-link { position: fixed; left: 12px; top: -60px; z-index: 200; padding: 10px 14px; border-radius: 8px; background: var(--accent-strong, #0f766e); color: #fff; font-weight: 600; text-decoration: none; transition: top .12s; }
 .skip-link:focus { top: 12px; }
 #main:focus { outline: none; }
+
+/* ------------------------------------------------------------------ Navy background (default): deep blue, a faint grid and two soft glows */
+:root[data-theme='dark'][data-backdrop='navy'] {
+  --bg: #0A1030; --canvas-top: #0C1438; --canvas-bottom: #070B22;
+  --bg-elev: #111B45; --bg-sunken: #0D1539; --bg-hover: #18246B;
+  --border: #243170; --border-strong: #354796;
+  --text-muted: #A8B3DA; --text-faint: #98A4D2;
+  --sb-bg: linear-gradient(180deg, #0B1238 0%, #070B24 100%); --sb-border: rgba(160, 180, 255, .10);
+  --accent: #FF4D97; --accent-strong: #FF7DB4; --accent-soft: rgba(255, 77, 151, .16); --accent-text: #0A1030;
+  --focus: 0 0 0 3px rgba(255, 77, 151, .35);
+  --tri-a-glow: rgba(99, 102, 241, .30); --tri-b-glow: rgba(255, 77, 151, .22); --tri-c-glow: rgba(56, 189, 248, .14);
+  --curve: rgba(255, 125, 180, .45); --curve-fill: rgba(255, 77, 151, .06);
+}
+:root[data-backdrop='navy'] .bg-stage, :root[data-backdrop='navy'] .bg-curve { display: none; }
+:root[data-backdrop='navy'] .app-bg::after {
+  content: ''; position: absolute; inset: 0;
+  background-image: linear-gradient(rgba(150, 170, 255, .07) 1px, transparent 1px), linear-gradient(90deg, rgba(150, 170, 255, .07) 1px, transparent 1px);
+  background-size: 56px 56px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 78%); mask-image: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 78%);
+}
+:root[data-backdrop='navy'] .bg-aurora .o1 { background: radial-gradient(closest-side, var(--tri-a-glow), transparent); }
+:root[data-backdrop='navy'] .bg-aurora .o2 { background: radial-gradient(closest-side, var(--tri-b-glow), transparent); }
+:root[data-backdrop='navy'] .bg-aurora .o3 { background: radial-gradient(closest-side, var(--tri-c-glow), transparent); }
+:root[data-backdrop='navy'] .app-bg * { animation-duration: 60s; }
+:root[data-theme='light'][data-backdrop='navy'] .app-bg::after { background-image: linear-gradient(rgba(60, 70, 140, .06) 1px, transparent 1px), linear-gradient(90deg, rgba(60, 70, 140, .06) 1px, transparent 1px); background-size: 56px 56px; -webkit-mask-image: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 78%); mask-image: radial-gradient(ellipse at 50% 30%, #000 25%, transparent 78%); }
+:root[data-backdrop='navy'][data-motion='reduce'] .app-bg * { animation: none !important; }

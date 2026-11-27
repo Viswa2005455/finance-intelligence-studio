@@ -134,11 +134,12 @@ test('a file dropped anywhere is analysed', async ({ page }) => {
 
 test('the background can be switched to still or off in Settings', async ({ page }) => {
   await page.goto('/settings');
+  await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'navy');
   await page.getByRole('tab', { name: 'Still' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'still');
   await page.getByRole('tab', { name: 'Off' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'off');
-  await page.getByRole('tab', { name: 'Moving' }).click();
+  await page.getByRole('tab', { name: '3D scene' }).click();
   await expect(page.locator('html')).toHaveAttribute('data-backdrop', 'animated');
 });
 
