@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
 import { useProjects } from '../lib/project';
+import { diffVersions, type Change } from '../lib/versionDiff';
 import { useToast } from '../lib/toast';
 import { Modal } from './Modal';
 import { Badge, Callout, Field, Skeleton } from './ui';
@@ -30,6 +31,14 @@ export function SaveLoad<T extends object>({ kind, label, getData, onLoad }: { k
   const [busy, setBusy] = useState(false);
   const [items, setItems] = useState<Item[] | null>(null);
   const [expanded, setExpanded] = useState<Full | null>(null);
+  const [diff, setDiff] = useState<{ itemId: string; version: number; changes: Change[] } | null>(null);
+  const showDiff = async (itemId: string, version: number) => {
+    if (diff?.itemId === itemId && diff.version === version) { setDiff(null); return; }
+    try {
+      const [a, b] = await Promise.all([api.get<{ data: unknown }>(`/api/saved/${itemId}/versions/${version - 1}`), api.get<{ data: unknown }>(`/api/saved/${itemId}/versions/${version}`)]);
+      setDiff({ itemId, version, changes: diffVersions(a.data, b.data) });
+    } catch (e) { toast((e as Error).message, 'error'); }
+  };
   const [scope, setScope] = useState<'project' | 'all'>('project');
 
   // Unsaved changes: compared with what was last opened or saved, so a person is warned before leaving or replacing them.
@@ -161,8 +170,20 @@ export function SaveLoad<T extends object>({ kind, label, getData, onLoad }: { k
                       {expanded.versions.map((v) => (
                         <li key={v.version}><div className="row between">
                           <span>v{v.version} · {fmtDate(v.created_at)}{v.note && <span className="faint"> — {v.note}</span>}</span>
-                          <button className="btn sm" onClick={() => load(it.id, v.version)}>Restore</button>
-                        </div></li>
+                          <span className="row" style={{ gap: 6 }}>
+                            {v.version > 1 && <button className="btn sm ghost" onClick={() => showDiff(it.id, v.version)}>What changed</button>}
+                            <button className="btn sm" onClick={() => load(it.id, v.version)}>Restore</button>
+                          </span>
+                        </div>
+                        {diff?.itemId === it.id && diff.version === v.version && (
+                          diff.changes.length === 0 ? <p className="faint" style={{ fontSize: 12 }}>Nothing differs from v{v.version - 1}.</p> : (
+                            <ul className="summary-list" style={{ fontSize: 12 }} aria-label={`Changes in version ${v.version}`}>
+                              {diff.changes.slice(0, 30).map((c) => <li key={c.path}><code>{c.path}</code>: {c.kind === 'added' ? <>added <b>{c.after}</b></> : c.kind === 'removed' ? <>removed (was {c.before})</> : <>{c.before} to <b>{c.after}</b></>}</li>)}
+                              {diff.changes.length > 30 && <li className="faint">…and {diff.changes.length - 30} more</li>}
+                            </ul>
+                          )
+                        )}
+                        </li>
                       ))}
                     </ul>
                   )}

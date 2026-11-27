@@ -266,3 +266,37 @@ test('text size and high contrast apply at once and saved models export to Excel
   expect((await download).suggestedFilename()).toMatch(/\.xlsx$/);
   await expect(page.getByRole('heading', { name: 'Recent activity' })).toBeVisible();
 });
+
+test('the calculators answer, check a GSTIN and age receivables', async ({ page }) => {
+  await page.goto('/calculators');
+  await expect(page.getByRole('heading', { name: 'Calculators' })).toBeVisible();
+  await expect(page.getByText('Monthly instalment').first()).toBeVisible();
+  await expect(page.getByText('Interest saved').first()).toBeVisible();
+  await page.getByRole('tab', { name: 'GSTIN check' }).click();
+  await expect(page.getByText('This number is well formed')).toBeVisible();
+  await page.getByLabel('GSTIN', { exact: true }).fill('27AAPFU0939F1ZX');
+  await expect(page.getByText('should be V')).toBeVisible();
+  await page.getByRole('tab', { name: 'Break-even' }).click();
+  await expect(page.getByText('Break-even units')).toBeVisible();
+  await page.getByRole('tab', { name: 'Receivables ageing' }).click();
+  await expect(page.getByText('Chase in this order')).toBeVisible();
+});
+
+test('a page can be pinned to the top of the menu', async ({ page }) => {
+  await page.goto('/calculators');
+  await page.getByRole('button', { name: /^Pin/ }).click();
+  await expect(page.locator('.nav').getByText('Pinned', { exact: true })).toBeVisible();
+  await page.getByRole('button', { name: /^Unpin/ }).click();
+  await expect(page.getByText('Pinned', { exact: true })).toHaveCount(0);
+});
+
+test('a saved model shows what changed between versions', async ({ page }) => {
+  const made = await page.request.post('/api/saved', { data: { kind: 'dcf', name: 'E2E diff', data: { wacc: 0.11 } } });
+  const item = await made.json();
+  await page.request.put(`/api/saved/${item.id}`, { data: { data: { wacc: 0.09 }, note: 'lower wacc' } });
+  await page.goto('/dcf');
+  await page.getByRole('button', { name: 'Open', exact: true }).click();
+  await page.getByRole('button', { name: 'Versions' }).first().click();
+  await page.getByRole('button', { name: 'What changed' }).click();
+  await expect(page.getByRole('list', { name: 'Changes in version 2' })).toContainText('0.11 to 0.09');
+});

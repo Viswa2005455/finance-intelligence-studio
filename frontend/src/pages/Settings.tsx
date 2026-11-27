@@ -199,6 +199,7 @@ function DataCard({ retentionDays }: { retentionDays: number }) {
         <div className="stack">
           <button className="btn" onClick={exportAll}><Download size={15} />Export all my data (JSON)</button>
           <button className="btn" onClick={() => downloadGet('/api/account/export.xlsx', 'saved-models.xlsx').catch((e: Error) => toast(e.message, 'error'))}><FileSpreadsheet size={15} />Export saved models (Excel)</button>
+          <button className="btn" onClick={() => downloadGet('/api/account/handover.zip', 'handover.zip').catch((e: Error) => toast(e.message, 'error'))}><Download size={15} />Accountant handover pack (zip)</button>
           <button className="btn danger" onClick={() => setConfirm('data')}><Trash2 size={15} />Delete all my data (keep account)</button>
           <button className="btn danger" onClick={() => setConfirm('account')}><UserX size={15} />Delete my account permanently</button>
         </div>
@@ -234,7 +235,7 @@ function GuidanceTips() {
 
 const ACTION_TEXT: Record<string, string> = {
   'account.created': 'Account created', 'account.signed_in': 'Signed in', 'account.password_changed': 'Password changed', 'account.sessions_revoked': 'Signed out other devices',
-  'account.exported': 'Exported all data (JSON)', 'account.exported_xlsx': 'Exported saved models (Excel)', 'account.data_deleted': 'Deleted all data', 'account.password_reset_requested': 'Password reset requested',
+  'account.exported': 'Exported all data (JSON)', 'account.exported_xlsx': 'Exported saved models (Excel)', 'account.handover': 'Made an accountant handover pack', 'account.data_deleted': 'Deleted all data', 'account.password_reset_requested': 'Password reset requested',
   'account.password_reset': 'Password reset', 'model.saved': 'Saved a model', 'model.deleted': 'Deleted a saved model', 'upload.created': 'Uploaded a file', 'upload.deleted': 'Deleted an upload',
   'upload.moved': 'Moved an upload', 'project.created': 'Created a project', 'project.updated': 'Updated a project', 'project.deleted': 'Deleted a project', 'project.exported': 'Exported a project', 'report.exported': 'Exported a report', 'ai.chat': 'Asked the assistant',
 };

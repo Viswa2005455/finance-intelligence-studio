@@ -615,7 +615,7 @@ details.disclosure > .body { padding: 0 14px 14px; animation: fade-in var(--dur)
   .content { padding: 16px; }
   .page-header h1 { font-size: 21px; }
   .kpi-value { font-size: 20px; }
-  .topbar-controls .hide-sm { display: none; }
+  .topbar-controls .hide-sm, .topbar > .hide-sm { display: none; }
   .card { padding: 14px; }
   .chart { height: 240px; }
   .toasts { left: 16px; right: 16px; }
@@ -725,6 +725,10 @@ textarea.input { resize: vertical; min-height: 72px; font-family: inherit; line-
   .print-report, .print-report * { color: #111 !important; }
   .print-report table.data th { background: #f1f5f9 !important; }
   .page { animation: none !important; }
+  .card { background: #fff !important; box-shadow: none !important; border: 1px solid #cbd5e1 !important; break-inside: avoid; }
+  .card, .card * { color: #111 !important; }
+  .tabs, .btn, .kpi-how, .skip-link { display: none !important; }
+  .table-wrap { overflow: visible !important; }
 }
 
 /* ------------------------------------------------------------------ Upload: data found + calculations */

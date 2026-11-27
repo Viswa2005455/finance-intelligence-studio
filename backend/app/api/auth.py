@@ -186,6 +186,52 @@ def export_xlsx(user: User = Depends(current_user), db: Session = Depends(get_db
                     headers={"Content-Disposition": 'attachment; filename="finance-intelligence-studio-saved-models.xlsx"'})
 
 
+HANDOVER_MAX_BYTES = 60 * 1024 * 1024
+
+
+@account.get("/handover.zip")
+def handover_pack(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Everything an accountant needs in one zip: an Excel workbook of saved models, the full JSON export and the original uploaded files
+    (up to a size cap; files over it are named in the README, not silently dropped)."""
+    import io
+    import json
+    import re
+    import zipfile
+    from ..db.models import SavedVersion, UploadBlob
+    from ..reports import workbook
+    from .projects import export_payload
+
+    items = []
+    for it in db.scalars(select(SavedItem).where(SavedItem.user_id == user.id).order_by(SavedItem.kind, SavedItem.name).limit(200)).all():
+        v = db.scalar(select(SavedVersion).where(SavedVersion.item_id == it.id, SavedVersion.version == it.latest_version))
+        if v is not None:
+            items.append({"kind": it.kind, "name": it.name, "version": it.latest_version, "updated_at": it.updated_at, "data": v.data})
+    buf = io.BytesIO()
+    included, left_out, used = [], [], 0
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("saved-models.xlsx", workbook.build(items))
+        z.writestr("everything.json", json.dumps(export_payload(db, user.id, None), indent=2, default=str))
+        for u in db.scalars(select(Upload).where(Upload.user_id == user.id).order_by(Upload.uploaded_at)).all():
+            blob = db.get(UploadBlob, u.id)
+            safe = re.sub(r"[^A-Za-z0-9._ -]", "_", u.name)[:80] or "file"
+            if blob is None or used + len(blob.data) > HANDOVER_MAX_BYTES:
+                left_out.append(u.name)
+                continue
+            used += len(blob.data)
+            z.writestr(f"source-files/{u.id.hex[:8]}-{safe}", blob.data)
+            included.append(u.name)
+        lines = ["Finance Intelligence Studio: handover pack", "", f"Prepared for: {user.display_name}", f"Saved models: {len(items)} (see saved-models.xlsx)",
+                 "everything.json holds projects, every saved version and the activity history.", "", f"Source files included: {len(included)}"]
+        lines += [f"  - {n}" for n in included]
+        if left_out:
+            lines += ["", "Not included (over the size cap, or the original is no longer stored):"] + [f"  - {n}" for n in left_out]
+        lines += ["", "These figures are calculations from the files and assumptions listed. They are not audited and not advice."]
+        z.writestr("README.txt", chr(10).join(lines))
+    log_activity(db, user.id, "account.handover", files=len(included), models=len(items))
+    db.commit()
+    return Response(buf.getvalue(), media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="finance-studio-handover.zip"'})
+
+
 @account.get("/activity")
 def recent_activity(limit: int = 50, user: User = Depends(current_user), db: Session = Depends(get_db)):
     """Your own history: sign-ins, saves, uploads, exports. Never holds file contents or passwords."""

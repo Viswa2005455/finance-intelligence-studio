@@ -275,6 +275,11 @@ Industry setting for ratio readings, glossary hover and "show me how" panels, co
 cash-budget interest and repayment, seasonal forecasting, DCF undo/redo, Excel export of saved models, activity list, text size and high contrast,
 skip link, browser crash reports (`POST /api/client-errors`) and `docs/OPERATIONS.md` (backups, restore rehearsal, a test copy).
 
+Session 6, second batch: Calculators page (loan with prepayment, savings goal, pricing, cost of a hire, break-even, working-capital what-if, GSTIN check,
+receivables ageing), "What changed" between saved versions, pinned pages, print layout, accountant handover zip.
+Not built, and why: advance tax and TDS dates (the app's tax rule set does not hold them, so they could not be checked), capital gains (rates not in the rule set),
+Hindi labels, installable app, Monte Carlo DCF, 13-week cash forecast, covenant tracker, Tally/Zoho presets (need real sample exports), expiring read-only links (needs a privacy review).
+
 Left out on purpose: email reminders (needs an email service the app does not have), share links (needs a public-link and permissions design),
 visual regression and screen-reader testing (need tools or people outside this build), Screener quarterly data (source layout not verified),
 large-file virtualisation (no file has yet been too slow). Autosave of working drafts already existed (kept in the browser, restored on return).

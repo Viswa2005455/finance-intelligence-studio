@@ -39,3 +39,15 @@ def test_endpoints(client):
     actions = [e["action"] for e in events]
     assert "model.saved" in actions and "account.exported_xlsx" in actions
     assert actions.index("account.exported_xlsx") < actions.index("model.saved")  # newest first
+
+
+def test_handover_zip_holds_workbook_json_files_and_readme(client):
+    import zipfile
+    client.post("/api/saved", json={"kind": "dcf", "name": "For my accountant", "data": {"wacc": 0.1}})
+    z = client.get("/api/account/handover.zip")
+    assert z.status_code == 200 and z.headers["content-type"] == "application/zip"
+    names = zipfile.ZipFile(io.BytesIO(z.content)).namelist()
+    assert {"saved-models.xlsx", "everything.json", "README.txt"} <= set(names)
+    readme = zipfile.ZipFile(io.BytesIO(z.content)).read("README.txt").decode()
+    assert "Saved models: 1" in readme and "not audited" in readme
+    assert any(e["action"] == "account.handover" for e in client.get("/api/account/activity").json()["events"])

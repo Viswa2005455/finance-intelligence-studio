@@ -3,7 +3,7 @@ import { existsSync, mkdirSync } from 'node:fs';
 
 export const AUTH_FILE = 'e2e/.auth/user.json';
 /** Every page of the signed-in app. */
-export const ALL_PAGES = ['/', '/projects', '/upload', '/budgeting', '/forecasting', '/variance', '/costing', '/close', '/calendar', '/accounting', '/investments', '/markets', '/income-tax', '/gst',
+export const ALL_PAGES = ['/', '/projects', '/upload', '/budgeting', '/forecasting', '/variance', '/costing', '/close', '/calendar', '/calculators', '/accounting', '/investments', '/markets', '/income-tax', '/gst',
   '/statements', '/ratios', '/cash-flow', '/red-flags', '/model-check', '/peers', '/scenarios', '/sensitivity', '/dcf', '/investment', '/code-lab', '/assistant',
   '/ai-health', '/reports', '/learn', '/settings'];
 export const EMAIL = 'e2e-user@example.com';

@@ -1,4 +1,4 @@
-import { Menu, Moon, Sun, Activity, LogOut, Search } from 'lucide-react';
+import { Menu, Moon, Sun, Activity, LogOut, Pin, PinOff, Printer, Search } from 'lucide-react';
 import { Suspense, useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { NAV } from '../nav';
@@ -16,6 +16,7 @@ import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
 import { useGuide } from '../lib/guide';
 import { markRecent, markVisited } from '../lib/progress';
+import { load, save } from '../lib/storage';
 
 export function Layout() {
   const [open, setOpen] = useState(false);
@@ -28,6 +29,9 @@ export function Layout() {
   const navigate = useNavigate();
   const guide = useGuide();
   const [palette, setPalette] = useState(false);
+  const [pins, setPins] = useState<string[]>(() => load<string[]>('fis.pins', []));
+  const togglePin = (to: string) => setPins((p) => { const next = p.includes(to) ? p.filter((x) => x !== to) : [...p, to]; save('fis.pins', next); return next; });
+  const pinned = pins.map((to) => NAV.find((n) => n.to === to)).filter((n): n is (typeof NAV)[number] => !!n);
   const [help, setHelp] = useState(false);
   useEffect(() => {
     let g = 0;  // when "g" was pressed: the next key (within a second) picks the page
@@ -77,6 +81,8 @@ export function Layout() {
           </div>
         </div>
         <nav className="nav">
+          {pinned.length > 0 && <div className="nav-group">Pinned</div>}
+          {pinned.map((n) => <NavLink key={`pin-${n.to}`} to={n.to} end={n.to === '/'}><n.icon size={17} /><span>{n.label}</span></NavLink>)}
           {NAV.map((n) => {
             const header = n.group !== lastGroup ? <div className="nav-group" key={`g-${n.group}`}>{n.group}</div> : null;
             lastGroup = n.group;
@@ -118,6 +124,8 @@ export function Layout() {
             <span className="here">{current?.label ?? 'Not found'}</span>
           </div>
           <div className="topbar-spacer" />
+          {current && current.to !== '/' && <button className="btn sm ghost hide-sm" aria-pressed={pins.includes(current.to)} title={pins.includes(current.to) ? 'Unpin this page' : 'Pin this page to the top of the menu'} onClick={() => togglePin(current.to)}>{pins.includes(current.to) ? <PinOff size={15} aria-hidden="true" /> : <Pin size={15} aria-hidden="true" />}<span className="hide-md">{pins.includes(current.to) ? 'Unpin' : 'Pin'}</span></button>}
+          <button className="btn sm ghost no-print hide-sm" aria-label="Print this page" title="Print this page" onClick={() => window.print()}><Printer size={15} aria-hidden="true" /></button>
           <button className="btn sm search-btn" aria-keyshortcuts="Control+K" title="Search pages (Ctrl+K)" onClick={() => setPalette(true)}><Search size={15} aria-hidden="true" /><span>Search</span><kbd className="hide-md" aria-hidden="true">Ctrl K</kbd></button>
           <div className="topbar-controls">
             <select className="input compact project-select" aria-label="Active project" value={activeId ?? ''}

@@ -3,6 +3,15 @@ export interface ChangeEntry { date: string; title: string; items: string[] }
 
 export const CHANGELOG: ChangeEntry[] = [
   {
+    date: '2026-11-28', title: 'Calculators, version comparison and an accountant handover pack',
+    items: [
+      'A Calculators page: loan with extra payments, savings goal, price from a target margin, true cost of a hire, break-even, working-capital what-if, GSTIN check and receivables ageing.',
+      'On any saved model, "What changed" lists every value that differs from the previous version.',
+      'Pin the pages you use most to the top of the menu, and print any page with a clean black-on-white layout.',
+      'Settings can make a handover zip for your accountant: an Excel workbook of saved models, the full data export and your original files.',
+    ],
+  },
+  {
     date: '2026-11-27', title: 'Industry readings, due dates, loans in the cash budget and easier reading',
     items: [
       'Ratios can be judged against an industry (software, retail, manufacturing, services, utilities), so a current ratio of 0.8 is read in context.',
