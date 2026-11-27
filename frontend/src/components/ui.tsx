@@ -1,7 +1,8 @@
-import { AlertTriangle, ChevronDown, Copy, GraduationCap, Info, CheckCircle2, XCircle, Construction } from 'lucide-react';
+import { AlertTriangle, ChevronDown, Copy, GraduationCap, HelpCircle, Info, CheckCircle2, XCircle, Construction } from 'lucide-react';
 import { cloneElement, isValidElement, memo, useEffect, useId, useRef, useState, type ReactElement, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { problemLog } from '../lib/api';
+import { glossify } from '../lib/glossary';
 import { LEVEL_LABEL, type Reading } from '../lib/readings';
 import { isNum, parseInputNumber } from '../lib/format';
 import { useSettings } from '../lib/settings';
@@ -55,15 +56,22 @@ export function FlashValue({ value, className = '' }: { value: string; className
   return <div className={`${className} ${flash ? 'flash' : ''}`}>{value}</div>;
 }
 
-export function Kpi({ label, value, delta, deltaTone, hint, spark }: { label: string; value: string; delta?: ReactNode; deltaTone?: 'pos' | 'neg' | 'muted'; hint?: string; spark?: ReactNode }) {
+/** Text with finance terms (WACC, DSO, terminal value...) explained on hover or keyboard focus. */
+export function Glossed({ text }: { text: string }) {
+  return <>{glossify(text).map((p, i) => (typeof p === 'string' ? p : <span key={i} className="gloss" tabIndex={0} data-def={p.def} aria-label={`${p.term}: ${p.def}`}>{p.term}</span>))}</>;
+}
+
+export function Kpi({ label, value, delta, deltaTone, hint, spark, how }: { label: string; value: string; delta?: ReactNode; deltaTone?: 'pos' | 'neg' | 'muted'; hint?: string; spark?: ReactNode; how?: ReactNode }) {
+  const [showHow, setShowHow] = useState(false);
   return (
     <div className="card kpi" title={hint}>
-      <div className="kpi-label">{label}</div>
+      <div className="kpi-label">{label}{how && <button type="button" className="kpi-how" aria-expanded={showHow} aria-label={`Show how ${label} is calculated`} onClick={() => setShowHow((v) => !v)}><HelpCircle size={14} /></button>}</div>
       <div className="kpi-top">
         <FlashValue className="kpi-value" value={value} />
         {spark && <div className="kpi-spark">{spark}</div>}
       </div>
       {delta && <div className={`kpi-delta ${deltaTone ?? 'muted'}`}>{delta}</div>}
+      {how && showHow && <div className="kpi-how-panel">{how}</div>}
     </div>
   );
 }
@@ -255,9 +263,9 @@ export function ReadingCard({ reading, title = 'In plain English', showNext = tr
     <Card title={title} subtitle="A reading of the figures below, using stated rules of thumb"
       actions={<Badge tone={READING_TONE[reading.level]}>{LEVEL_LABEL[reading.level]}</Badge>}>
       <div className={`insight ${reading.level}`} style={{ marginTop: 0 }}>
-        <b style={{ fontSize: 14 }}>{reading.headline}</b>
-        <ul className="summary-list">{reading.points.map((p) => <li key={p}>{p}</li>)}</ul>
-        {reading.caution && <p className="faint" style={{ fontSize: 12 }}><b>Watch out:</b> {reading.caution}</p>}
+        <b style={{ fontSize: 14 }}><Glossed text={reading.headline} /></b>
+        <ul className="summary-list">{reading.points.map((p) => <li key={p}><Glossed text={p} /></li>)}</ul>
+        {reading.caution && <p className="faint" style={{ fontSize: 12 }}><b>Watch out:</b> <Glossed text={reading.caution} /></p>}
         {showNext && reading.next && reading.next.length > 0 && (
           <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
             <span className="faint" style={{ fontSize: 12 }}>Next:</span>

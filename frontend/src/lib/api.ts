@@ -140,10 +140,14 @@ export const api = {
 };
 
 /** POST JSON and save the returned file (Excel, Word, …) under the server's suggested name. */
-export async function downloadPost(path: string, data: unknown, fallbackName: string): Promise<void> {
+export const downloadPost = (path: string, data: unknown, fallbackName: string): Promise<void> => saveResponse('POST', path, data, fallbackName);
+/** GET a file (for example the Excel workbook of saved models) and save it under the server's suggested name. */
+export const downloadGet = (path: string, fallbackName: string): Promise<void> => saveResponse('GET', path, undefined, fallbackName);
+
+async function saveResponse(method: 'GET' | 'POST', path: string, data: unknown, fallbackName: string): Promise<void> {
   let res: Response;
   try {
-    res = await fetch(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+    res = await fetch(path, method === 'GET' ? { method } : { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
   } catch {
     throw new ApiError(BACKEND_DOWN, 0);
   }
@@ -153,7 +157,7 @@ export async function downloadPost(path: string, data: unknown, fallbackName: st
     let hasBody = false;
     try { const b = await res.json(); hasBody = true; detail = typeof b?.detail?.message === 'string' ? b.detail.message : b?.detail; } catch { /* not JSON */ }
     const f = friendlyStatus(res.status, detail, hasBody);
-    remember(f.message, 'POST', path, res.status, typeof detail === 'string' ? detail : undefined);
+    remember(f.message, method, path, res.status, typeof detail === 'string' ? detail : undefined);
     throw new ApiError(f.message, res.status, f.category);
   }
   const name = /filename="([^"]+)"/.exec(res.headers.get('content-disposition') ?? '')?.[1] ?? fallbackName;

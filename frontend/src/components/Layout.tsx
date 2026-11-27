@@ -63,6 +63,7 @@ export function Layout() {
   let lastGroup = '';
   return (
     <div className={`shell ${open ? 'nav-open' : ''}`}>
+      <a className="skip-link" href="#main" onClick={(e) => { e.preventDefault(); document.getElementById('main')?.focus(); }}>Skip to main content</a>
       <Backdrop />
       <CommandPalette open={palette} onClose={() => setPalette(false)} onHelp={() => setHelp(true)} />
       <ShortcutHelp open={help} onClose={() => setHelp(false)} />
@@ -143,7 +144,7 @@ export function Layout() {
             </button>
           </div>
         </header>
-        <main className="content" id="main">
+        <main className="content" id="main" tabIndex={-1}>
           {settings.periodFrom > settings.periodTo && (
             <div className="callout error" style={{ marginBottom: 16 }}>The reporting period start is after its end. Please correct the date range.</div>
           )}

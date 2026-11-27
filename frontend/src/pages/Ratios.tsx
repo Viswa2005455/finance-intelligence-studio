@@ -1,7 +1,8 @@
 import { Download, FileUp, RotateCcw } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { Badge, Callout, Card, ErrorBox, Formula, LearnBox, NumberField, PageHeader, Tabs } from '../components/ui';
+import { Badge, Callout, Card, ErrorBox, Field, Formula, Glossed, LearnBox, NumberField, PageHeader, Tabs } from '../components/ui';
+import { loadRaw, save } from '../lib/storage';
 import { SaveLoad } from '../components/SaveLoad';
 import { api } from '../lib/api';
 import { downloadFile, fmtNum, fmtRatio, isNum, toCSV } from '../lib/format';
@@ -18,7 +19,7 @@ interface Ratio {
 }
 interface Insight {
   level: 'strong' | 'good' | 'watch' | 'concern' | 'info'; label: string; headline: string; meaning: string; typical: string; caution: string;
-  next_step: string; context: string[]; related: { key: string; value: number }[];
+  next_step: string; context: string[]; related: { key: string; value: number }[]; industry_note?: string;
 }
 interface Summary {
   overall: string; headline: string; note: string;
@@ -35,13 +36,14 @@ function InsightBlock({ r, nameOf }: { r: Ratio; nameOf: (k: string) => string }
     <div className={`insight ${i.level}`}>
       <div className="row" style={{ gap: 8, alignItems: 'flex-start' }}>
         <Badge tone={LEVEL_TONE[i.level]}>{i.label}</Badge>
-        <b style={{ fontSize: 13.5 }}>{i.headline}</b>
+        <b style={{ fontSize: 13.5 }}><Glossed text={i.headline} /></b>
       </div>
-      <p>{i.meaning}</p>
+      <p><Glossed text={i.meaning} /></p>
       {i.context.map((c) => <p key={c} className="insight-context">{c}</p>)}
+      {i.industry_note && <p className="faint" style={{ fontSize: 12 }}>{i.industry_note}</p>}
       <dl>
         <dt>Typical range</dt><dd>{i.typical}</dd>
-        <dt>Next step</dt><dd>{i.next_step}</dd>
+        <dt>Next step</dt><dd><Glossed text={i.next_step} /></dd>
         {i.caution && <><dt>Watch out</dt><dd>{i.caution}</dd></>}
       </dl>
       {i.related.length > 0 && <div className="faint" style={{ fontSize: 12 }}>Read with: {i.related.map((x) => nameOf(x.key)).join(', ')}</div>}
@@ -113,6 +115,9 @@ export function Ratios() {
   const [data, setData] = useState<Data>(EXAMPLE);
   const [isExample, setIsExample] = useState(true);
   const [days, setDays] = useState<number | null>(365);
+  const [industry, setIndustry] = useState<string>(() => loadRaw('fis.ratios.industry', 'general'));
+  const pickIndustry = (v: string) => { setIndustry(v); save('fis.ratios.industry', v); };
+  const industries = useAsync((signal) => api.get<{ industries: Record<string, string> }>('/api/finance/ratios/items', { signal }), []);
   const [cat, setCat] = useState('All');
   const [sources, setSources] = useState<Record<string, string>>({});
   const [pending, setPending] = useState<{ file: string; rows: (Mapping & { accept: boolean })[] } | null>(null);
@@ -142,7 +147,7 @@ export function Ratios() {
     toast(`Applied ${Object.keys(next).length} confirmed values`);
   };
 
-  const body = useMemo(() => ({ data: Object.fromEntries(Object.entries(data).filter(([, v]) => isNum(v))), period_days: days ?? 365 }), [data, days]);
+  const body = useMemo(() => ({ data: Object.fromEntries(Object.entries(data).filter(([, v]) => isNum(v))), period_days: days ?? 365, industry }), [data, days, industry]);
   const req = useDebounced(body, 150);
   const res = useAsync((signal) => api.post<{ ratios: Ratio[]; summary?: Summary; dupont?: Dupont | null }>('/api/finance/ratios', req, { signal }), [JSON.stringify(req)]);
   const integrity = useMemo(() => integrityIssues(body.data), [body]);
@@ -221,6 +226,13 @@ export function Ratios() {
               </div>
             </Card>
           ))}
+          <Card title="Industry" subtitle="The readings compare each ratio with this kind of business">
+            <Field label="Compare against" hint="A current ratio of 0.8 is a warning for a manufacturer and normal for a supermarket. These are rules of thumb: check them against your sector.">
+              <select className="input" value={industry} onChange={(e) => pickIndustry(e.target.value)}>
+                {Object.entries(industries.data?.industries ?? { general: 'General / mixed' }).map(([k, label]) => <option key={k} value={k}>{label}</option>)}
+              </select>
+            </Field>
+          </Card>
           <Card title="Period length">
             <NumberField label="Days in period" value={days} onChange={setDays} min={1} max={366} hint="365 for annual, 90/91 for a quarter — used for DSO, DIO, DPO" />
           </Card>

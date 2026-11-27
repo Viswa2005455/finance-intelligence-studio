@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { edit, redo, start, undo, type History } from './history';
 import { loadRaw, save } from './storage';
 import type { DCFModel } from './types';
 
@@ -24,17 +25,20 @@ export const EXAMPLE_MODEL: DCFModel = {
   mid_year: false,
 };
 
-interface Ctx { model: DCFModel; setModel: (m: DCFModel) => void; patch: (p: Partial<DCFModel>) => void; reset: () => void; isExample: boolean }
+interface Ctx { model: DCFModel; setModel: (m: DCFModel) => void; patch: (p: Partial<DCFModel>) => void; reset: () => void; isExample: boolean; undo: () => void; redo: () => void; canUndo: boolean; canRedo: boolean }
+interface Snap { model: DCFModel; isExample: boolean }
 const DCFContext = createContext<Ctx | null>(null);
 
 export function DCFModelProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<{ model: DCFModel; isExample: boolean }>(() =>
-    loadRaw('fis.dcf', { model: EXAMPLE_MODEL, isExample: true }));
-  const persist = useCallback((s: { model: DCFModel; isExample: boolean }) => { save('fis.dcf', s); return s; }, []);
-  const setModel = useCallback((m: DCFModel) => setState(persist({ model: m, isExample: false })), [persist]);
-  const patch = useCallback((p: Partial<DCFModel>) => setState((s) => persist({ model: { ...s.model, ...p }, isExample: false })), [persist]);
-  const reset = useCallback(() => setState(persist({ model: EXAMPLE_MODEL, isExample: true })), [persist]);
-  const value = useMemo(() => ({ ...state, setModel, patch, reset }), [state, setModel, patch, reset]);
+  const [store, setStore] = useState<History<Snap>>(() => start(loadRaw<Snap>('fis.dcf', { model: EXAMPLE_MODEL, isExample: true })));
+  const apply = useCallback((fn: (h: History<Snap>) => History<Snap>) => setStore((h) => { const n = fn(h); save('fis.dcf', n.cur); return n; }), []);
+  const setModel = useCallback((m: DCFModel) => apply((h) => edit(h, { model: m, isExample: false }, Date.now(), true)), [apply]);
+  const patch = useCallback((p: Partial<DCFModel>) => apply((h) => edit(h, { model: { ...h.cur.model, ...p }, isExample: false }, Date.now())), [apply]);
+  const reset = useCallback(() => apply((h) => edit(h, { model: EXAMPLE_MODEL, isExample: true }, Date.now(), true)), [apply]);
+  const doUndo = useCallback(() => apply(undo), [apply]);
+  const doRedo = useCallback(() => apply(redo), [apply]);
+  const value = useMemo(() => ({ ...store.cur, setModel, patch, reset, undo: doUndo, redo: doRedo, canUndo: store.past.length > 0, canRedo: store.future.length > 0 }),
+    [store, setModel, patch, reset, doUndo, doRedo]);
   return <DCFContext.Provider value={value}>{children}</DCFContext.Provider>;
 }
 

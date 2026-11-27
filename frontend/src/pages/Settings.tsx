@@ -1,4 +1,4 @@
-import { Download, KeyRound, LogOut, MonitorSmartphone, Trash2, UserX } from 'lucide-react';
+import { Download, FileSpreadsheet, KeyRound, LogOut, MonitorSmartphone, Trash2, UserX } from 'lucide-react';
 import { useState } from 'react';
 import { Modal } from '../components/Modal';
 import { useAuth } from '../lib/auth';
@@ -6,7 +6,7 @@ import { useGuide } from '../lib/guide';
 import { useProjects } from '../lib/project';
 import { downloadFile } from '../lib/format';
 import { Callout, Card, Field, PageHeader, Skeleton, Tabs } from '../components/ui';
-import { api } from '../lib/api';
+import { api, downloadGet } from '../lib/api';
 import { CURRENCIES, UNIT_SCALES, type Currency, type NumberStyle, type UnitScale } from '../lib/format';
 import { useSettings, type ThemePref } from '../lib/settings';
 import { useToast } from '../lib/toast';
@@ -32,6 +32,14 @@ export function SettingsPage() {
               <Tabs label="Background" value={settings.backdrop} onChange={(v: 'animated' | 'still' | 'off') => update({ backdrop: v })}
                 options={[{ value: 'animated', label: 'Moving' }, { value: 'still', label: 'Still' }, { value: 'off', label: 'Off' }]} />
             </Field>
+            <Field label="Text size" hint="Scales the whole interface. Your browser's own zoom (Ctrl and +) works too.">
+              <Tabs label="Text size" value={settings.textSize} onChange={(v: 'normal' | 'large' | 'larger') => update({ textSize: v })}
+                options={[{ value: 'normal', label: 'Normal' }, { value: 'large', label: 'Large' }, { value: 'larger', label: 'Larger' }]} />
+            </Field>
+            <label className="row" style={{ fontSize: 13 }}>
+              <input type="checkbox" checked={settings.contrast === 'high'} onChange={(e) => update({ contrast: e.target.checked ? 'high' : 'normal' })} />
+              High contrast: stronger text and borders, and a plain background
+            </label>
             <label className="row" style={{ fontSize: 13 }}>
               <input type="checkbox" checked={settings.reduceMotion} onChange={(e) => update({ reduceMotion: e.target.checked })} />
               Reduce motion (animations are also reduced automatically when your OS asks for it)
@@ -74,6 +82,7 @@ export function SettingsPage() {
         <AccountCard />
         <SessionsCard />
         <DataCard retentionDays={user?.retention_days ?? 90} />
+        <ActivityCard />
         <Card title="About" className="span-all">
           <div className="metric-row"><span>Backend</span><span className="v">{health.data ? `v${health.data.version} · ${health.data.environment}` : health.error ? 'offline' : '…'}</span></div>
           <div className="metric-row"><span>Calculation conventions</span><span className="v" style={{ fontWeight: 400 }}>Rates as decimals internally · CF₀ undiscounted · end-of-period discounting unless mid-year is chosen</span></div>
@@ -189,6 +198,7 @@ function DataCard({ retentionDays }: { retentionDays: number }) {
         </div>
         <div className="stack">
           <button className="btn" onClick={exportAll}><Download size={15} />Export all my data (JSON)</button>
+          <button className="btn" onClick={() => downloadGet('/api/account/export.xlsx', 'saved-models.xlsx').catch((e: Error) => toast(e.message, 'error'))}><FileSpreadsheet size={15} />Export saved models (Excel)</button>
           <button className="btn danger" onClick={() => setConfirm('data')}><Trash2 size={15} />Delete all my data (keep account)</button>
           <button className="btn danger" onClick={() => setConfirm('account')}><UserX size={15} />Delete my account permanently</button>
         </div>
@@ -218,6 +228,31 @@ function GuidanceTips() {
         <input type="checkbox" checked={!guide.off} onChange={(e) => guide.setOff(!e.target.checked)} />Show tips
       </label>
       <div className="row mt-sm"><button className="btn" onClick={guide.reset}>Show all tips again</button></div>
+    </Card>
+  );
+}
+
+const ACTION_TEXT: Record<string, string> = {
+  'account.created': 'Account created', 'account.signed_in': 'Signed in', 'account.password_changed': 'Password changed', 'account.sessions_revoked': 'Signed out other devices',
+  'account.exported': 'Exported all data (JSON)', 'account.exported_xlsx': 'Exported saved models (Excel)', 'account.data_deleted': 'Deleted all data', 'account.password_reset_requested': 'Password reset requested',
+  'account.password_reset': 'Password reset', 'model.saved': 'Saved a model', 'model.deleted': 'Deleted a saved model', 'upload.created': 'Uploaded a file', 'upload.deleted': 'Deleted an upload',
+  'upload.moved': 'Moved an upload', 'project.created': 'Created a project', 'project.updated': 'Updated a project', 'project.deleted': 'Deleted a project', 'project.exported': 'Exported a project', 'report.exported': 'Exported a report', 'ai.chat': 'Asked the assistant',
+};
+
+/** Your own recent history, newest first: the audit trail the app keeps about your account. */
+function ActivityCard() {
+  const res = useAsync((signal) => api.get<{ events: { when: string; action: string; entity_type: string | null; detail: Record<string, unknown> }[] }>('/api/account/activity?limit=30', { signal }), []);
+  return (
+    <Card title="Recent activity" className="span-all">
+      {res.loading && !res.data && <Skeleton h={80} />}
+      {res.data && !res.data.events.length && <p className="faint">Nothing recorded yet.</p>}
+      {res.data && res.data.events.length > 0 && (
+        <ul className="summary-list" aria-label="Recent activity">
+          {res.data.events.map((e, i) => (
+            <li key={i}><b>{ACTION_TEXT[e.action] ?? e.action}</b>{typeof e.detail?.name === 'string' && <> ({e.detail.name})</>} <span className="faint">{new Date(e.when).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}</span></li>
+          ))}
+        </ul>
+      )}
     </Card>
   );
 }

@@ -127,13 +127,17 @@ class CashBudgetRequest(BaseModel):
     receipts: list[CashLineIn] = Field(default_factory=list, max_length=100)
     payments: list[CashLineIn] = Field(default_factory=list, max_length=100)
     minimum_cash: float = Field(default=0, ge=0)
+    interest_rate_pct: float = Field(default=0, ge=0, le=100)
+    periods_per_year: int = Field(default=12, ge=1, le=366)
+    repay: bool = False
 
 
 @router.post("/cash-budget")
 def cash_budget(req: CashBudgetRequest):
     r = cashflow.cash_budget(req.periods, req.opening_cash,
                              [cashflow.CashLine(l.name, l.values) for l in req.receipts],
-                             [cashflow.CashLine(l.name, l.values) for l in req.payments], req.minimum_cash)
+                             [cashflow.CashLine(l.name, l.values) for l in req.payments], req.minimum_cash,
+                             req.interest_rate_pct, req.periods_per_year, req.repay)
     burn = cashflow.runway(req.opening_cash, [p.net_flow for p in r.periods]) if req.opening_cash >= 0 else None
     out = asdict(r)
     out["runway"] = asdict(burn) if burn else None

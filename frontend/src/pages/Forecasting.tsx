@@ -12,7 +12,7 @@ import { downloadFile, fmtCompact, fmtNum, fmtPct, fmtPctPoints, isNum, parseInp
 import type { Series } from '../lib/types';
 import { useAsync, useDebounced } from '../lib/useApi';
 
-type Method = 'linear' | 'moving_average' | 'ses' | 'cagr';
+type Method = 'linear' | 'moving_average' | 'ses' | 'cagr' | 'seasonal';
 interface FcRes {
   method: Method; history: number[]; forecast: number[]; lower: (number | null)[]; upper: (number | null)[]; fitted: (number | null)[];
   params: Record<string, number>; backtest: { holdout: number; mae: number | null; rmse: number | null; mape: number | null }; confidence: number; notes: string[];
@@ -21,7 +21,7 @@ interface FcRes {
 const EXAMPLE = '182, 191.5, 176.2, 188.9, 205.3, 199.8, 214.6, 221, 218.4, 230.7, 238.1, 245.9';
 const METHODS: { value: Method; label: string }[] = [
   { value: 'linear', label: 'Linear trend' }, { value: 'ses', label: 'Exponential smoothing' },
-  { value: 'moving_average', label: 'Moving average' }, { value: 'cagr', label: 'Constant growth (CAGR)' },
+  { value: 'seasonal', label: 'Trend with seasons' }, { value: 'moving_average', label: 'Moving average' }, { value: 'cagr', label: 'Constant growth (CAGR)' },
 ];
 
 export function Forecasting() {
@@ -35,6 +35,7 @@ export function Forecasting() {
   const [conf, setConf] = useState<number | null>(0.95);
   const [window, setWindow] = useState<number | null>(3);
   const [alpha, setAlpha] = useState<number | null>(null);
+  const [season, setSeason] = useState<number | null>(12);
   const [holdout, setHoldout] = useState<number | null>(null);
 
   const series = useAsync((signal) => api.get<{ series: Series[] }>('/api/uploads/series', { signal }), []);
@@ -56,8 +57,8 @@ export function Forecasting() {
   const isExample = source === 'manual' && text === EXAMPLE;
 
   const body = useMemo(() => (values.length >= 2 && isNum(horizon) && isNum(conf) && (source === 'upload' || manualBad.length === 0) ? {
-    series: values, method, horizon, confidence: conf, window: window ?? 3, alpha, holdout,
-  } : null), [values.join(','), method, horizon, conf, window, alpha, holdout, source, manualBad.length]); // eslint-disable-line react-hooks/exhaustive-deps
+    series: values, method, horizon, confidence: conf, window: window ?? 3, alpha, holdout, season: season ?? 12,
+  } : null), [values.join(','), method, horizon, conf, window, alpha, holdout, season, source, manualBad.length]); // eslint-disable-line react-hooks/exhaustive-deps
   const req = useDebounced(body, 150);
   const res = useAsync((signal) => api.post<FcRes>('/api/finance/forecast', req, { signal }), [JSON.stringify(req)], !!req);
   const r = res.data;
@@ -122,6 +123,7 @@ export function Forecasting() {
                 <NumberField label="Horizon (periods)" value={horizon} onChange={setHorizon} min={1} max={60} required />
                 <NumberField label="Interval confidence" percent value={conf} onChange={setConf} min={50} max={99} required />
                 {method === 'moving_average' && <NumberField label="Window" value={window} onChange={setWindow} min={1} required />}
+                {method === 'seasonal' && <NumberField label="Season length (periods)" value={season} onChange={setSeason} min={2} max={60} required hint="12 for monthly data with a yearly pattern, 4 for quarterly. Needs two full seasons of history." />}
                 {method === 'ses' && <NumberField label="Alpha (blank = optimise)" value={alpha} onChange={setAlpha} min={0.01} max={1} />}
                 <NumberField label="Holdout periods" value={holdout} onChange={setHoldout} min={1} hint="Blank = 25% of history" />
               </div>

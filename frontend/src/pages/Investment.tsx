@@ -101,13 +101,13 @@ export function Investment() {
           {res.error && <ErrorBox error={res.error} />}
           {r && req && <ReadingCard reading={readAppraisal(r, req.discount_rate, cur)} />}
           <div className="grid cols-4">
-            <Kpi label="Net present value" value={r ? fmtMoney(r.npv, cur) : '—'} deltaTone={r && r.npv >= 0 ? 'pos' : 'neg'}
+            <Kpi label="Net present value" how={r && <>Each cash flow is divided by (1 + {fmtPct(req?.discount_rate ?? 0, 1)}) once for every period it is away, then all are added, the money put in being negative: <code>{r.timeline.map((t) => fmtMoney(t.present_value, cur)).join(' + ')} = {fmtMoney(r.npv, cur)}</code>.</>} value={r ? fmtMoney(r.npv, cur) : '—'} deltaTone={r && r.npv >= 0 ? 'pos' : 'neg'}
               delta={r ? (r.npv > 0 ? 'Accept' : r.npv < 0 ? 'Reject' : 'Indifferent') : undefined} />
-            <Kpi label="IRR" value={irrText} delta={r && r.irr.status !== 'unique' ? r.irr.status === 'multiple' ? `${r.irr.values.map((v) => fmtPct(v, 1)).join(', ')}` : 'No valid IRR' : r && isNum(rate) ? (r.irr.values[0] > rate ? 'Above discount rate' : 'Below discount rate') : undefined}
+            <Kpi label="IRR" how={r && <>The yearly rate at which the NPV above would be exactly zero. It has no formula to write down, so it is found by searching: the NPV profile chart shows the curve crossing zero at the IRR.</>} value={irrText} delta={r && r.irr.status !== 'unique' ? r.irr.status === 'multiple' ? `${r.irr.values.map((v) => fmtPct(v, 1)).join(', ')}` : 'No valid IRR' : r && isNum(rate) ? (r.irr.values[0] > rate ? 'Above discount rate' : 'Below discount rate') : undefined}
               deltaTone={r && r.irr.status === 'unique' && isNum(rate) ? (r.irr.values[0] > rate ? 'pos' : 'neg') : 'muted'} />
             <Kpi label="MIRR" value={r?.mirr.value !== null && r ? fmtPct(r.mirr.value) : '—'} delta={r?.mirr.error ?? undefined} />
             <Kpi label="Profitability index" value={r && isNum(r.profitability_index.value) ? fmtNum(r.profitability_index.value, 3) : '—'} />
-            <Kpi label="Payback" value={r ? (isNum(r.payback.period) ? `${fmtNum(r.payback.period, 2)} yrs` : 'Not recovered') : '—'} />
+            <Kpi label="Payback" how={r && <>The time until the running total of cash flows turns positive, ignoring the time value of money. Discounted payback does the same with each cash flow discounted first.</>} value={r ? (isNum(r.payback.period) ? `${fmtNum(r.payback.period, 2)} yrs` : 'Not recovered') : '—'} />
             <Kpi label="Discounted payback" value={r ? (isNum(r.discounted_payback.period) ? `${fmtNum(r.discounted_payback.period, 2)} yrs` : 'Not recovered') : '—'} />
             <Kpi label="Equivalent annual annuity" value={r ? fmtMoney(r.eaa, cur) : '—'} />
             <Kpi label="Sign changes" value={r ? String(r.irr.sign_changes) : '—'} delta={r ? (r.irr.sign_changes === 1 ? 'Conventional' : 'Unconventional') : undefined} />

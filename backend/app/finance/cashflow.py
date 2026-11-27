@@ -2,8 +2,11 @@
 
 Cash budget convention: flows are per period (usually months). Receipts are positive
 amounts, payments are positive amounts (they are subtracted). If a minimum cash balance is
-set, the shortfall in any period is covered by financing drawn in that period; repayment is
-not modelled, so cumulative financing is the peak funding need.
+set, the shortfall in any period is covered by financing drawn in that period.
+
+Optionally the financing carries interest and is repaid from surplus cash. Interest for a period is the balance owed at the start
+of the period times the annual rate divided by periods per year, and is paid in cash that period. When repayment is on, any cash above
+the minimum balance is used to repay the loan, never more than is owed. Without repayment the loan stays outstanding.
 """
 
 from __future__ import annotations
@@ -29,6 +32,9 @@ class CashPeriod:
     financing: float
     closing: float
     closing_without_financing: float
+    interest: float = 0.0
+    repayment: float = 0.0
+    loan_balance: float = 0.0
 
 
 @dataclass
@@ -43,15 +49,23 @@ class CashBudget:
     receipts_by_line: dict[str, float]
     payments_by_line: dict[str, float]
     warnings: list[str] = field(default_factory=list)
+    total_interest: float = 0.0
+    total_repayment: float = 0.0
+    peak_loan: float = 0.0
+    ending_loan: float = 0.0
 
 
 def cash_budget(period_labels: list[str], opening_cash: float, receipts: list[CashLine], payments: list[CashLine],
-                minimum_cash: float = 0.0) -> CashBudget:
+                minimum_cash: float = 0.0, interest_rate_pct: float = 0.0, periods_per_year: int = 12, repay: bool = False) -> CashBudget:
     n = len(period_labels)
     if not 1 <= n <= 60:
         raise FinanceInputError("Provide between 1 and 60 periods.")
     if minimum_cash < 0:
         raise FinanceInputError("Minimum cash balance cannot be negative.")
+    if not 0 <= interest_rate_pct <= 100:
+        raise FinanceInputError("Interest rate must be between 0% and 100% a year.")
+    if not 1 <= periods_per_year <= 366:
+        raise FinanceInputError("Periods per year must be between 1 and 366.")
     for line in receipts + payments:
         if len(line.values) != n:
             raise FinanceInputError(f"'{line.name}' has {len(line.values)} values; expected {n}.")
@@ -64,20 +78,27 @@ def cash_budget(period_labels: list[str], opening_cash: float, receipts: list[Ca
     opening = opening_cash
     unfinanced = opening_cash
     total_fin = 0.0
+    loan = total_int = total_rep = peak_loan = 0.0
     lowest, lowest_p, first_neg = float("inf"), period_labels[0], None
     for i, p in enumerate(period_labels):
         r = sum(l.values[i] for l in receipts)
         pay = sum(l.values[i] for l in payments)
         net = r - pay
-        pre = opening + net
+        interest = loan * interest_rate_pct / 100 / periods_per_year
+        pre = opening + net - interest
         fin = max(0.0, minimum_cash - pre)
-        closing = pre + fin
+        rep = min(loan, pre - minimum_cash) if repay and fin == 0 and loan > 0 else 0.0
+        loan += fin - rep
+        closing = pre + fin - rep
+        total_int += interest
+        total_rep += rep
+        peak_loan = max(peak_loan, loan)
         unfinanced += net
         if unfinanced < lowest:
             lowest, lowest_p = unfinanced, p
         if unfinanced < 0 and first_neg is None:
             first_neg = p
-        rows.append(CashPeriod(p, opening, r, pay, net, fin, closing, unfinanced))
+        rows.append(CashPeriod(p, opening, r, pay, net, fin, closing, unfinanced, interest, rep, loan))
         total_fin += fin
         opening = closing
 
@@ -85,9 +106,13 @@ def cash_budget(period_labels: list[str], opening_cash: float, receipts: list[Ca
     if first_neg:
         warnings.append(f"Without financing, cash turns negative in {first_neg}.")
     if total_fin > 0:
-        warnings.append(f"Financing of {total_fin:,.2f} is needed to keep cash at or above the minimum balance (repayment not modelled).")
+        warnings.append(f"Financing of {total_fin:,.2f} is needed to keep cash at or above the minimum balance.")
+    if total_int > 0:
+        warnings.append(f"Interest on the financing comes to {total_int:,.2f} over the period, paid from cash.")
+    if loan > 0:
+        warnings.append(f"{loan:,.2f} is still owed at the end of the last period.")
     return CashBudget(rows, sum(x.receipts for x in rows), sum(x.payments for x in rows), total_fin, lowest, lowest_p, first_neg,
-                      {l.name: sum(l.values) for l in receipts}, {l.name: sum(l.values) for l in payments}, warnings)
+                      {l.name: sum(l.values) for l in receipts}, {l.name: sum(l.values) for l in payments}, warnings, total_int, total_rep, peak_loan, loan)
 
 
 @dataclass

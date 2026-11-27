@@ -13,6 +13,8 @@ from __future__ import annotations
 
 from typing import Callable
 
+from . import industries
+
 Level = str
 # (level, headline, meaning, next step)
 Reading = tuple[Level, str, str, str]
@@ -437,16 +439,24 @@ def _context(key: str, a: dict) -> list[str]:
     return out
 
 
-def insight_for(key: str, value: float, values: dict) -> dict | None:
+def insight_for(key: str, value: float, values: dict, industry: str = "general") -> dict | None:
     rule = RULES.get(key)
     if rule is None:
         return None
     level, headline, meaning, nxt = rule(value, values)
+    typical = TYPICAL.get(key, "")
+    note = ""
+    spec = industries.spec_for(industry, key)
+    if spec is not None:
+        # Judge against this industry's norms: the level and the typical range change, the calculated value and the wording do not.
+        level = industries.level_for(spec, value)
+        typical = spec[4]
+        note = f"Judged against {industries.INDUSTRIES[industry].lower()} norms, not a general business. {spec[4]}"
     related = [{"key": k, "value": values[k]} for k in RELATED.get(key, []) if k in values]
     return {
         "level": level, "label": LEVEL_LABEL[level], "headline": headline, "meaning": meaning,
-        "typical": TYPICAL.get(key, ""), "caution": CAUTION.get(key, ""), "next_step": nxt,
-        "context": _context(key, values), "related": related,
+        "typical": typical, "caution": CAUTION.get(key, ""), "next_step": nxt,
+        "context": _context(key, values), "related": related, "industry_note": note,
     }
 
 
@@ -498,12 +508,14 @@ def summarise(results: list[dict]) -> dict:
             "note": "These readings use common rules of thumb. Industry, size and accounting policy change what is normal, so compare with peers and over time."}
 
 
-def attach(results: list[dict]) -> dict:
-    """Add an `insight` to every calculated ratio (in place) and return the overall summary."""
+def attach(results: list[dict], industry: str = "general") -> dict:
+    """Add an `insight` to every calculated ratio (in place) and return the overall summary. `industry` picks the norms used."""
     values = {r["key"]: r["value"] for r in results if r.get("status") == "ok" and r.get("value") is not None}
     for r in results:
-        r["insight"] = insight_for(r["key"], r["value"], values) if r.get("status") == "ok" and r.get("value") is not None else None
-    return summarise(results)
+        r["insight"] = insight_for(r["key"], r["value"], values, industry) if r.get("status") == "ok" and r.get("value") is not None else None
+    summary = summarise(results)
+    summary["industry"] = {"key": industry, "label": industries.INDUSTRIES.get(industry, industry)}
+    return summary
 
 
 def dupont(values: dict) -> dict | None:

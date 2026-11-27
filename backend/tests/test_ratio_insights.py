@@ -121,3 +121,44 @@ def test_equity_multiplier_levels():
 def test_endpoint_returns_dupont(client):
     body = client.post("/api/finance/ratios", json={"data": EXAMPLE}).json()
     assert body["dupont"]["parts"][2]["name"] == "equity multiplier"
+
+
+def test_the_same_current_ratio_is_judged_by_the_industry():
+    # 0.8: a concern for a general business or a manufacturer, a watch for a supermarket, and healthy for a utility.
+    assert ri.insight_for("current_ratio", 0.8, {})["level"] == "concern"
+    assert ri.insight_for("current_ratio", 0.8, {}, "manufacturing")["level"] == "concern"
+    assert ri.insight_for("current_ratio", 0.8, {}, "retail")["level"] == "watch"
+    assert ri.insight_for("current_ratio", 0.8, {}, "utilities")["level"] == "good"
+    assert ri.insight_for("current_ratio", 1.6, {}, "retail")["level"] == "strong"
+
+
+def test_industry_changes_the_typical_range_and_adds_a_note_without_changing_the_value():
+    general = ri.insight_for("dso", 12, {})
+    retail = ri.insight_for("dso", 12, {}, "retail")
+    assert retail["level"] == "good" and "Judged against retail and distribution" in retail["industry_note"]
+    assert "till" in retail["typical"] and general["industry_note"] == ""
+
+
+def test_ratios_without_an_industry_rule_keep_the_general_reading():
+    assert ri.insight_for("pe", 20, {}, "retail")["industry_note"] == ""
+    assert ri.insight_for("current_ratio", 1.8, {}, "no-such-industry")["level"] == ri.insight_for("current_ratio", 1.8, {})["level"]
+
+
+def test_every_profile_threshold_is_ordered_sensibly():
+    from app.finance import industries
+    for name, profile in industries.PROFILES.items():
+        assert name in industries.INDUSTRIES
+        for key, (direction, concern, watch, strong, typical) in profile.items():
+            assert key in ri.RULES and typical
+            ordered = concern < watch < strong if direction == "higher" else concern > watch > strong
+            assert ordered, (name, key)
+
+
+def test_endpoint_accepts_an_industry_and_refuses_unknown_ones(client):
+    data = {**EXAMPLE, "current_assets": 800, "current_liabilities": 1000}  # current ratio 0.8
+    base = client.post("/api/finance/ratios", json={"data": data}).json()
+    retail = client.post("/api/finance/ratios", json={"data": data, "industry": "retail"}).json()
+    lvl = lambda body: next(r for r in body["ratios"] if r["key"] == "current_ratio")["insight"]["level"]
+    assert lvl(base) == "concern" and lvl(retail) == "watch"
+    assert retail["summary"]["industry"]["label"] == "Retail and distribution"
+    assert client.post("/api/finance/ratios", json={"data": data, "industry": "fishing"}).status_code == 422

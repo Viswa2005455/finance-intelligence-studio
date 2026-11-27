@@ -11,6 +11,7 @@ import { useAsync } from '../lib/useApi';
 import { useAuth } from '../lib/auth';
 import { useProjects } from '../lib/project';
 import { useState } from 'react';
+import { DueSoonBanner } from '../components/DueSoonBanner';
 import { CompanyDashboard } from '../components/CompanyDashboard';
 import { GetStarted } from '../components/Guide';
 import { RecentPages } from '../components/RecentPages';
@@ -63,6 +64,7 @@ function SampleOverview({ hasCompanies, onBack }: { hasCompanies: boolean; onBac
       />
 
       {!hasCompanies && <GetStarted />}
+      <DueSoonBanner />
       <div style={{ marginBottom: 16 }}><RecentPages /></div>
 
       {dash.error && <ErrorBox error={dash.error} onRetry={dash.reload} />}
@@ -215,6 +217,7 @@ export function Overview() {
           <button className="btn" onClick={() => setSample(true)}>View sample dashboard</button>
           <Link to="/statements" className="btn primary"><FileUp size={16} />Import a company</Link>
         </>} />
+      <DueSoonBanner />
       <div style={{ marginBottom: 16 }}><RecentPages /></div>
       <CompanyDashboard sources={real} initialId={real.some((s) => s.id === initial) ? initial : real[0].id} />
     </div>

@@ -83,3 +83,4 @@ Keep the database password only in `backend/.env` on the server; never put it in
 For a self-hosted database, back up regularly with
 `pg_dump -Fc -h <host> -U fis_app finance_studio > backup.dump`.
 The dump includes the uploaded files. Managed services such as Supabase include automatic backups on paid plans.
+For a step-by-step backup, a restore rehearsal, crash reports and a test copy, see [OPERATIONS.md](OPERATIONS.md).

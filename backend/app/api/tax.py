@@ -19,7 +19,7 @@ from ..db.session import get_db
 from ..files import ledger, service, taxdocs
 from ..files.routing import suggest_statement_mapping
 from ..files.registers import PURCHASE_TEMPLATE, SALES_TEMPLATE, read_register
-from ..finance import FinanceInputError, gst, incometax, taxaudit
+from ..finance import FinanceInputError, compliance_calendar, gst, incometax, taxaudit
 from ..reports.taxaudit_doc import build_docx
 from .base import BaseModel
 from .finance import clean
@@ -357,6 +357,19 @@ class GSTProfileIn(BaseModel):
 @gst_router.post("/returns")
 def returns(p: GSTProfileIn):
     return gst.select_returns(gst.GSTProfile(**p.model_dump()))
+
+class CalendarIn(BaseModel):
+    gst: GSTProfileIn | None = None
+    today: dt.date | None = None
+    months: int = Field(default=6, ge=1, le=12)
+
+
+@router.post("/calendar")
+def compliance(req: CalendarIn):
+    """Upcoming income-tax, tax-audit and (when a GST profile is given) GST dates, soonest first."""
+    prof = req.gst.model_dump() if req.gst else None
+    return compliance_calendar.calendar(req.today or dt.date.today(), prof, req.months)
+
 
 
 class HeadsIn(BaseModel):

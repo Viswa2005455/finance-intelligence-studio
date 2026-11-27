@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from sqlalchemy import text
 
 from .ai.provider import get_provider
-from .api import accounting, ai, analysis, auth, costing, dashboard, demo, feedback, finance, investments, market, payments, planning, projects, public, reports, tax, uploads
+from .api import accounting, ai, analysis, auth, client_errors, costing, dashboard, demo, feedback, finance, investments, market, payments, planning, projects, public, reports, tax, uploads
 from .auth.deps import current_user
 from .config import get_settings
 from .db.session import session_factory
@@ -205,6 +205,7 @@ app.include_router(auth.router)
 app.include_router(auth.account)
 app.include_router(public.router)  # public: the methodology catalogue
 app.include_router(feedback.router)  # signed-in users only (checked inside)
+app.include_router(client_errors.router)  # public, tightly rate-limited crash reports from the browser
 app.include_router(demo.router)  # public: a rate-limited demo calculator for visitors
 app.include_router(payments.router)  # public: customers pay for a service without an account
 app.include_router(projects.router)

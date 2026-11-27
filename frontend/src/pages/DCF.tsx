@@ -1,4 +1,4 @@
-import { ArrowRight, Bot, RotateCcw } from 'lucide-react';
+import { ArrowRight, Bot, Redo2, RotateCcw, Undo2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bar, BarChart, CartesianGrid, Cell, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -19,7 +19,7 @@ import { useAsync, useDebounced } from '../lib/useApi';
 interface Template { id: string; name: string; description: string; model: DCFModel }
 
 export function DCF() {
-  const { model, patch, reset, isExample, setModel } = useDCFModel();
+  const { model, patch, reset, isExample, setModel, undo, redo, canUndo, canRedo } = useDCFModel();
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateId, setTemplateId] = useState('');
   useEffect(() => { api.get<{ templates: Template[] }>('/api/finance/dcf/templates').then((r) => setTemplates(r.templates)).catch(() => undefined); }, []);
@@ -60,6 +60,8 @@ export function DCF() {
       <PageHeader title="DCF Valuation" badge={isExample ? <Badge tone="sample">Example assumptions</Badge> : <Badge tone="accent">Your assumptions</Badge>}
         subtitle="Unlevered free cash flow (FCFF) model. These assumptions are shared with Scenario Planning and Sensitivity Analysis."
         actions={<>
+          <button className="btn" onClick={undo} disabled={!canUndo} aria-label="Undo the last change"><Undo2 size={15} />Undo</button>
+          <button className="btn" onClick={redo} disabled={!canRedo} aria-label="Redo the change you undid"><Redo2 size={15} />Redo</button>
           <SaveLoad kind="dcf" label="DCF model" getData={() => model} onLoad={(m) => setModel(m)} />
           {templates.length > 0 && (
             <select className="input compact" style={{ width: 210 }} aria-label="Start from a template" value={templateId}
@@ -87,10 +89,10 @@ export function DCF() {
           {res.error && <ErrorBox error={res.error} />}
           {stale && <ReadingCard reading={readDCF(stale, req, cur, isNum(marketPrice) ? marketPrice : null)} />}
           <div className="grid cols-4">
-            <Kpi label="Enterprise value" value={stale ? fmtMoney(stale.enterprise_value, cur) : '—'} />
-            <Kpi label="Equity value" value={stale ? fmtMoney(stale.equity_value, cur) : '—'} deltaTone="muted" delta={stale ? `Net debt ${fmtMoney(stale.net_debt, cur)}` : undefined} />
-            <Kpi label="Value per share" value={stale && isNum(stale.value_per_share) ? fmtMoney(stale.value_per_share, cur, 2) : '—'} delta={!model.shares_outstanding ? 'Enter shares outstanding' : undefined} />
-            <Kpi label="Terminal value share of EV" value={stale ? fmtPct(stale.terminal_value_share_of_ev, 1) : '—'}
+            <Kpi label="Enterprise value" how={stale && <>Add up the present value of every forecast year's free cash flow and the present value of the terminal value: <code>{fmtMoney(stale.sum_pv_fcff, cur, 1)} + {fmtMoney(stale.pv_terminal_value, cur, 1)} = {fmtMoney(stale.enterprise_value, cur, 1)}</code>. Each cash flow is divided by (1 + WACC) for every year it is away.</>} value={stale ? fmtMoney(stale.enterprise_value, cur) : '—'} />
+            <Kpi label="Equity value" how={stale && <>Enterprise value belongs to lenders and shareholders together. Take away net debt (debt less cash) to get what belongs to shareholders: <code>{fmtMoney(stale.enterprise_value, cur, 1)} − {fmtMoney(stale.net_debt, cur, 1)} = {fmtMoney(stale.equity_value, cur, 1)}</code>.</>} value={stale ? fmtMoney(stale.equity_value, cur) : '—'} deltaTone="muted" delta={stale ? `Net debt ${fmtMoney(stale.net_debt, cur)}` : undefined} />
+            <Kpi label="Value per share" how={stale && <>Equity value divided by the number of shares: <code>{fmtMoney(stale.equity_value, cur, 1)} ÷ {model.shares_outstanding ?? 'shares (not entered)'}</code>. Enter shares outstanding above to see it.</>} value={stale && isNum(stale.value_per_share) ? fmtMoney(stale.value_per_share, cur, 2) : '—'} delta={!model.shares_outstanding ? 'Enter shares outstanding' : undefined} />
+            <Kpi label="Terminal value share of EV" how={stale && <>How much of today's value comes from the years after the forecast: <code>{fmtMoney(stale.pv_terminal_value, cur, 1)} ÷ {fmtMoney(stale.enterprise_value, cur, 1)}</code>. The higher it is, the more the answer rests on one long-run assumption.</>} value={stale ? fmtPct(stale.terminal_value_share_of_ev, 1) : '—'}
               delta={stale ? (model.terminal_method === 'gordon' ? `Implied exit ${isNum(stale.implied_exit_multiple) ? fmtNum(stale.implied_exit_multiple, 1) + '×' : 'n/a'}` : `Implied g ${fmtPct(stale.implied_terminal_growth, 2)}`) : undefined} />
           </div>
           {stale && <Warnings items={stale.warnings} />}

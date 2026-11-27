@@ -12,6 +12,7 @@ import { loadRaw, save } from '../lib/storage';
 import { useAsync } from '../lib/useApi';
 import { SheetPreview, type Sheet } from './SheetPreview';
 import { Badge, Callout, Card, Disclosure, ErrorBox, Skeleton, Warnings } from './ui';
+import { CompareWith } from './CompareWith';
 
 export interface RevealUpload {
   id: string; name: string; label: string; extension: string; size: number; status: string; project_id?: string | null;
@@ -101,6 +102,8 @@ export function UploadReveal({ u, preview }: { u: RevealUpload; preview: ReactNo
             </Callout>
           </div>
         )}
+
+        {tabular && <CompareWith currentId={u.id} />}
 
         {!tabular ? (
           <div className="mt stack">

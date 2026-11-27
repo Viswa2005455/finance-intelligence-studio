@@ -269,6 +269,16 @@ The app is now aimed at practising professionals: CPAs, CFA charterholders, CMAs
 - Tax audit: Form 3CD clauses that need records the app cannot read (TDS returns, fixed asset register, MSME status of creditors, stock register, partnership deed) are listed as "Needs your input". Ledger keyword rules (loan, freight, penalty…) can miss or over-flag entries; every flag shows its cell for checking. Rule 6DD exceptions to s.40A(3) are not applied automatically.
 - AI: live calls to Anthropic were not tested in the build environment (no key); run "Access" and "Test reply" on AI Model Health after adding a key. Health results are kept in memory per server process and reset on restart.
 
+## Session 6 additions (not yet released)
+
+Industry setting for ratio readings, glossary hover and "show me how" panels, compare two uploads, compliance calendar with in-app reminders,
+cash-budget interest and repayment, seasonal forecasting, DCF undo/redo, Excel export of saved models, activity list, text size and high contrast,
+skip link, browser crash reports (`POST /api/client-errors`) and `docs/OPERATIONS.md` (backups, restore rehearsal, a test copy).
+
+Left out on purpose: email reminders (needs an email service the app does not have), share links (needs a public-link and permissions design),
+visual regression and screen-reader testing (need tools or people outside this build), Screener quarterly data (source layout not verified),
+large-file virtualisation (no file has yet been too slow). Autosave of working drafts already existed (kept in the browser, restored on return).
+
 ## Next steps (in order)
 
 1. **Phase 5: Data & Code Lab.**

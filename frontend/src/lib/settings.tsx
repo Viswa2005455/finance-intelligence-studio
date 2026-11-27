@@ -14,11 +14,15 @@ export interface Settings {
   periodFrom: string;
   periodTo: string;
   numberStyle: NumberStyle;
+  /** Page text size: the whole interface is scaled. */
+  textSize: 'normal' | 'large' | 'larger';
+  /** Stronger text and borders, and no moving background. */
+  contrast: 'normal' | 'high';
 }
 
 const DEFAULTS: Settings = {
   theme: 'system', currency: 'INR', units: 'lakhs', reduceMotion: false, backdrop: 'animated', learningMode: true,
-  periodFrom: '2025-11', periodTo: '2026-10', numberStyle: 'auto',
+  periodFrom: '2025-11', periodTo: '2026-10', numberStyle: 'auto', textSize: 'normal', contrast: 'normal',
 };
 
 interface Ctx { settings: Settings; update: (p: Partial<Settings>) => void; resolvedTheme: 'dark' | 'light' }
@@ -49,7 +53,9 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
     document.documentElement.dataset.theme = resolvedTheme;
     document.documentElement.dataset.motion = settings.reduceMotion ? 'reduce' : 'auto';
     document.documentElement.dataset.backdrop = settings.backdrop;
-  }, [resolvedTheme, settings.reduceMotion, settings.backdrop]);
+    document.documentElement.dataset.textsize = settings.textSize;
+    document.documentElement.dataset.contrast = settings.contrast;
+  }, [resolvedTheme, settings.reduceMotion, settings.backdrop, settings.textSize, settings.contrast]);
 
   const update = useCallback((p: Partial<Settings>) => {
     setSettings((s) => {

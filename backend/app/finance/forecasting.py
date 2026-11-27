@@ -1,7 +1,7 @@
 """Time-series forecasting for financial series (revenue, expenses, cash).
 
 Methods: linear trend (OLS), simple moving average, simple exponential smoothing (SES),
-and constant growth (CAGR). Accuracy is measured with a time-aware holdout: the model is
+constant growth (CAGR) and a seasonal trend (straight-line trend plus a fixed add-on for each position in the season). Accuracy is measured with a time-aware holdout: the model is
 fitted only on observations before the holdout window and scored on the window, so it is
 never trained and tested on the same observations.
 
@@ -21,7 +21,7 @@ from scipy import stats
 
 from . import FinanceInputError
 
-Method = Literal["linear", "moving_average", "ses", "cagr"]
+Method = Literal["linear", "moving_average", "ses", "cagr", "seasonal"]
 
 
 @dataclass
@@ -126,7 +126,44 @@ def cagr(y: np.ndarray, h: int) -> Forecast:
     return Forecast(point, [None] * h, [None] * h, fitted, {"growth_rate": float(g)})
 
 
-def _run(method: Method, y: np.ndarray, h: int, conf: float, window: int, alpha: float | None) -> Forecast:
+def seasonal(y: np.ndarray, h: int, conf: float, m: int) -> Forecast:
+    """Straight-line trend plus an additive seasonal pattern, fitted together by least squares.
+
+    y_t = slope * t + level[t mod m]. The seasonal index of each position is its level less the average level, so the indices add to zero.
+    Needs at least two full seasons. The interval uses the residual spread of this fit (t-distribution, n - m - 1 degrees of freedom)."""
+    n = len(y)
+    if m < 2:
+        raise FinanceInputError("The season length must be at least 2 periods (12 for monthly data with a yearly pattern, 4 for quarterly).")
+    if n < 2 * m:
+        raise FinanceInputError(f"A seasonal forecast needs at least two full seasons: {2 * m} observations for a season of {m}.")
+
+    def design(t: np.ndarray) -> np.ndarray:
+        x = np.zeros((len(t), m + 1))
+        x[:, 0] = t
+        x[np.arange(len(t)), 1 + (t.astype(int) % m)] = 1.0
+        return x
+
+    t = np.arange(n, dtype=float)
+    coef, *_ = np.linalg.lstsq(design(t), y, rcond=None)
+    fitted = design(t) @ coef
+    tf = np.arange(n, n + h, dtype=float)
+    point = design(tf) @ coef
+    dof = n - (m + 1)
+    lower: list[float | None] = [None] * h
+    upper: list[float | None] = [None] * h
+    if dof > 0:
+        s = math.sqrt(float(np.sum((y - fitted) ** 2)) / dof)
+        half = stats.t.ppf(0.5 + conf / 2, dof) * s
+        lower, upper = list(point - half), list(point + half)
+    levels = coef[1:]
+    params = {"slope": float(coef[0]), "season_length": float(m)}
+    params.update({f"season_{k + 1}": float(levels[k] - levels.mean()) for k in range(m)})
+    return Forecast(list(point), lower, upper, list(fitted), params)
+
+
+def _run(method: Method, y: np.ndarray, h: int, conf: float, window: int, alpha: float | None, season: int = 12) -> Forecast:
+    if method == "seasonal":
+        return seasonal(y, h, conf, season)
     if method == "linear":
         return linear(y, h, conf)
     if method == "moving_average":
@@ -150,16 +187,16 @@ def error_metrics(actual: list[float], predicted: list[float]) -> dict[str, floa
 
 
 def forecast(series: list[float], method: Method, horizon: int, *, confidence: float = 0.95,
-             window: int = 3, alpha: float | None = None, holdout: int | None = None) -> ForecastResult:
+             window: int = 3, alpha: float | None = None, holdout: int | None = None, season: int = 12) -> ForecastResult:
     if not 1 <= horizon <= 60:
         raise FinanceInputError("Forecast horizon must be between 1 and 60 periods.")
     if not 0.5 <= confidence < 1:
         raise FinanceInputError("Confidence level must be between 0.5 and 0.99.")
-    min_len = {"linear": 3, "moving_average": max(window, 2), "ses": 3, "cagr": 2}.get(method, 3)
+    min_len = {"linear": 3, "moving_average": max(window, 2), "ses": 3, "cagr": 2, "seasonal": 2 * season}.get(method, 3)
     y = _validate(series, min_len)
     notes: list[str] = []
 
-    fc = _run(method, y, horizon, confidence, window, alpha)
+    fc = _run(method, y, horizon, confidence, window, alpha, season)
 
     # Time-aware holdout backtest.
     if holdout is None:
@@ -170,7 +207,7 @@ def forecast(series: list[float], method: Method, horizon: int, *, confidence: f
     if len(y) - holdout >= min_len:
         train = y[:-holdout]
         try:
-            bt = _run(method, train, holdout, confidence, window, alpha)
+            bt = _run(method, train, holdout, confidence, window, alpha, season)
         except FinanceInputError as e:  # the forecast itself is still valid; only accuracy is unknown
             notes.append(f"Backtest could not run on the training window ({e}); accuracy could not be measured.")
         else:
@@ -189,7 +226,10 @@ def forecast(series: list[float], method: Method, horizon: int, *, confidence: f
         notes.append("CAGR uses only the first and last observations; intermediate volatility is ignored.")
     if method == "linear":
         notes.append("Intervals assume independent, normally distributed residuals around a straight-line trend.")
-    notes.append("Seasonality is not modelled in this version.")
+    if method == "seasonal":
+        notes.append(f"Assumes the same seasonal pattern (season of {season} periods) every cycle, added to a straight-line trend.")
+    else:
+        notes.append("This method does not model seasonality; choose the seasonal method if your data repeats a yearly pattern.")
 
     return ForecastResult(method, list(map(float, y)), fc.point, fc.lower, fc.upper, fc.fitted, fc.params,
                           backtest, confidence, notes)

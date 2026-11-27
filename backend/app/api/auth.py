@@ -169,6 +169,31 @@ def export_all(user: User = Depends(current_user), db: Session = Depends(get_db)
     return payload
 
 
+@account.get("/export.xlsx")
+def export_xlsx(user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """The latest version of every saved model as one Excel workbook (an index sheet and a sheet per model)."""
+    from ..db.models import SavedVersion
+    from ..reports import workbook
+    rows = db.scalars(select(SavedItem).where(SavedItem.user_id == user.id).order_by(SavedItem.kind, SavedItem.name).limit(200)).all()
+    items = []
+    for it in rows:
+        v = db.scalar(select(SavedVersion).where(SavedVersion.item_id == it.id, SavedVersion.version == it.latest_version))
+        if v is not None:
+            items.append({"kind": it.kind, "name": it.name, "version": it.latest_version, "updated_at": it.updated_at, "data": v.data})
+    log_activity(db, user.id, "account.exported_xlsx", count=len(items))
+    db.commit()
+    return Response(workbook.build(items), media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    headers={"Content-Disposition": 'attachment; filename="finance-intelligence-studio-saved-models.xlsx"'})
+
+
+@account.get("/activity")
+def recent_activity(limit: int = 50, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Your own history: sign-ins, saves, uploads, exports. Never holds file contents or passwords."""
+    n = max(1, min(limit, 200))
+    rows = db.scalars(select(Activity).where(Activity.user_id == user.id).order_by(Activity.created_at.desc(), Activity.id.desc()).limit(n)).all()
+    return {"events": [{"when": a.created_at, "action": a.action, "entity_type": a.entity_type, "detail": a.detail or {}} for a in rows]}
+
+
 class ConfirmIn(BaseModel):
     password: str = Field(max_length=200)
 

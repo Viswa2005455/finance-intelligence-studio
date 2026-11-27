@@ -9,7 +9,7 @@ from typing import Annotated, Literal
 from fastapi import APIRouter
 from pydantic import Field, model_validator
 
-from ..finance import FinanceInputError, forecasting, ratio_insights, ratios, sensitivity, tvm, valuation_range, variance
+from ..finance import FinanceInputError, forecasting, industries, ratio_insights, ratios, sensitivity, tvm, valuation_range, variance
 from ..finance.cost_of_capital import capm, wacc
 from ..finance.dcf import OUTPUTS, SENSITIVITY_VARIABLES, DCFInputs, run_dcf
 from ..finance.dcf_templates import TEMPLATES as DCF_TEMPLATES
@@ -289,11 +289,12 @@ def price_volume(req: PriceVolumeRequest):
 class RatioRequest(BaseModel):
     data: dict[str, float | None]
     period_days: int = Field(default=365, ge=1, le=366)
+    industry: str = Field(default="general", max_length=30)
 
 
 @router.get("/ratios/items")
 def ratio_items():
-    return {"items": ratios.ITEMS, "averageable": sorted(ratios.AVERAGEABLE)}
+    return {"items": ratios.ITEMS, "averageable": sorted(ratios.AVERAGEABLE), "industries": industries.INDUSTRIES}
 
 
 @router.post("/ratios")
@@ -302,7 +303,9 @@ def ratios_endpoint(req: RatioRequest):
     if unknown:
         raise FinanceInputError(f"Unknown statement items: {', '.join(unknown)}")
     results = [asdict(r) for r in ratios.compute_ratios(req.data, req.period_days)]
-    summary = ratio_insights.attach(results)
+    if req.industry not in industries.INDUSTRIES:
+        raise FinanceInputError(f"Unknown industry '{req.industry}'. Choose one of: {', '.join(industries.INDUSTRIES)}.")
+    summary = ratio_insights.attach(results, req.industry)
     values = {r["key"]: r["value"] for r in results if r.get("status") == "ok" and r.get("value") is not None}
     return clean({"ratios": results, "summary": summary, "dupont": ratio_insights.dupont(values)})
 
@@ -311,7 +314,8 @@ def ratios_endpoint(req: RatioRequest):
 
 class ForecastRequest(BaseModel):
     series: list[float | None] = Field(min_length=2, max_length=600)
-    method: Literal["linear", "moving_average", "ses", "cagr"] = "linear"
+    method: Literal["linear", "moving_average", "ses", "cagr", "seasonal"] = "linear"
+    season: int = Field(default=12, ge=2, le=60)
     horizon: int = Field(default=6, ge=1, le=60)
     confidence: float = Field(default=0.95, ge=0.5, lt=1)
     window: int = Field(default=3, ge=1, le=60)
@@ -322,7 +326,7 @@ class ForecastRequest(BaseModel):
 @router.post("/forecast")
 def forecast_endpoint(req: ForecastRequest):
     r = forecasting.forecast(req.series, req.method, req.horizon, confidence=req.confidence,
-                             window=req.window, alpha=req.alpha, holdout=req.holdout)
+                             window=req.window, alpha=req.alpha, holdout=req.holdout, season=req.season)
     return clean(asdict(r))
 
 

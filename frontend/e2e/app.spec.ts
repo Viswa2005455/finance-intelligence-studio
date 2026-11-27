@@ -191,3 +191,78 @@ test('feedback can be sent from any page', async ({ page }) => {
   await page.getByRole('button', { name: 'Send', exact: true }).click();
   await expect(page.getByText('your note was sent')).toBeVisible();
 });
+
+test('the first Tab stop skips the menu and lands in the page', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.getByRole('heading', { name: /Welcome back/ })).toBeVisible();
+  await page.keyboard.press('Tab');
+  const skip = page.getByRole('link', { name: 'Skip to main content' });
+  await expect(skip).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#main')).toBeFocused();
+});
+
+test('the compliance calendar lists dates, marks one filed and adds GST on request', async ({ page }) => {
+  await page.goto('/calendar');
+  await expect(page.getByRole('heading', { name: 'Compliance calendar' })).toBeVisible();
+  const list = page.getByRole('list', { name: 'Compliance dates' });
+  await expect(list.getByText('Last date to revise a return')).toBeVisible();
+  await expect(list.getByText('GSTR-3B due')).toHaveCount(0);
+  await list.getByRole('button', { name: 'Mark filed' }).last().click();
+  await expect(list.getByRole('button', { name: 'Undo' })).toHaveCount(1);
+  await page.getByLabel('Registered for GST?').selectOption('regular');
+  await expect(list.getByText('GSTR-3B due').first()).toBeVisible();
+});
+
+test('show-me-how opens the working behind a figure', async ({ page }) => {
+  await page.goto('/investment');
+  await page.getByRole('button', { name: 'Show how Net present value is calculated' }).click();
+  await expect(page.getByText('divided by (1 +')).toBeVisible();
+});
+
+test('the ratio readings can be judged against an industry', async ({ page }) => {
+  await page.goto('/ratios');
+  await expect(page.getByRole('heading', { name: 'Industry' })).toBeVisible();
+  await page.getByLabel('Compare against').selectOption('utilities');
+  await expect(page.getByLabel('Compare against')).toHaveValue('utilities');
+});
+
+test('the cash budget can charge interest and repay the loan', async ({ page }) => {
+  await page.goto('/cash-flow');
+  await page.getByRole('tab', { name: 'Cash budget & runway' }).click();
+  await page.getByLabel('Interest on financing (% a year)').fill('12');
+  await page.getByLabel('Repay financing from spare cash').check();
+  await expect(page.getByText('Interest paid').first()).toBeVisible();
+});
+
+test('the DCF can step back and forward through changes', async ({ page }) => {
+  await page.goto('/dcf');
+  const undo = page.getByRole('button', { name: 'Undo the last change' });
+  const redo = page.getByRole('button', { name: 'Redo the change you undid' });
+  await expect(undo).toBeDisabled();
+  const picker = page.getByLabel('Start from a template');
+  const names = await picker.locator('option').allTextContents();
+  await picker.selectOption({ index: 1 });
+  await expect(page.getByText('Your assumptions')).toBeVisible();
+  await expect(undo).toBeEnabled();
+  await undo.click();
+  await expect(page.getByText('Example assumptions')).toBeVisible();
+  await expect(redo).toBeEnabled();
+  await redo.click();
+  await expect(page.getByText('Your assumptions')).toBeVisible();
+  expect(names.length).toBeGreaterThan(1);
+});
+
+test('text size and high contrast apply at once and saved models export to Excel', async ({ page }) => {
+  await page.goto('/settings');
+  await page.getByRole('tab', { name: 'Large', exact: true }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-textsize', 'large');
+  await page.getByLabel(/High contrast/).check();
+  await expect(page.locator('html')).toHaveAttribute('data-contrast', 'high');
+  await page.getByRole('tab', { name: 'Normal', exact: true }).first().click();
+  await page.getByLabel(/High contrast/).uncheck();
+  const download = page.waitForEvent('download');
+  await page.getByRole('button', { name: 'Export saved models (Excel)' }).click();
+  expect((await download).suggestedFilename()).toMatch(/\.xlsx$/);
+  await expect(page.getByRole('heading', { name: 'Recent activity' })).toBeVisible();
+});

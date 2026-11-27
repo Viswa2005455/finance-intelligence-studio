@@ -12,7 +12,7 @@ from ..auth.deps import current_user
 from ..config import Settings, get_settings
 from ..db.models import User
 from ..db.session import get_db
-from ..files import archive, service
+from ..files import archive, compare, service
 from ..files.model_check import check_workbook
 from ..files.screener import NotScreener, parse_screener
 from ..files.taccount import NotTAccount, parse_taccount
@@ -112,3 +112,22 @@ def peers_endpoint(req: PeersRequest):
 @router.post("/profile")
 def profile_endpoint(req: CompanyData):
     return clean(asdict(profile.build(req.periods, req.items)))
+
+
+class CompareIn(BaseModel):
+    older_id: str = Field(max_length=64)
+    newer_id: str = Field(max_length=64)
+
+
+@router.post("/compare")
+def compare_uploads(req: CompareIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    """Set two of the user's uploads side by side: which lines are in both, and which moved most."""
+    if req.older_id == req.newer_id:
+        raise HTTPException(422, "Choose two different files to compare.")
+    ups = []
+    for uid in (req.older_id, req.newer_id):
+        u = service.get_upload(db, user.id, uid)
+        if u is None or u.status != "processed":
+            raise HTTPException(404, "That file was not found or could not be read.")
+        ups.append(u)
+    return clean({"older": {"id": req.older_id, "name": ups[0].name}, "newer": {"id": req.newer_id, "name": ups[1].name}, **compare.compare(ups[0].analysis or {}, ups[1].analysis or {})})

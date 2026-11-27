@@ -15,9 +15,10 @@ import { loadRaw, save } from '../lib/storage';
 import { useAsync, useDebounced } from '../lib/useApi';
 
 interface CashLine { name: string; values: (number | null)[] }
-interface CBState { periods: string[]; opening: number | null; minimum: number | null; receipts: CashLine[]; payments: CashLine[] }
+interface CBState { periods: string[]; opening: number | null; minimum: number | null; receipts: CashLine[]; payments: CashLine[]; rate?: number | null; repay?: boolean }
 interface CBRes {
-  periods: { period: string; opening: number; receipts: number; payments: number; net_flow: number; financing: number; closing: number; closing_without_financing: number }[];
+  periods: { period: string; opening: number; receipts: number; payments: number; net_flow: number; financing: number; closing: number; closing_without_financing: number; interest: number; repayment: number; loan_balance: number }[];
+  total_interest: number; total_repayment: number; peak_loan: number; ending_loan: number;
   total_receipts: number; total_payments: number; total_financing: number; lowest_closing_without_financing: number; lowest_period: string;
   first_negative_period: string | null; receipts_by_line: Record<string, number>; payments_by_line: Record<string, number>; warnings: string[];
   runway: { average_net_burn: number; months: number | null; message: string } | null;
@@ -112,7 +113,7 @@ function CashBudget() {
   const setReceipts = useCallback((l: CashLine[]) => set({ ...latest.current, receipts: l }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const setPayments = useCallback((l: CashLine[]) => set({ ...latest.current, payments: l }), []); // eslint-disable-line react-hooks/exhaustive-deps
   const incomplete = d.opening === null || [...d.receipts, ...d.payments].some((l) => l.values.some((v) => v === null) || !l.name.trim());
-  const body = useMemo(() => (incomplete ? null : { periods: d.periods, opening_cash: d.opening, minimum_cash: d.minimum ?? 0, receipts: d.receipts, payments: d.payments }), [d, incomplete]);
+  const body = useMemo(() => (incomplete ? null : { periods: d.periods, opening_cash: d.opening, minimum_cash: d.minimum ?? 0, interest_rate_pct: d.rate ?? 0, repay: !!d.repay, receipts: d.receipts, payments: d.payments }), [d, incomplete]);
   const req = useDebounced(body, 150);
   const res = useAsync((signal) => api.post<CBRes>('/api/finance/cash-budget', req, { signal }), [JSON.stringify(req)], !!req);
   const r = res.data;
@@ -146,6 +147,12 @@ function CashBudget() {
           value={r ? (r.first_negative_period ? `Runs out ${r.first_negative_period}` : r.runway && isNum(r.runway.months) ? `${fmtNum(r.runway.months, 1)} months` : 'Not burning cash') : '—'}
           deltaTone={r?.first_negative_period ? 'neg' : 'muted'}
           delta={r ? `Lowest unfinanced cash ${fmtMoney(r.lowest_closing_without_financing, cur)} (${r.lowest_period})` : undefined} />
+      </div>
+      <div className="grid cols-4">
+        <Card><NumberField label="Interest on financing (% a year)" value={d.rate ?? null} onChange={(v) => set({ ...d, rate: v })} min={0} hint="Charged each month on the balance owed. Leave blank for none." /></Card>
+        <Card><label className="row" style={{ fontSize: 13.5 }}><input type="checkbox" checked={!!d.repay} onChange={(e) => set({ ...d, repay: e.target.checked })} />Repay financing from spare cash</label><p className="faint" style={{ fontSize: 12, margin: '6px 0 0' }}>Cash above the minimum balance is used to pay the loan back.</p></Card>
+        {r && (r.total_interest > 0 || r.total_repayment > 0 || r.ending_loan > 0) && <Kpi label="Interest paid" value={fmtMoney(r.total_interest, cur)} delta={r.ending_loan > 0 ? `${fmtMoney(r.ending_loan, cur)} still owed at the end` : 'Loan fully repaid'} deltaTone={r.ending_loan > 0 ? 'neg' : 'pos'} />}
+        {r && r.peak_loan > 0 && <Kpi label="Highest loan balance" value={fmtMoney(r.peak_loan, cur)} />}
       </div>
       {res.error && <ErrorBox error={res.error} />}
       {incomplete && <Callout tone="warn">Fill in every cell (use 0 where there is no flow) and the opening cash. Blanks are not treated as zero.</Callout>}
@@ -194,7 +201,7 @@ function CashBudget() {
             <table className="data">
               <thead><tr><th />{r.periods.map((p) => <th key={p.period} className="r">{p.period}</th>)}</tr></thead>
               <tbody>
-                {([['Opening cash', 'opening'], ['+ Receipts', 'receipts'], ['− Payments', 'payments'], ['= Net cash flow', 'net_flow'], ['+ Financing', 'financing'], ['Closing cash', 'closing']] as const).map(([label, k]) => (
+                {([['Opening cash', 'opening'], ['+ Receipts', 'receipts'], ['− Payments', 'payments'], ['= Net cash flow', 'net_flow'], ['+ Financing', 'financing'], ...(r.total_interest > 0 ? [['− Interest paid', 'interest'] as const] : []), ...(r.total_repayment > 0 ? [['− Loan repaid', 'repayment'] as const] : []), ['Closing cash', 'closing']] as readonly (readonly [string, 'opening' | 'receipts' | 'payments' | 'net_flow' | 'financing' | 'interest' | 'repayment' | 'closing'])[]).map(([label, k]) => (
                   <tr key={k} style={k === 'closing' || k === 'net_flow' ? { fontWeight: 650 } : undefined}>
                     <td>{label}</td>{r.periods.map((p) => <td key={p.period} className={`r ${k === 'net_flow' ? (p.net_flow >= 0 ? 'pos' : 'neg') : ''}`}>{fmtNum(p[k], 0)}</td>)}
                   </tr>
@@ -206,7 +213,7 @@ function CashBudget() {
       )} />
       <LinesEditor title="Receipts (cash in)" lines={d.receipts} periods={d.periods} onChange={setReceipts} />
       <LinesEditor title="Payments (cash out)" lines={d.payments} periods={d.periods} onChange={setPayments} />
-      <Callout tone="info">Financing is drawn to restore the minimum balance in any month it is breached. Repayments and interest on that financing are not modelled in this version.</Callout>
+      <Callout tone="info">Financing is drawn to restore the minimum balance in any month it is breached. Add an interest rate to charge interest on the balance owed, and tick the repayment box to pay it back from any cash above the minimum.</Callout>
     </div>
   );
 }

@@ -18,6 +18,7 @@ const KEYWORDS: Record<string, string> = {
   '/investments': 'bond duration option black scholes portfolio sharpe', '/markets': 'share price quote risk var volatility beta',
   '/income-tax': 'itr tax regime 87a form 16 3cd audit', '/gst': 'gstr 3b gstr 1 2b reconciliation return', '/model-check': 'excel errors formulas audit',
   '/assistant': 'ai chat claude ask', '/ai-health': 'model status provider', '/reports': 'export pack word pdf excel', '/learn': 'methodology formulas help learn',
+  '/calendar': 'compliance calendar due dates deadlines gst return filing reminder tax audit',
   '/close': 'month end close checklist reconcile sign off accounting period',
   '/settings': 'password theme dark light export delete account currency background motion',
 };
