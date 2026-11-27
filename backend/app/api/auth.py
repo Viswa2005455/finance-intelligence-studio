@@ -220,7 +220,7 @@ def handover_pack(user: User = Depends(current_user), db: Session = Depends(get_
             used += len(blob.data)
             z.writestr(f"source-files/{u.id.hex[:8]}-{safe}", blob.data)
             included.append(u.name)
-        lines = ["Finance Intelligence Studio: handover pack", "", f"Prepared for: {user.display_name}", f"Saved models: {len(items)} (see saved-models.xlsx)",
+        lines = ["Finlight: handover pack", "", f"Prepared for: {user.display_name}", f"Saved models: {len(items)} (see saved-models.xlsx)",
                  "everything.json holds projects, every saved version and the activity history.", "", f"Source files included: {len(included)}"]
         lines += [f"  - {n}" for n in included]
         if left_out:

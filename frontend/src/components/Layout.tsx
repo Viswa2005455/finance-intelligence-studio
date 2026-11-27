@@ -54,7 +54,7 @@ export function Layout() {
   useEffect(() => { if (loc.pathname === '/upload') guide.dismiss('nav-upload'); }, [loc.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { markVisited(loc.pathname); markRecent(loc.pathname); }, [loc.pathname]);
   useEffect(() => {
-    document.title = `${current?.label ?? 'Not found'} · Finance Intelligence Studio`;
+    document.title = `${current?.label ?? 'Not found'} · Finlight`;
   }, [current]);
   useEffect(() => {
     let alive = true;
@@ -76,8 +76,8 @@ export function Layout() {
         <div className="brand">
           <div className="brand-mark"><Activity size={19} strokeWidth={2.5} /></div>
           <div>
-            <div className="brand-name">Finance Intelligence</div>
-            <div className="brand-sub">Studio</div>
+            <div className="brand-name">Finlight</div>
+            <div className="brand-sub">Finance, made clear</div>
           </div>
         </div>
         <nav className="nav">

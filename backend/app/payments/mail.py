@@ -87,7 +87,7 @@ def customer_message(o: Order, s: Settings) -> EmailMessage:
         f"Thank you for your order. Your payment of Rs {o.amount} is confirmed.\n\n"
         f"Service: {o.service}\nPackage: {o.package}\nPayment ID: {o.payment_id}\n\n"
         f"YOUR INSTANT KIT\n{kit}{custom}\n\n"
-        f"Thanks,\n{OWNER_NAME}\nFinance Intelligence Studio\n{SITE}\n"
+        f"Thanks,\n{OWNER_NAME}\nFinlight\n{SITE}\n"
     )
     if o.kit_bytes:
         m.add_attachment(o.kit_bytes, maintype="application", subtype="zip", filename=o.kit_name or "kit.zip")
@@ -97,7 +97,7 @@ def customer_message(o: Order, s: Settings) -> EmailMessage:
 def owner_message(o: Order, s: Settings) -> EmailMessage:
     m = EmailMessage()
     m["Subject"] = f"New paid order: {o.service} ({o.package}) - Rs {o.amount}" + (" [CUSTOM WORK DUE]" if o.custom else " [kit only]")
-    m["From"] = formataddr(("Finance Intelligence Studio", sender_address(s)))
+    m["From"] = formataddr(("Finlight", sender_address(s)))
     m["To"] = owner_address(s)
     m["Reply-To"] = o.customer_email
     owed = (f"Instant kit sent. CUSTOM WORK DUE within {o.delivery_days or '?'} day(s) after you have their details."

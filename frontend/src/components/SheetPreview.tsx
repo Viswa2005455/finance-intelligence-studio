@@ -50,7 +50,7 @@ export function SheetPreview({ sheets, excel }: { sheets: Sheet[]; excel: boolea
                   const cls = [typeof v === 'number' ? 'r' : '', calc ? 'calculated' : ''].filter(Boolean).join(' ');
                   return (
                     <td key={c} className={cls || undefined}
-                      title={calc ? 'Calculated by Finance Intelligence Studio: the file had no saved result for this formula. Verify in Excel.' : undefined}>
+                      title={calc ? 'Calculated by Finlight: the file had no saved result for this formula. Verify in Excel.' : undefined}>
                       {v === null || v === undefined ? '' : String(v)}
                     </td>
                   );

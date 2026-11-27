@@ -32,7 +32,7 @@ export function Landing({ onSignIn, onRegister }: { onSignIn: () => void; onRegi
   const req = useDebounced(body, 250);
   const res = useAsync((signal) => api.post<Appraisal>('/api/demo/appraisal', req, { signal }), [JSON.stringify(req)], !!req);
   const r = res.data;
-  useEffect(() => { document.title = 'Finance Intelligence Studio: financial analysis you can defend'; }, []);
+  useEffect(() => { document.title = 'Finlight: financial analysis you can defend'; }, []);
 
   return (
     <div className="landing">
@@ -40,7 +40,7 @@ export function Landing({ onSignIn, onRegister }: { onSignIn: () => void; onRegi
       <header className="landing-bar">
         <div className="row" style={{ gap: 10 }}>
           <div className="brand-mark" style={{ width: 36, height: 36, borderRadius: 11 }}><Activity size={19} strokeWidth={2.5} /></div>
-          <b style={{ fontFamily: 'var(--font-display)', fontSize: 17 }}>Finance Intelligence Studio</b>
+          <b style={{ fontFamily: 'var(--font-display)', fontSize: 17 }}>Finlight</b>
         </div>
         <div className="row">
           <button className="btn ghost" onClick={onSignIn}>Sign in</button>

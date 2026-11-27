@@ -4,7 +4,7 @@
 # It uses no Render database, because Render's free database expires after about 30 days.
 services:
   - type: web
-    name: finance-studio-v2
+    name: finlight
     runtime: docker
     plan: free
     dockerfilePath: ./Dockerfile

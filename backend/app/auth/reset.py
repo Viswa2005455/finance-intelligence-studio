@@ -44,14 +44,14 @@ def reset_link(settings: Settings, token: str) -> str:
 def reset_message(user: User, link: str, settings: Settings) -> EmailMessage:
     first = user.display_name.split()[0] if user.display_name.strip() else "there"
     m = EmailMessage()
-    m["Subject"] = "Reset your Finance Intelligence Studio password"
-    m["From"] = formataddr(("Finance Intelligence Studio", sender_address(settings)))
+    m["Subject"] = "Reset your Finlight password"
+    m["From"] = formataddr(("Finlight", sender_address(settings)))
     m["To"] = user.email
     m.set_content(
         f"Hi {first},\n\n"
         "Someone asked to reset the password for this account. If that was you, open this link and choose a new password:\n\n"
         f"{link}\n\n"
         f"The link works once and expires in {RESET_MINUTES} minutes. If you did not ask for it, ignore this email: your password has not changed.\n\n"
-        "Finance Intelligence Studio\n"
+        "Finlight\n"
     )
     return m

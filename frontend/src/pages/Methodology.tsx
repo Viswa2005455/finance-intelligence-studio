@@ -12,7 +12,7 @@ interface Catalogue { ratios: RatioDoc[]; methods: MethodDoc[]; conventions: str
 export function Methodology() {
   const res = useAsync((signal) => api.get<Catalogue>('/api/public/methodology', { signal }), []);
   const [q, setQ] = useState('');
-  useEffect(() => { document.title = 'How we calculate: Finance Intelligence Studio'; }, []);
+  useEffect(() => { document.title = 'How we calculate: Finlight'; }, []);
   const c = res.data;
   const hit = (text: string) => q.toLowerCase().split(/\s+/).filter(Boolean).every((t) => text.toLowerCase().includes(t));
   const methods = useMemo(() => (c?.methods ?? []).filter((m) => hit(`${m.name} ${m.formula} ${m.what} ${m.group}`)), [c, q]); // eslint-disable-line react-hooks/exhaustive-deps

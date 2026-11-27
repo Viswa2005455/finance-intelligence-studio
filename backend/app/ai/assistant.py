@@ -30,7 +30,7 @@ MAX_TOOL_RESULT_CHARS = 30_000
 # USD per million tokens: input, output, cache read, cache write (5-minute TTL = 1.25x input).
 PRICES = {m: v["prices"] for m, v in MODELS.items()}
 
-SYSTEM = """You are the AI analyst inside Finance Intelligence Studio, a professional workspace used by CPAs, CFA \
+SYSTEM = """You are the AI analyst inside Finlight, a professional workspace used by CPAs, CFA \
 charterholders, CMAs, auditors and corporate finance teams.
 
 How you work:

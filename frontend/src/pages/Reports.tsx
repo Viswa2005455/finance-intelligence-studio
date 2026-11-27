@@ -162,7 +162,7 @@ export function Reports() {
                   (WACC {fmtPct(dcf.wacc, 2)}, terminal growth {fmtPct(dcf.terminal_growth, 2)}).</p></>
             )}
             {sections.includes('memo') && memo.trim() && <><h2>Analyst memo</h2><SafeMarkdown text={memo} /></>}
-            <p className="faint pr-foot">Prepared with Finance Intelligence Studio. Derived and approximated lines are labelled in the data. Screening scores indicate where to investigate and are not evidence of misstatement or distress. Analysis, not investment advice.</p>
+            <p className="faint pr-foot">Prepared with Finlight. Derived and approximated lines are labelled in the data. Screening scores indicate where to investigate and are not evidence of misstatement or distress. Analysis, not investment advice.</p>
           </>
         )}
       </article>

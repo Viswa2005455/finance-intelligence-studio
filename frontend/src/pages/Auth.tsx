@@ -40,7 +40,7 @@ export function AuthScreen({ initialMode = 'login', onBack }: { initialMode?: Mo
     check();
     return () => { alive = false; clearTimeout(timer); };
   }, []);
-  useEffect(() => { document.title = `${TITLES[mode]} · Finance Intelligence Studio`; }, [mode]);
+  useEffect(() => { document.title = `${TITLES[mode]} · Finlight`; }, [mode]);
 
   const canSubmit = mode === 'forgot' ? !!email : mode === 'reset' ? !!password && !!confirm
     : !!email && !!password && (mode !== 'register' || !!name.trim());
@@ -77,8 +77,8 @@ export function AuthScreen({ initialMode = 'login', onBack }: { initialMode?: Mo
         <div className="auth-showcase-brand">
           <div className="brand-mark" style={{ width: 42, height: 42, borderRadius: 12 }}><Activity size={22} strokeWidth={2.5} /></div>
           <div>
-            <div className="brand-name" style={{ fontSize: 16 }}>Finance Intelligence</div>
-            <div className="brand-sub">Studio</div>
+            <div className="brand-name" style={{ fontSize: 16 }}>Finlight</div>
+            <div className="brand-sub">Finance, made clear</div>
           </div>
         </div>
         <div>
@@ -102,7 +102,7 @@ export function AuthScreen({ initialMode = 'login', onBack }: { initialMode?: Mo
         <div className="auth-brand">
           <div className="brand-mark" style={{ width: 44, height: 44, borderRadius: 13 }}><Activity size={24} strokeWidth={2.5} /></div>
           <div>
-            <div style={{ fontWeight: 750, fontSize: 20, fontFamily: 'var(--font-display)' }}>Finance Intelligence Studio</div>
+            <div style={{ fontWeight: 750, fontSize: 20, fontFamily: 'var(--font-display)' }}>Finlight</div>
             <div className="muted">FP&amp;A, valuation and financial analysis</div>
           </div>
         </div>

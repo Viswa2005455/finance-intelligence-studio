@@ -58,7 +58,7 @@ function Shell({ children }: { children: ReactNode }) {
       <header className="svc-top">
         <Link to="/services" className="svc-brand">
           <span className="brand-mark" style={{ width: 34, height: 34, borderRadius: 10 }}><Activity size={18} strokeWidth={2.5} /></span>
-          <span><b>Finance Intelligence Studio</b><small>Ready-made kits by {CONTACT.name}</small></span>
+          <span><b>Finlight</b><small>Ready-made kits by {CONTACT.name}</small></span>
         </Link>
         <nav className="svc-top-links">
           <a className="btn sm ghost" href={CONTACT.store} target="_blank" rel="noreferrer"><ShoppingBag size={15} />Excel templates</a>
@@ -68,7 +68,7 @@ function Shell({ children }: { children: ReactNode }) {
       <main className="svc-main">{children}</main>
       <footer className="svc-foot">
         <div className="svc-foot-grid">
-          <div><b>Finance Intelligence Studio</b><br />Ready-made finance, data and website kits by {CONTACT.name}, from ₹99. Instant download after payment; custom work available.</div>
+          <div><b>Finlight</b><br />Ready-made finance, data and website kits by {CONTACT.name}, from ₹99. Instant download after payment; custom work available.</div>
           <div><b>Contact</b><br /><a href={`mailto:${CONTACT.email}`}>{CONTACT.email}</a></div>
           <div><b>Payments</b><br />Secure payment by Razorpay: UPI, cards and netbanking.</div>
         </div>
@@ -104,7 +104,7 @@ function ServiceCard({ s }: { s: Service }) {
 }
 
 export function ServicesList() {
-  useTitle('Ready-made finance, data and website kits from ₹99 · Finance Intelligence Studio');
+  useTitle('Ready-made finance, data and website kits from ₹99 · Finlight');
   const [cat, setCat] = useState<CategoryId | 'all'>('all');
   const [q, setQ] = useState('');
   const shown = useMemo(() => {
@@ -295,6 +295,6 @@ export function ServiceDetail() {
 }
 
 export function ServiceThankYou() {
-  useTitle('Order confirmation · Finance Intelligence Studio');
+  useTitle('Order confirmation · Finlight');
   return <Shell><ThankYou /></Shell>;
 }

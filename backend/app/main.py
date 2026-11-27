@@ -1,4 +1,4 @@
-"""Finance Intelligence Studio API.
+"""Finlight API.
 
 Run locally:  uv run alembic upgrade head   (first time and after updates)
               uv run uvicorn app.main:app --reload --port 8000
@@ -71,7 +71,7 @@ async def lifespan(_: FastAPI):
 settings = get_settings()
 # The interactive API docs are for development; a hosted copy does not publish its API schema.
 _docs = not settings.is_production
-app = FastAPI(title="Finance Intelligence Studio API", version=VERSION, lifespan=lifespan,
+app = FastAPI(title="Finlight API", version=VERSION, lifespan=lifespan,
               docs_url="/docs" if _docs else None, redoc_url=None, openapi_url="/openapi.json" if _docs else None)
 
 app.add_middleware(

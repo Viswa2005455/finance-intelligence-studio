@@ -10,7 +10,7 @@ export function PublicShell({ title, children }: { title: string; children: Reac
       <header className="landing-bar">
         <a href="/" className="row" style={{ gap: 10, textDecoration: 'none', color: 'inherit' }}>
           <div className="brand-mark" style={{ width: 36, height: 36, borderRadius: 11 }}><Activity size={19} strokeWidth={2.5} /></div>
-          <b style={{ fontFamily: 'var(--font-display)', fontSize: 17 }}>Finance Intelligence Studio</b>
+          <b style={{ fontFamily: 'var(--font-display)', fontSize: 17 }}>Finlight</b>
         </a>
         <nav className="row" aria-label="Site" style={{ gap: 14, fontSize: 14 }}>
           <a href="/methodology">How we calculate</a>

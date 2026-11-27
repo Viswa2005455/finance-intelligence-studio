@@ -5,7 +5,7 @@ import { CHANGELOG } from '../lib/changelog';
 
 /** Public page: what changed and when, in plain words. */
 export function WhatsNew() {
-  useEffect(() => { document.title = "What's new: Finance Intelligence Studio"; }, []);
+  useEffect(() => { document.title = "What's new: Finlight"; }, []);
   return (
     <PublicShell title="What's new">
       <section className="landing-hero" style={{ paddingTop: 20 }}>

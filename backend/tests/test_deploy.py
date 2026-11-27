@@ -7,7 +7,7 @@ import pytest
 def site(tmp_path, monkeypatch, anon_client):
     dist = tmp_path / "dist"
     (dist / "assets").mkdir(parents=True)
-    (dist / "index.html").write_text("<!doctype html><title>Finance Intelligence Studio</title>")
+    (dist / "index.html").write_text("<!doctype html><title>Finlight</title>")
     (dist / "assets" / "index-abc123.js").write_text("console.log(1)")
     (dist / "favicon.svg").write_text("<svg/>")
     (tmp_path / "secret.txt").write_text("outside the build folder")
@@ -19,7 +19,7 @@ def site(tmp_path, monkeypatch, anon_client):
 
 def test_website_files_and_client_side_routes(site):
     home = site.get("/")
-    assert home.status_code == 200 and "Finance Intelligence Studio" in home.text
+    assert home.status_code == 200 and "Finlight" in home.text
     assert "default-src 'self'" in home.headers["content-security-policy"]
     deep = site.get("/red-flags")  # a React route, not a file
     assert deep.status_code == 200 and deep.text == home.text

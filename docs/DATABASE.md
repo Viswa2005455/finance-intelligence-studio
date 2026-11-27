@@ -1,6 +1,6 @@
 # Database guide
 
-Finance Intelligence Studio stores accounts, projects, saved models and upload metadata in
+Finlight stores accounts, projects, saved models and upload metadata in
 **PostgreSQL** (version 14 or newer). Since version 0.10 the original uploaded file bytes are
 stored in the database too (`upload_blobs`), so a hosted copy needs no disk. Older versions kept
 them in `backend/storage/uploads/<random-id>.bin`; the migration copies those files into the

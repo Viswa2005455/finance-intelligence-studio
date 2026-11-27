@@ -16,7 +16,7 @@ def build_docx(r: dict) -> bytes:
     st.font.name = "Calibri"
     st.font.size = Pt(10)
     warn = doc.add_paragraph()
-    run = warn.add_run("DRAFT prepared by Finance Intelligence Studio for the auditor's review. Not a signed audit report. "
+    run = warn.add_run("DRAFT prepared by Finlight for the auditor's review. Not a signed audit report. "
                        "PAN and GSTIN are masked: enter the full numbers in the e-filing utility.")
     run.bold = True
     run.font.color.rgb = RGBColor(0xB4, 0x23, 0x18)

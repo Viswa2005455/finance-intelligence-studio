@@ -30,7 +30,7 @@ THIN = Side(style="thin", color="CBD5E1")
 PCT = "0.0%"
 NUM = "#,##0.00;(#,##0.00);-"
 NUM0 = "#,##0;(#,##0);-"
-DISCLAIMER = ("Prepared with Finance Intelligence Studio from the data listed under Sources. Calculations follow the formulas "
+DISCLAIMER = ("Prepared with Finlight from the data listed under Sources. Calculations follow the formulas "
               "shown; derived and approximated lines are labelled. Screening scores indicate where to investigate and are not "
               "evidence of misstatement or distress. This pack is analysis, not investment advice.")
 
@@ -224,7 +224,7 @@ def build_excel(inp: ReportInput) -> bytes:
             rf.cell(row=r, column=2, value=f.severity)
             rf.cell(row=r, column=3, value=f.period or "")
             rf.cell(row=r, column=4, value=f.detail)
-        rf.cell(row=r + 2, column=1, value="Values computed by the Finance Intelligence Studio engine; component workings are shown in the app.").font = Font(italic=True, color="64748B")
+        rf.cell(row=r + 2, column=1, value="Values computed by the Finlight engine; component workings are shown in the app.").font = Font(italic=True, color="64748B")
         for col, w in zip("ABCDEF", (30, 26, 10, 60, 40, 40)):
             rf.column_dimensions[col].width = w
 

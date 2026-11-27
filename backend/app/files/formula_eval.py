@@ -3,7 +3,7 @@
 Why: many financial exports (e.g. Screener.in, Moneycontrol, files written by scripts) store
 formulas but no saved results, so reading the file without Excel gives empty cells. This
 module recalculates the common cases so the data can still be analysed. Every value it
-produces is reported as "calculated by Finance Intelligence Studio" so the user can verify it
+produces is reported as "calculated by Finlight" so the user can verify it
 against Excel.
 
 Safety: formulas are tokenised and parsed by hand — nothing is passed to Python's eval or

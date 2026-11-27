@@ -1,4 +1,4 @@
-# Finance Intelligence Studio
+# Finlight
 
 A professional financial analysis workspace for CPAs, CFA charterholders, CMAs, auditors and corporate finance teams. Import company financials (including one-click Screener.in exports), run tested calculations — valuation, ratios, forensic screens, accounting schedules, cost accounting, fixed income, portfolio and derivatives analytics — see every formula and its source, and export audit-ready Excel (live formulas), Word and PDF packs.
 
